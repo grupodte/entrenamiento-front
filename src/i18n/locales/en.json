@@ -15,6 +15,11 @@
     "home": "Home",
     "landing": "Landing Page"
   },
+  "construction": {
+    "title": "Site under construction",
+    "description": "This page is under construction. Check back soon.",
+    "cta": "Got it"
+  },
   "home": {
     "heroText": "Master's in training and nutrition. 15 years transforming bodies."
   },

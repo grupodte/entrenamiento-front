@@ -1,22 +1,24 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Link } from 'react-router-dom'
+import { Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import burgerIcon from '../assets/burger.svg'
 
 const navItems = [
   { to: '/', key: 'pages.home' },
-  { to: '/landing-page', key: 'pages.landing' }
+  { to: '/landing-page', key: 'pages.landing' },
+  { to: '/postulacion', key: 'Postulacion' }
 ]
 
-export default function Navbar({ isVisible = true }) {
+export default function Navbar({ isVisible = true }: { isVisible?: boolean }) {
   const { t, i18n } = useTranslation()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
   const currentLang = (i18n.resolvedLanguage || i18n.language || 'es').split('-')[0]
 
   const toggleMenu = () => setIsMenuOpen((prev) => !prev)
   const closeMenu = () => setIsMenuOpen(false)
-  const setLanguage = (lng) => i18n.changeLanguage(lng)
+  const setLanguage = (lng: string) => i18n.changeLanguage(lng)
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 12)
@@ -41,19 +43,20 @@ export default function Navbar({ isVisible = true }) {
         </Link>
 
         <nav className="hidden md:flex items-center gap-5" aria-label="Primary">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `text-[13px] uppercase tracking-[0.12em] transition-opacity duration-200 hover:opacity-100 ${
+          {navItems.map((item) => {
+            const isActive = pathname === item.to
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`text-[13px] uppercase tracking-[0.12em] transition-opacity duration-200 hover:opacity-100 ${
                   isActive ? 'opacity-100' : 'opacity-[0.85]'
-                }`
-              }
-            >
-              {t(item.key)}
-            </NavLink>
-          ))}
+                }`}
+              >
+                {item.key.startsWith('pages.') ? t(item.key) : item.key}
+              </Link>
+            )
+          })}
           <div className="flex items-center gap-2" aria-label={t('nav.languageLabel')}>
             <button
               type="button"
@@ -108,23 +111,27 @@ export default function Navbar({ isVisible = true }) {
         }`}
       >
         <div className="p-[18px] flex flex-col gap-2.5">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `px-3 py-2.5 rounded-[12px] text-[13px] uppercase tracking-[0.14em] transition-[background-color,opacity] duration-200 hover:bg-[rgba(255,255,255,0.18)] hover:opacity-100 ${
+          {navItems.map((item) => {
+            const isActive = pathname === item.to
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`px-3 py-2.5 rounded-[12px] text-[13px] uppercase tracking-[0.14em] transition-[background-color,opacity] duration-200 hover:bg-[rgba(255,255,255,0.18)] hover:opacity-100 ${
                   isActive
                     ? 'bg-[rgba(255,255,255,0.24)] opacity-100'
                     : 'opacity-[0.85]'
-                }`
-              }
-              onClick={closeMenu}
-            >
-              {t(item.key)}
-            </NavLink>
-          ))}
-          <div className="flex gap-2 pt-3 mt-1.5 border-t border-white/20" aria-label={t('nav.languageLabel')}>
+                }`}
+                onClick={closeMenu}
+              >
+                {item.key.startsWith('pages.') ? t(item.key) : item.key}
+              </Link>
+            )
+          })}
+          <div
+            className="flex gap-2 pt-3 mt-1.5 border-t border-white/20"
+            aria-label={t('nav.languageLabel')}
+          >
             <button
               type="button"
               className={`border border-white/30 bg-transparent text-white px-[10px] py-[6px] text-[11px] tracking-[0.12em] uppercase cursor-pointer transition-all duration-200 ${

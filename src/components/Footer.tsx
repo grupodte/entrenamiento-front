@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom'
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
-export default function Footer({ isVisible = true }) {
+export default function Footer({ isVisible = true }: { isVisible?: boolean }) {
   const { t } = useTranslation()
 
   return (
@@ -20,6 +20,7 @@ export default function Footer({ isVisible = true }) {
         <div className="flex gap-4 text-[12px] uppercase tracking-[0.12em] opacity-80">
           <Link to="/">{t('pages.home')}</Link>
           <Link to="/landing-page">{t('pages.landing')}</Link>
+          <Link to="/postulacion">Postulacion</Link>
         </div>
         <p className="m-0 text-[11px] opacity-60">{t('footer.rights')}</p>
       </div>

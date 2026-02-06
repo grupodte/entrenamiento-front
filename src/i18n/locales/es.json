@@ -15,6 +15,11 @@
     "home": "Inicio",
     "landing": "Landing Page"
   },
+  "construction": {
+    "title": "Sitio en construcción",
+    "description": "Esta página está en construcción. Volvé pronto.",
+    "cta": "Entendido"
+  },
   "home": {
     "heroText": "Mag\u00edster en entrenamiento y nutrici\u00f3n. 15 a\u00f1os transformando cuerpos."
   },

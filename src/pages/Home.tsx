@@ -1,21 +1,23 @@
-import { useOutletContext } from 'react-router-dom'
+import { useContext } from 'react'
 import { useTranslation } from 'react-i18next'
 import heroImage from '../assets/Imagenes/image 280.webp'
 import MessagesSection from '../components/MessagesSection.jsx'
 import MethodSection from '../components/MethodSection.jsx'
-import CasesSection from '../components/CasesSection.jsx'
 import TransformSection from '../components/TransformSection.jsx'
 import ShowcaseSection from '../components/ShowcaseSection.jsx'
+import ConstructionModal from '../components/ConstructionModal'
+import { HomePhaseContext } from '../layouts/MainLayout'
 
 export default function Home() {
   const { t } = useTranslation()
-  const { homePhase } = useOutletContext() ?? {}
+  const { homePhase } = useContext(HomePhaseContext)
   const resolvedPhase = homePhase ?? 'content'
   const heroVisible = ['hero', 'content', 'ready'].includes(resolvedPhase)
   const messagesVisible = ['content', 'ready'].includes(resolvedPhase)
 
   return (
     <div className="flex flex-col gap-1 sm:gap-2">
+      <ConstructionModal />
       <section
         className={`relative w-full min-h-[450px] sm:min-h-[360px] md:min-h-[520px] flex items-center justify-center p-1 sm:p-6 bg-cover bg-center rounded-[10px] sm:rounded-[18px] md:rounded-[24px] text-center overflow-hidden transition-[opacity,transform,filter] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           heroVisible
@@ -50,8 +52,6 @@ export default function Home() {
         <MethodSection />
       </div>
 
-
-
       <div
         className={`transition-[opacity,transform,filter] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           messagesVisible
@@ -61,7 +61,6 @@ export default function Home() {
       >
         <TransformSection />
       </div>
-
 
       <div
         className={`transition-[opacity,transform,filter] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${

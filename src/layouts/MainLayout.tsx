@@ -1,7 +1,15 @@
-import { useEffect, useState } from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
-import Navbar from '../components/Navbar.jsx'
-import Footer from '../components/Footer.jsx'
+import { createContext, useEffect, useMemo, useState } from 'react'
+import { Outlet, useRouterState } from '@tanstack/react-router'
+import Navbar from '../components/Navbar'
+import Footer from '../components/Footer'
+
+type HomePhaseContextValue = {
+  homePhase: string
+}
+
+export const HomePhaseContext = createContext<HomePhaseContextValue>({
+  homePhase: 'ready'
+})
 
 const PRELOADER_DURATION = 600
 const PRELOADER_EXIT_DURATION = 300
@@ -9,7 +17,7 @@ const HERO_DELAY = 120
 const CONTENT_DELAY = 240
 
 export default function MainLayout() {
-  const location = useLocation()
+  const location = useRouterState({ select: (state) => state.location })
   const isHome = location.pathname === '/'
   const [homePhase, setHomePhase] = useState(isHome ? 'preload' : 'ready')
 
@@ -51,6 +59,8 @@ export default function MainLayout() {
   const showNavbar = !isHome || ['header', 'hero', 'content'].includes(homePhase)
   const showFooter = !isHome || homePhase === 'content'
 
+  const contextValue = useMemo(() => ({ homePhase }), [homePhase])
+
   return (
     <div className="min-h-screen flex flex-col">
       {showPreloader && (
@@ -66,7 +76,9 @@ export default function MainLayout() {
       <Navbar isVisible={showNavbar} />
       <main className="flex-1 pt-17 md:pt-16">
         <div className="w-full max-w-none md:max-w-[1350px] mx-auto px-1 sm:px-5 md:px-5 pb-6 md:pb-8">
-          <Outlet context={{ homePhase }} />
+          <HomePhaseContext.Provider value={contextValue}>
+            <Outlet />
+          </HomePhaseContext.Provider>
         </div>
       </main>
       <Footer isVisible={showFooter} />
