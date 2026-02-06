@@ -166,6 +166,7 @@ export default function PostulacionWizard() {
   const [currentStep, setCurrentStep] = useState(initialStep)
   const [exitReason, setExitReason] = useState<string | null>(null)
   const [exitOpen, setExitOpen] = useState(false)
+  const [submitNotice, setSubmitNotice] = useState<string | null>(null)
 
   const form = useForm<ApplicationFormValues>({
     defaultValues: initialValues,
@@ -176,7 +177,13 @@ export default function PostulacionWizard() {
     onSubmit: async ({ value }) => {
       const result = applicationSchema.safeParse(value)
       if (!result.success) return
-      await submitApplication(result.data)
+      const submission = await submitApplication(result.data)
+      if (!submission.ok) return
+      if (submission.duplicate) {
+        setSubmitNotice('Postulación ya enviada.')
+        return
+      }
+      setSubmitNotice(null)
       console.log(result.data)
       saveApplication(result.data, totalSteps - 1)
       navigate({ to: '/postulacion/gracias' })
@@ -305,6 +312,9 @@ export default function PostulacionWizard() {
                 </Button>
               </div>
             </div>
+            {submitNotice ? (
+              <p className="m-0 text-sm text-amber-600">{submitNotice}</p>
+            ) : null}
           </CardContent>
         </Card>
       </div>

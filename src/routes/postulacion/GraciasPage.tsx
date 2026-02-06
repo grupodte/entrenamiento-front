@@ -10,8 +10,7 @@ export default function GraciasPage() {
   const summary = summaryParts.length ? summaryParts.join(' · ') : 'Perfil recibido'
 
   return (
-    <div className="relative overflow-hidden rounded-[32px] border border-black/10 bg-white/70 p-6 sm:p-10">
-      <div className="absolute -top-40 right-0 h-[280px] w-[280px] rounded-full bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.2),transparent_70%)]" />
+    <div className="relative ">
       <Card className="relative">
         <CardHeader>
           <CardTitle>Postulación enviada</CardTitle>
