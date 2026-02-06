@@ -1,0 +1,75 @@
+import { useEffect, useState } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
+import Navbar from '../components/Navbar.jsx'
+import Footer from '../components/Footer.jsx'
+
+const PRELOADER_DURATION = 600
+const PRELOADER_EXIT_DURATION = 300
+const HERO_DELAY = 120
+const CONTENT_DELAY = 240
+
+export default function MainLayout() {
+  const location = useLocation()
+  const isHome = location.pathname === '/'
+  const [homePhase, setHomePhase] = useState(isHome ? 'preload' : 'ready')
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.history.scrollRestoration = 'manual'
+    window.scrollTo(0, 0)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!isHome) {
+      setHomePhase('ready')
+      return
+    }
+
+    setHomePhase('preload')
+
+    const timers = [
+      setTimeout(() => setHomePhase('preload-exit'), PRELOADER_DURATION),
+      setTimeout(
+        () => setHomePhase('header'),
+        PRELOADER_DURATION + PRELOADER_EXIT_DURATION
+      ),
+      setTimeout(
+        () => setHomePhase('hero'),
+        PRELOADER_DURATION + PRELOADER_EXIT_DURATION + HERO_DELAY
+      ),
+      setTimeout(
+        () => setHomePhase('content'),
+        PRELOADER_DURATION + PRELOADER_EXIT_DURATION + CONTENT_DELAY
+      )
+    ]
+
+    return () => timers.forEach(clearTimeout)
+  }, [isHome])
+
+  const showPreloader = isHome && (homePhase === 'preload' || homePhase === 'preload-exit')
+  const preloaderIsExiting = homePhase === 'preload-exit'
+  const showNavbar = !isHome || ['header', 'hero', 'content'].includes(homePhase)
+  const showFooter = !isHome || homePhase === 'content'
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {showPreloader && (
+        <div
+          className={`fixed inset-0 z-[200] bg-[#ebebeb] transition-[opacity,transform,filter] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            preloaderIsExiting
+              ? 'opacity-0 scale-[1.02] blur-[2px]'
+              : 'opacity-100 scale-100 blur-0'
+          }`}
+          aria-hidden="true"
+        />
+      )}
+      <Navbar isVisible={showNavbar} />
+      <main className="flex-1 pt-17 md:pt-16">
+        <div className="w-full max-w-none md:max-w-[1350px] mx-auto px-1 sm:px-5 md:px-5 pb-6 md:pb-8">
+          <Outlet context={{ homePhase }} />
+        </div>
+      </main>
+      <Footer isVisible={showFooter} />
+    </div>
+  )
+}

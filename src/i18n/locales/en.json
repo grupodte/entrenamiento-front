@@ -1,0 +1,59 @@
+{
+  "app": {
+    "name": "DD FIT"
+  },
+  "language": {
+    "label": "Language",
+    "es": "Spanish",
+    "en": "English"
+  },
+  "nav": {
+    "languageLabel": "Language",
+    "toggleMenu": "Toggle menu"
+  },
+  "pages": {
+    "home": "Home",
+    "landing": "Landing Page"
+  },
+  "home": {
+    "heroText": "Master's in training and nutrition. 15 years transforming bodies."
+  },
+  "messages": {
+    "titleLineOne": "Real messages.",
+    "titleLineTwo": "Real results.",
+    "realMessageAlt": "Real message {{index}}"
+  },
+  "method": {
+    "lineOne": "You didn't fail.",
+    "lineTwo": "The method failed."
+  },
+  "cases": {
+    "eyebrow": "Real cases",
+    "titleLineOne": "Results from the method",
+    "titleLineTwo": "Dani teaches",
+    "subtitle": "Before and afters from people who followed the NOVA 8 method with coaching.",
+    "beforeLabel": "Before",
+    "afterLabel": "After",
+    "imageAlt": "{{name}} {{phase}}",
+    "items": {
+      "quique": {
+        "name": "Quique",
+        "result": "Down 35 kg",
+        "detail": "Transformed with the NOVA 8 method."
+      },
+      "maria": {
+        "name": "Maria",
+        "result": "Down 11 kg",
+        "detail": "Regained confidence and energy."
+      }
+    }
+  },
+  "transform": {
+    "title": "From understanding to transforming.",
+    "subtitle": "Everything on your phone"
+  },
+  "footer": {
+    "tagline": "Training, health and wellbeing.",
+    "rights": "All rights reserved."
+  }
+}

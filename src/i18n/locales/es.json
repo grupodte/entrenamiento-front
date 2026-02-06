@@ -1,0 +1,59 @@
+{
+  "app": {
+    "name": "DD FIT"
+  },
+  "language": {
+    "label": "Idioma",
+    "es": "Espanol",
+    "en": "Ingles"
+  },
+  "nav": {
+    "languageLabel": "Idioma",
+    "toggleMenu": "Abrir menu"
+  },
+  "pages": {
+    "home": "Inicio",
+    "landing": "Landing Page"
+  },
+  "home": {
+    "heroText": "Mag\u00edster en entrenamiento y nutrici\u00f3n. 15 a\u00f1os transformando cuerpos."
+  },
+  "messages": {
+    "titleLineOne": "Mensajes reales.",
+    "titleLineTwo": "Resultados reales.",
+    "realMessageAlt": "Mensaje real {{index}}"
+  },
+  "method": {
+    "lineOne": "No fallaste vos.",
+    "lineTwo": "Fall\u00f3 el m\u00e9todo."
+  },
+  "cases": {
+    "eyebrow": "Casos reales",
+    "titleLineOne": "Resultados del m\u00e9todo",
+    "titleLineTwo": "que ense\u00f1a Dani",
+    "subtitle": "Antes y despu\u00e9s de personas que aplicaron el m\u00e9todo NOVA 8 con seguimiento del entrenador.",
+    "beforeLabel": "Antes",
+    "afterLabel": "Despu\u00e9s",
+    "imageAlt": "{{name}} {{phase}}",
+    "items": {
+      "quique": {
+        "name": "Quique",
+        "result": "Baj\u00f3 35 kg",
+        "detail": "Transform\u00f3 su cuerpo con el m\u00e9todo NOVA 8."
+      },
+      "maria": {
+        "name": "Mar\u00eda",
+        "result": "Baj\u00f3 11 kg",
+        "detail": "Recuper\u00f3 confianza y energ\u00eda."
+      }
+    }
+  },
+  "transform": {
+    "title": "De entender a transformar.",
+    "subtitle": "Todo en tu celular"
+  },
+  "footer": {
+    "tagline": "Entrenamiento, salud y bienestar.",
+    "rights": "Todos los derechos reservados."
+  }
+}

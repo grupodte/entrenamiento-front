@@ -1,0 +1,1 @@
+-- Add seed data for Supabase here.
