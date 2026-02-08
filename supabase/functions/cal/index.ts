@@ -134,7 +134,7 @@ async function insertAppointment(payload: {
   user_id: string | null;
   guest_name: string | null;
   guest_email: string | null;
-  status: string;
+  status?: string | null;
   start_at?: string | null;
   end_at?: string | null;
   cal_booking_id?: string | null;
@@ -146,14 +146,79 @@ async function insertAppointment(payload: {
   await adminClient.from("appointments").insert(payload);
 }
 
-async function updateAppointment(bookingId: string, status: string, payload: unknown) {
+async function updateAppointment(
+  bookingIds: string[],
+  fields: {
+    status?: string | null;
+    payload?: unknown;
+    start_at?: string | null;
+    end_at?: string | null;
+    guest_name?: string | null;
+    guest_email?: string | null;
+  },
+) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return;
 
   const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  await adminClient
+  if (bookingIds.length === 0) return;
+
+  const updatePayload: Record<string, unknown> = {};
+  if (fields.status) updatePayload.status = fields.status;
+  if (fields.payload) updatePayload.payload = fields.payload;
+  if (fields.start_at !== undefined) updatePayload.start_at = fields.start_at;
+  if (fields.end_at !== undefined) updatePayload.end_at = fields.end_at;
+  if (fields.guest_name !== undefined) updatePayload.guest_name = fields.guest_name;
+  if (fields.guest_email !== undefined) updatePayload.guest_email = fields.guest_email;
+
+  if (Object.keys(updatePayload).length === 0) return;
+
+  const { data } = await adminClient
     .from("appointments")
-    .update({ status, payload })
-    .eq("cal_booking_id", bookingId);
+    .update(updatePayload)
+    .in("cal_booking_id", bookingIds)
+    .select("id");
+
+  if (data && data.length > 0) return;
+
+  await adminClient.from("appointments").insert({
+    cal_booking_id: bookingIds[0],
+    status: fields.status ?? "scheduled",
+    payload: fields.payload ?? {},
+    start_at: fields.start_at ?? null,
+    end_at: fields.end_at ?? null,
+    guest_name: fields.guest_name ?? null,
+    guest_email: fields.guest_email ?? null,
+  });
+}
+
+function extractBookingIds(payload: Record<string, unknown> | null | undefined) {
+  const candidates = [
+    payload?.bookingUid,
+    payload?.uid,
+    payload?.id,
+    payload?.bookingId,
+    (payload?.booking as Record<string, unknown> | undefined)?.uid,
+    (payload?.booking as Record<string, unknown> | undefined)?.id,
+  ];
+  return Array.from(
+    new Set(
+      candidates
+        .filter((value) => value !== undefined && value !== null && value !== "")
+        .map((value) => String(value)),
+    ),
+  );
+}
+
+function normalizeStatus(value: unknown, event?: string) {
+  if (typeof value === "string" && value.trim()) {
+    return value.toLowerCase();
+  }
+  const upperEvent = (event ?? "").toUpperCase();
+  if (upperEvent.includes("CANCEL")) return "cancelled";
+  if (upperEvent.includes("RESCHEDULE")) return "rescheduled";
+  if (upperEvent.includes("REJECT")) return "rejected";
+  if (upperEvent.includes("CREATED") || upperEvent.includes("BOOKED")) return "scheduled";
+  return null;
 }
 
 async function verifyWebhookSignature(rawBody: string, signature: string | null) {
@@ -222,9 +287,22 @@ serve(async (req) => {
       }
 
       case "availability": {
+        const query = {
+          ...(input as Record<string, string | number | boolean | undefined | null>),
+        } as Record<string, string | number | boolean | undefined | null>;
+
+        if (query.startTime && !query.start) {
+          query.start = query.startTime;
+          delete query.startTime;
+        }
+        if (query.endTime && !query.end) {
+          query.end = query.endTime;
+          delete query.endTime;
+        }
+
         const data = await calFetch("/v2/slots", {
           version: CAL_API_VERSION_SLOTS,
-          query: input as Record<string, string | number | boolean | undefined | null>,
+          query,
         });
 
         return jsonResponse({ data });
@@ -242,14 +320,17 @@ serve(async (req) => {
         const guestEmail = (attendee.email as string | undefined) ?? email ?? null;
         const guestName = (attendee.name as string | undefined) ?? null;
 
+        const bookingData = booking?.data as Record<string, unknown> | undefined;
+        const [bookingId] = extractBookingIds(bookingData);
+
         await insertAppointment({
           user_id: user?.id ?? null,
           guest_name: guestName,
           guest_email: guestEmail,
           status: "scheduled",
-          start_at: (booking?.data?.start as string | undefined) ?? null,
-          end_at: (booking?.data?.end as string | undefined) ?? null,
-          cal_booking_id: (booking?.data?.uid as string | undefined) ?? null,
+          start_at: (bookingData?.start as string | undefined) ?? null,
+          end_at: (bookingData?.end as string | undefined) ?? null,
+          cal_booking_id: bookingId ?? null,
           payload: booking,
         });
 
@@ -285,7 +366,7 @@ serve(async (req) => {
           body: input,
         });
 
-        await updateAppointment(bookingUid, "cancelled", data);
+        await updateAppointment([bookingUid], { status: "cancelled", payload: data });
 
         return jsonResponse({ data });
       }
@@ -318,7 +399,8 @@ serve(async (req) => {
         const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         const event = String(body.triggerEvent ?? "unknown");
         const payload = body.payload as Record<string, unknown> | undefined;
-        const bookingUid = String(payload?.bookingUid ?? payload?.uid ?? "");
+        const bookingIds = extractBookingIds(payload);
+        const bookingUid = bookingIds[0] ?? "";
 
         await adminClient.from("webhook_events").insert({
           event,
@@ -326,11 +408,23 @@ serve(async (req) => {
           payload: body,
         });
 
-        if (bookingUid) {
-          const status = String(payload?.status ?? "");
-          if (status) {
-            await updateAppointment(bookingUid, status, body);
-          }
+        if (bookingIds.length > 0) {
+          const status = normalizeStatus(payload?.status, event);
+          const attendees = (payload?.attendees as Array<Record<string, unknown>> | undefined) ?? [];
+          const attendee = attendees[0] ?? {};
+          const guestName = (attendee.name as string | undefined) ?? null;
+          const guestEmail = (attendee.email as string | undefined) ?? null;
+          const startAt = (payload?.startTime as string | undefined) ?? (payload?.start as string | undefined) ?? null;
+          const endAt = (payload?.endTime as string | undefined) ?? (payload?.end as string | undefined) ?? null;
+
+          await updateAppointment(bookingIds, {
+            status,
+            payload: body,
+            start_at: startAt,
+            end_at: endAt,
+            guest_name: guestName,
+            guest_email: guestEmail,
+          });
         }
 
         return jsonResponse({ ok: true });

@@ -13,7 +13,8 @@
   },
   "pages": {
     "home": "Home",
-    "landing": "Landing Page"
+    "landing": "Landing Page",
+    "agenda": "Schedule"
   },
   "construction": {
     "title": "Site under construction",
@@ -60,5 +61,40 @@
   "footer": {
     "tagline": "Training, health and wellbeing.",
     "rights": "All rights reserved."
+  },
+  "agenda": {
+    "title": "Schedule your call",
+    "subtitle": "Pick an available time to coordinate your session.",
+    "durationTbd": "Duration to be confirmed",
+    "summary": "Summary",
+    "selectSlot": "Pick a time to continue.",
+    "confirmedTitle": "Booking confirmed",
+    "confirmedMessage": "We sent you an email with the details. If you need to change it, let us know in advance.",
+    "thanksMessage": "Thanks for booking. We sent you an email with the details.",
+    "redirectMessage": "You will be redirected to the main site in a few seconds.",
+    "bookAnother": "Book another",
+    "backHome": "Back to home",
+    "stepSelect": "Select date and time",
+    "pickTime": "Choose an available time",
+    "loading": "Loading availability...",
+    "noSlots": "No slots available for this date.",
+    "reserve": "Book",
+    "stepFinal": "Final step",
+    "confirmDetails": "Confirm your details",
+    "back": "Back",
+    "selectedSlot": "Selected time",
+    "fullName": "Full name",
+    "fullNamePlaceholder": "Your name",
+    "email": "Email",
+    "emailPlaceholder": "you@email.com",
+    "confirm": "Confirm booking",
+    "confirming": "Confirming...",
+    "errors": {
+      "loadAvailability": "We couldn't load availability. Please try again.",
+      "noAvailability": "No availability at the moment.",
+      "selectSlot": "Please select an available time.",
+      "completeForm": "Please complete your name and email.",
+      "bookingFailed": "We couldn't confirm your booking. Please try again."
+    }
   }
 }

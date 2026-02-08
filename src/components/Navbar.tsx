@@ -6,6 +6,7 @@ import burgerIcon from '../assets/burger.svg'
 const navItems = [
   { to: '/', key: 'pages.home' },
   { to: '/landing-page', key: 'pages.landing' },
+  { to: '/agenda', key: 'pages.agenda' },
   { to: '/postulacion', key: 'Postulacion' }
 ]
 

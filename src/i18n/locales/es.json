@@ -13,7 +13,8 @@
   },
   "pages": {
     "home": "Inicio",
-    "landing": "Landing Page"
+    "landing": "Landing Page",
+    "agenda": "Agenda"
   },
   "construction": {
     "title": "Sitio en construcción",
@@ -60,5 +61,40 @@
   "footer": {
     "tagline": "Entrenamiento, salud y bienestar.",
     "rights": "Todos los derechos reservados."
+  },
+  "agenda": {
+    "title": "Agendá tu llamada",
+    "subtitle": "Elegí un horario disponible para coordinar tu sesión.",
+    "durationTbd": "Duración a confirmar",
+    "summary": "Resumen",
+    "selectSlot": "Elegí un horario para continuar.",
+    "confirmedTitle": "Cita confirmada",
+    "confirmedMessage": "Te enviamos un correo con los detalles. Si necesitás cambiarla, avisanos con tiempo.",
+    "thanksMessage": "Gracias por agendar. Te enviamos un correo con los detalles.",
+    "redirectMessage": "En unos segundos vas a volver al sitio principal.",
+    "bookAnother": "Agendar otra",
+    "backHome": "Ir al inicio",
+    "stepSelect": "Seleccioná fecha y hora",
+    "pickTime": "Elegí el horario disponible",
+    "loading": "Buscando disponibilidad...",
+    "noSlots": "No hay horarios para esta fecha.",
+    "reserve": "Reservar",
+    "stepFinal": "Paso final",
+    "confirmDetails": "Confirmá tus datos",
+    "back": "Volver",
+    "selectedSlot": "Horario seleccionado",
+    "fullName": "Nombre y apellido",
+    "fullNamePlaceholder": "Tu nombre",
+    "email": "Email",
+    "emailPlaceholder": "tu@email.com",
+    "confirm": "Confirmar cita",
+    "confirming": "Confirmando...",
+    "errors": {
+      "loadAvailability": "No pudimos cargar la disponibilidad. Intentá de nuevo.",
+      "noAvailability": "No hay horarios disponibles por ahora.",
+      "selectSlot": "Seleccioná un horario disponible.",
+      "completeForm": "Completá tu nombre y email.",
+      "bookingFailed": "No pudimos confirmar tu cita. Intentá de nuevo."
+    }
   }
 }

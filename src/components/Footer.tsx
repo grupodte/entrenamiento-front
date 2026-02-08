@@ -20,6 +20,7 @@ export default function Footer({ isVisible = true }: { isVisible?: boolean }) {
         <div className="flex gap-4 text-[12px] uppercase tracking-[0.12em] opacity-80">
           <Link to="/">{t('pages.home')}</Link>
           <Link to="/landing-page">{t('pages.landing')}</Link>
+          <Link to="/agenda">{t('pages.agenda')}</Link>
           <Link to="/postulacion">Postulacion</Link>
         </div>
         <p className="m-0 text-[11px] opacity-60">{t('footer.rights')}</p>

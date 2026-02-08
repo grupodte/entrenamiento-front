@@ -41,3 +41,66 @@ a {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+.ddfit-datepicker .react-datepicker {
+  border: 0;
+  font-family: "BlauerNue", system-ui, sans-serif;
+  width: 100%;
+}
+
+.ddfit-calendar {
+  border: 0 !important;
+  background: transparent;
+  width: 100%;
+}
+
+.ddfit-calendar .react-datepicker__month-container {
+  width: 100%;
+}
+
+.ddfit-calendar .react-datepicker__header {
+  background: #f2f2f2;
+  border-bottom: 0;
+  padding-top: 12px;
+}
+
+.ddfit-calendar .react-datepicker__current-month,
+.ddfit-calendar .react-datepicker__day-name {
+  font-weight: 600;
+  color: #0b0f1a;
+}
+
+.ddfit-calendar .react-datepicker__day-name {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ddfit-calendar .react-datepicker__day {
+  width: 2.4rem;
+  line-height: 2.4rem;
+  margin: 0.15rem;
+  border-radius: 0.75rem;
+  font-size: 0.85rem;
+  color: #0b0f1a;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.ddfit-calendar .react-datepicker__day--selected,
+.ddfit-calendar .react-datepicker__day--keyboard-selected {
+  background: #0b0f1a;
+  color: #ffffff;
+}
+
+.ddfit-calendar .react-datepicker__day:hover {
+  background: rgba(11, 15, 26, 0.1);
+}
+
+.ddfit-calendar .react-datepicker__navigation-icon::before {
+  border-color: #0b0f1a;
+}
+
+.ddfit-day--disabled {
+  opacity: 0.2 !important;
+  pointer-events: none;
+}
