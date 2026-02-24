@@ -9,8 +9,6 @@ function PostulacionLayout() {
     const LOCK_CLASS = 'postulacion-lock'
     const previousBodyOverflow = document.body.style.overflow
     const previousHtmlOverflow = document.documentElement.style.overflow
-    const viewportMeta = document.querySelector('meta[name="viewport"]')
-    const previousViewportContent = viewportMeta?.getAttribute('content') ?? null
     const desktopMedia = window.matchMedia('(min-width: 768px)')
 
     const applyOverflow = () => {
@@ -18,15 +16,8 @@ function PostulacionLayout() {
       document.body.style.overflow = overflow
       document.documentElement.style.overflow = overflow
     }
-
     document.body.classList.add(LOCK_CLASS)
     document.documentElement.classList.add(LOCK_CLASS)
-    if (viewportMeta) {
-      viewportMeta.setAttribute(
-        'content',
-        'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'
-      )
-    }
     applyOverflow()
 
     if (desktopMedia.addEventListener) {
@@ -34,7 +25,6 @@ function PostulacionLayout() {
     } else {
       desktopMedia.addListener(applyOverflow)
     }
-
     return () => {
       if (desktopMedia.removeEventListener) {
         desktopMedia.removeEventListener('change', applyOverflow)
@@ -45,13 +35,6 @@ function PostulacionLayout() {
       document.documentElement.classList.remove(LOCK_CLASS)
       document.body.style.overflow = previousBodyOverflow
       document.documentElement.style.overflow = previousHtmlOverflow
-      if (viewportMeta) {
-        if (previousViewportContent !== null) {
-          viewportMeta.setAttribute('content', previousViewportContent)
-        } else {
-          viewportMeta.removeAttribute('content')
-        }
-      }
     }
   }, [])
 
