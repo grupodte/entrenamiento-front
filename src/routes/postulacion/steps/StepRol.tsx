@@ -37,7 +37,10 @@ export default function StepRol({ form }: { form: WizardForm }) {
 
       <form.Field name="alineado">
         {(field) => (
-          <FieldWrapper label="¿Esto se alinea con lo que estás buscando?">
+          <FieldWrapper
+            label="¿Esto se alinea con lo que estás buscando?"
+            hint="Excluyente: si respondés que no, la postulación finaliza."
+          >
             <YesNoButtons
               value={field.state.value}
               onChange={(value) => {
@@ -55,7 +58,10 @@ export default function StepRol({ form }: { form: WizardForm }) {
 
       <form.Field name="comodidad_app">
         {(field) => (
-          <FieldWrapper label="¿Te sentís cómodo/a trabajando dentro de una app propia con procesos definidos?">
+          <FieldWrapper
+            label="¿Te sentís cómodo/a trabajando dentro de una app propia con procesos definidos?"
+            hint="Excluyente: si respondés que no, la postulación finaliza."
+          >
             <YesNoButtons
               value={field.state.value}
               onChange={(value) => {

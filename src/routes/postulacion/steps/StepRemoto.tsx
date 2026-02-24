@@ -6,7 +6,10 @@ export default function StepRemoto({ form }: { form: WizardForm }) {
     <div className="space-y-6">
       <form.Field name="remoto_100">
         {(field) => (
-          <FieldWrapper label="¿Podés trabajar 100% remoto?">
+          <FieldWrapper
+            label="¿Podés trabajar 100% remoto?"
+            hint="Excluyente: si respondés que no, la postulación finaliza."
+          >
             <YesNoButtons
               value={field.state.value}
               onChange={(value) => {
@@ -24,7 +27,10 @@ export default function StepRemoto({ form }: { form: WizardForm }) {
 
       <form.Field name="disponibilidad">
         {(field) => (
-          <FieldWrapper label="Disponibilidad semanal" hint="Seleccioná la opción que mejor te represente">
+          <FieldWrapper
+            label="Disponibilidad semanal"
+            hint="Excluyente: se requiere un mínimo de 6 horas por día."
+          >
             <div className="grid gap-3 sm:grid-cols-3">
               <OptionCard
                 label="4-5 hs"

@@ -153,6 +153,17 @@ function getExclusionReason(stepIndex: number, values: ApplicationFormValues) {
   return null
 }
 
+function getStepIssues(values: ApplicationFormValues, fields: Array<keyof ApplicationFormValues>) {
+  const parsed = applicationSchema.safeParse(values)
+  if (parsed.success) return []
+
+  const stepFields = new Set<string>(fields.map(String))
+  return parsed.error.issues.filter((issue) => {
+    const field = issue.path[0]
+    return typeof field === 'string' && stepFields.has(field)
+  })
+}
+
 export default function PostulacionWizard() {
   const navigate = useNavigate()
   const stored = loadApplication()
@@ -217,20 +228,16 @@ export default function PostulacionWizard() {
     const values = form.state.values
     const fields = stepConfig.getFields(values)
 
-    const parsed = applicationSchema.safeParse(values)
-    if (!parsed.success) {
-      const fieldErrors = parsed.error.flatten().fieldErrors
-      const hasStepErrors = fields.some((field) => fieldErrors[field]?.length)
-      if (hasStepErrors) {
-        fields.forEach((field) => {
-          const instance = form.getFieldInfo(field).instance
-          if (instance && !instance.state.meta.isTouched) {
-            instance.setMeta((prev) => ({ ...prev, isTouched: true }))
-          }
-        })
-        await Promise.all(fields.map((field) => form.validateField(field, 'change')))
-        return
-      }
+    const stepIssues = getStepIssues(values, fields)
+    if (stepIssues.length > 0) {
+      fields.forEach((field) => {
+        const instance = form.getFieldInfo(field).instance
+        if (instance && !instance.state.meta.isTouched) {
+          instance.setMeta((prev) => ({ ...prev, isTouched: true }))
+        }
+      })
+      await Promise.all(fields.map((field) => form.validateField(field, 'change')))
+      return
     }
 
     const exclusion = getExclusionReason(currentStep, values)
@@ -239,13 +246,6 @@ export default function PostulacionWizard() {
       setExitOpen(true)
       return
     }
-
-    const validations = await Promise.all(
-      fields.map((field) => form.validateField(field, 'change'))
-    )
-
-    const hasErrors = validations.some((errors) => (errors ?? []).length > 0)
-    if (hasErrors) return
 
     if (currentStep === totalSteps - 1) {
       await form.handleSubmit()

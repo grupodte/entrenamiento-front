@@ -19,6 +19,7 @@ const CONTENT_DELAY = 240
 export default function MainLayout() {
   const location = useRouterState({ select: (state) => state.location })
   const isHome = location.pathname === '/'
+  const isPostulacion = location.pathname === '/postulacion' || location.pathname.startsWith('/postulacion/')
   const [homePhase, setHomePhase] = useState(isHome ? 'preload' : 'ready')
 
   useEffect(() => {
@@ -56,8 +57,11 @@ export default function MainLayout() {
 
   const showPreloader = isHome && (homePhase === 'preload' || homePhase === 'preload-exit')
   const preloaderIsExiting = homePhase === 'preload-exit'
-  const showNavbar = !isHome || ['header', 'hero', 'content'].includes(homePhase)
-  const showFooter = !isHome || homePhase === 'content'
+  const showNavbar = (!isHome || ['header', 'hero', 'content'].includes(homePhase)) && !isPostulacion
+  const showFooter = (!isHome || homePhase === 'content') && !isPostulacion
+  const mainContainerClass = isPostulacion
+    ? 'w-full max-w-none mx-auto p-0'
+    : 'w-full max-w-none md:max-w-[1350px] mx-auto px-1 sm:px-5 md:px-5 pb-6 md:pb-8'
 
   const contextValue = useMemo(() => ({ homePhase }), [homePhase])
 
@@ -74,8 +78,8 @@ export default function MainLayout() {
         />
       )}
       <Navbar isVisible={showNavbar} />
-      <main className="flex-1 pt-17 md:pt-16">
-        <div className="w-full max-w-none md:max-w-[1350px] mx-auto px-1 sm:px-5 md:px-5 pb-6 md:pb-8">
+      <main className={`flex-1 ${showNavbar ? 'pt-17 md:pt-16' : 'pt-0'}`}>
+        <div className={mainContainerClass}>
           <HomePhaseContext.Provider value={contextValue}>
             <Outlet />
           </HomePhaseContext.Provider>

@@ -20,10 +20,10 @@ export default function StepDatos({ form }: { form: WizardForm }) {
         )}
       </form.Field>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 sm:items-end">
         <form.Field name="edad">
           {(field) => (
-            <FieldWrapper label="Edad">
+            <FieldWrapper label="Edad" hint="Excluyente: edad mínima 25 años.">
               <Input
                 type="number"
                 min={0}

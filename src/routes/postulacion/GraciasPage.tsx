@@ -13,13 +13,12 @@ export default function GraciasPage() {
     <div className="relative ">
       <Card className="relative">
         <CardHeader>
-          <CardTitle>Postulación enviada</CardTitle>
+          <CardTitle>Gracias por tu postulación</CardTitle>
           <p className="m-0 text-[14px] text-black/60">{summary}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="m-0 text-[15px] text-black/70">
-            Gracias por completar el formulario. Si tu perfil se alinea, nos vamos a estar
-            contactando.
+            Si tu perfil se alinea con nuestros objetivos, te estaremos contactando.
           </p>
           <div className="flex flex-wrap gap-3">
             <Button onClick={() => navigate({ to: '/' })}>Volver al sitio</Button>

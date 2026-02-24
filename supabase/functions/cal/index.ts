@@ -9,7 +9,12 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const SUPABASE_SERVICE_ROLE_KEY =
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+  Deno.env.get("SUPABASE_SERVICE_ROLE") ??
+  Deno.env.get("CAL_SERVICE_ROLE_KEY") ??
+  Deno.env.get("SERVICE_ROLE_KEY") ??
+  "";
 
 const CAL_API_KEY = Deno.env.get("CAL_API_KEY") ?? "";
 const CAL_API_BASE_URL = Deno.env.get("CAL_API_BASE_URL") ?? "https://api.cal.com";
@@ -120,14 +125,24 @@ async function isAdmin(userId: string | null) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return false;
 
   const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  const { data, error } = await adminClient
+  const { data: profileData, error: profileError } = await adminClient
     .from("profiles")
     .select("role")
     .eq("id", userId)
     .maybeSingle();
 
-  if (error) return false;
-  return data?.role === "admin";
+  if (!profileError && profileData) {
+    return profileData.role === "admin";
+  }
+
+  const { data: perfilesData, error: perfilesError } = await adminClient
+    .from("perfiles")
+    .select("rol")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (perfilesError) return false;
+  return perfilesData?.rol === "admin";
 }
 
 async function insertAppointment(payload: {
@@ -360,10 +375,20 @@ serve(async (req) => {
           return errorResponse("Missing bookingUid", 400);
         }
 
+        const cancelPayload: Record<string, unknown> = {};
+        const cancellationReason = input?.cancellationReason as string | undefined;
+        if (typeof cancellationReason === "string" && cancellationReason.trim()) {
+          cancelPayload.cancellationReason = cancellationReason.trim();
+        }
+        const cancelSubsequent = input?.cancelSubsequentBookings as boolean | undefined;
+        if (typeof cancelSubsequent === "boolean") {
+          cancelPayload.cancelSubsequentBookings = cancelSubsequent;
+        }
+
         const data = await calFetch(`/v2/bookings/${bookingUid}/cancel`, {
           method: "POST",
           version: CAL_API_VERSION_BOOKINGS,
-          body: input,
+          body: Object.keys(cancelPayload).length > 0 ? cancelPayload : undefined,
         });
 
         await updateAppointment([bookingUid], { status: "cancelled", payload: data });
