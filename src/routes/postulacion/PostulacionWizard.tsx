@@ -210,6 +210,18 @@ export default function PostulacionWizard() {
     ? 0
     : (progressStepNumber / progressStepsTotal) * 100
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const rafId = window.requestAnimationFrame(() => {
+      const scrollRoot = document.querySelector<HTMLElement>('[data-postulacion-scroll-root]')
+      scrollRoot?.scrollTo({ top: 0, behavior: 'auto' })
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    })
+
+    return () => window.cancelAnimationFrame(rafId)
+  }, [currentStep])
+
   const handleBack = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 0))
   }

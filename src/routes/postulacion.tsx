@@ -6,8 +6,11 @@ function PostulacionLayout() {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
+    const LOCK_CLASS = 'postulacion-lock'
     const previousBodyOverflow = document.body.style.overflow
     const previousHtmlOverflow = document.documentElement.style.overflow
+    const viewportMeta = document.querySelector('meta[name="viewport"]')
+    const previousViewportContent = viewportMeta?.getAttribute('content') ?? null
     const desktopMedia = window.matchMedia('(min-width: 768px)')
 
     const applyOverflow = () => {
@@ -16,6 +19,14 @@ function PostulacionLayout() {
       document.documentElement.style.overflow = overflow
     }
 
+    document.body.classList.add(LOCK_CLASS)
+    document.documentElement.classList.add(LOCK_CLASS)
+    if (viewportMeta) {
+      viewportMeta.setAttribute(
+        'content',
+        'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'
+      )
+    }
     applyOverflow()
 
     if (desktopMedia.addEventListener) {
@@ -30,13 +41,25 @@ function PostulacionLayout() {
       } else {
         desktopMedia.removeListener(applyOverflow)
       }
+      document.body.classList.remove(LOCK_CLASS)
+      document.documentElement.classList.remove(LOCK_CLASS)
       document.body.style.overflow = previousBodyOverflow
       document.documentElement.style.overflow = previousHtmlOverflow
+      if (viewportMeta) {
+        if (previousViewportContent !== null) {
+          viewportMeta.setAttribute('content', previousViewportContent)
+        } else {
+          viewportMeta.removeAttribute('content')
+        }
+      }
     }
   }, [])
 
   return (
-    <div className="min-h-screen w-full overflow-y-auto bg-[#f7f7f5] px-3 md:h-screen md:overflow-hidden sm:px-6">
+    <div
+      data-postulacion-scroll-root
+      className="min-h-screen w-full overflow-y-auto bg-[#f7f7f5] px-3 md:h-screen md:overflow-hidden sm:px-6"
+    >
       <div className="mx-auto flex min-h-screen w-full max-w-[980px] items-start justify-center py-4 md:h-full md:items-center sm:py-6">
         <Outlet />
       </div>
