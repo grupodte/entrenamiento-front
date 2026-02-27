@@ -87,6 +87,10 @@ a {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  width: 2.4rem;
+  line-height: 2.4rem;
+  margin: 0.15rem;
+  text-align: center;
 }
 
 .ddfit-calendar .react-datepicker__day {
