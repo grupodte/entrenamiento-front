@@ -104,20 +104,25 @@ async function calFetch(
 }
 
 async function getUserFromRequest(req: Request) {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { user: null, email: null };
-  const authHeader = req.headers.get("authorization") ?? "";
-  if (!authHeader) return { user: null, email: null };
+  try {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { user: null, email: null };
+    const authHeader = req.headers.get("authorization") ?? "";
+    if (!authHeader) return { user: null, email: null };
 
-  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: {
-      headers: { Authorization: authHeader },
-    },
-  });
+    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: {
+        headers: { Authorization: authHeader },
+      },
+    });
 
-  const { data, error } = await client.auth.getUser();
-  if (error) return { user: null, email: null };
+    const { data, error } = await client.auth.getUser();
+    if (error) return { user: null, email: null };
 
-  return { user: data.user, email: data.user?.email ?? null };
+    return { user: data.user, email: data.user?.email ?? null };
+  } catch (error) {
+    console.error("Failed to resolve user from request", error);
+    return { user: null, email: null };
+  }
 }
 
 async function isAdmin(userId: string | null) {
@@ -336,16 +341,15 @@ serve(async (req) => {
           body: input,
         });
 
-        const { user, email } = await getUserFromRequest(req);
-        const attendee = (input?.attendee as Record<string, unknown> | undefined) ?? {};
-        const guestEmail = (attendee.email as string | undefined) ?? email ?? null;
-        const guestName = (attendee.name as string | undefined) ?? null;
-
-        const bookingData = booking?.data as Record<string, unknown> | undefined;
-        const [bookingId] = extractBookingIds(bookingData);
-
         let warning: string | null = null;
         try {
+          const { user, email } = await getUserFromRequest(req);
+          const attendee = (input?.attendee as Record<string, unknown> | undefined) ?? {};
+          const guestEmail = (attendee.email as string | undefined) ?? email ?? null;
+          const guestName = (attendee.name as string | undefined) ?? null;
+          const bookingData = booking?.data as Record<string, unknown> | undefined;
+          const [bookingId] = extractBookingIds(bookingData);
+
           await insertAppointment({
             user_id: user?.id ?? null,
             guest_name: guestName,
