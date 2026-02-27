@@ -158,7 +158,13 @@ async function insertAppointment(payload: {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return;
 
   const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  await adminClient.from("appointments").insert(payload);
+  const { error } = await adminClient.from("appointments").insert(payload);
+  if (error) {
+    throw Object.assign(new Error("Failed to persist appointment"), {
+      status: 500,
+      payload: error,
+    });
+  }
 }
 
 async function updateAppointment(
@@ -338,18 +344,24 @@ serve(async (req) => {
         const bookingData = booking?.data as Record<string, unknown> | undefined;
         const [bookingId] = extractBookingIds(bookingData);
 
-        await insertAppointment({
-          user_id: user?.id ?? null,
-          guest_name: guestName,
-          guest_email: guestEmail,
-          status: "scheduled",
-          start_at: (bookingData?.start as string | undefined) ?? null,
-          end_at: (bookingData?.end as string | undefined) ?? null,
-          cal_booking_id: bookingId ?? null,
-          payload: booking,
-        });
+        let warning: string | null = null;
+        try {
+          await insertAppointment({
+            user_id: user?.id ?? null,
+            guest_name: guestName,
+            guest_email: guestEmail,
+            status: "scheduled",
+            start_at: (bookingData?.start as string | undefined) ?? null,
+            end_at: (bookingData?.end as string | undefined) ?? null,
+            cal_booking_id: bookingId ?? null,
+            payload: booking,
+          });
+        } catch (persistError) {
+          console.error("Booking created in Cal.com but local persistence failed", persistError);
+          warning = "BOOKING_CREATED_BUT_PERSIST_FAILED";
+        }
 
-        return jsonResponse({ data: booking });
+        return jsonResponse({ data: booking, warning });
       }
 
       case "list_bookings": {

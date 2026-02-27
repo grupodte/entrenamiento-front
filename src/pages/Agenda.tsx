@@ -1,9 +1,7 @@
 import type { FormEvent } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import DatePicker from 'react-datepicker'
 import { supabase } from '../lib/supabaseClient'
-import 'react-datepicker/dist/react-datepicker.css'
 import { useTranslation } from 'react-i18next'
 
 type BookingSummary = {
@@ -43,10 +41,12 @@ const extractSlots = (raw: unknown): string[] => {
   return []
 }
 
-const buildMonthRange = (date: Date) => {
-  const start = new Date(date.getFullYear(), date.getMonth(), 1)
+const buildNextDaysRange = (days: number) => {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   start.setHours(0, 0, 0, 0)
-  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0)
+  const end = new Date(start)
+  end.setDate(end.getDate() + Math.max(days - 1, 0))
   end.setHours(23, 59, 59, 999)
   return {
     start: start.toISOString(),
@@ -61,6 +61,15 @@ const formatLocalDateKey = (date: Date) => {
   return `${year}-${month}-${day}`
 }
 
+const parseLocalDateKey = (key: string) => {
+  const [year, month, day] = key.split('-').map(Number)
+  if (!year || !month || !day) return null
+  return new Date(year, month - 1, day, 12, 0, 0, 0)
+}
+
+const toLocalNoon = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0)
+
 export default function Agenda() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -68,8 +77,7 @@ export default function Agenda() {
   const [selectedEventTypeId, setSelectedEventTypeId] = useState<string>(
     envEventTypeId ? String(envEventTypeId) : ''
   )
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date())
+  const [selectedDate, setSelectedDate] = useState<Date>(toLocalNoon(new Date()))
   const [slotsByDate, setSlotsByDate] = useState<Record<string, string[]>>({})
   const [availableDates, setAvailableDates] = useState<string[]>([])
   const [selectedSlot, setSelectedSlot] = useState<string>('')
@@ -91,6 +99,12 @@ export default function Agenda() {
     () => new Set(availableDates),
     [availableDates]
   )
+  const nextSevenDays = useMemo(() => {
+    const base = toLocalNoon(new Date())
+    return Array.from({ length: 7 }, (_, index) =>
+      new Date(base.getFullYear(), base.getMonth(), base.getDate() + index, 12, 0, 0, 0)
+    )
+  }, [])
 
   useEffect(() => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -138,12 +152,12 @@ export default function Agenda() {
     let isMounted = true
 
     const fetchSlots = async () => {
-      if (!selectedEventTypeId || !calendarMonth) return
+      if (!selectedEventTypeId) return
       setIsLoadingSlots(true)
       setError(null)
       setSelectedSlot('')
 
-      const { start, end } = buildMonthRange(calendarMonth)
+      const { start, end } = buildNextDaysRange(7)
 
       const { data, error: fetchError } = await supabase.functions.invoke('cal', {
         body: {
@@ -185,17 +199,34 @@ export default function Agenda() {
           }
         })
       } else {
-        const times = Array.from(new Set(extractSlots(rawSlots)))
-        if (times.length > 0) {
-          normalized[selectedDateKey] = times.sort(
+        extractSlots(rawSlots).forEach((slot) => {
+          const slotDate = new Date(slot)
+          if (Number.isNaN(slotDate.getTime())) return
+          const key = formatLocalDateKey(slotDate)
+          if (!normalized[key]) normalized[key] = []
+          normalized[key].push(slot)
+        })
+
+        Object.entries(normalized).forEach(([key, value]) => {
+          const times = Array.from(new Set(value)).sort(
             (a, b) => new Date(a).getTime() - new Date(b).getTime()
           )
-          dates.push(selectedDateKey)
-        }
+          if (times.length > 0) {
+            normalized[key] = times
+            dates.push(key)
+          }
+        })
       }
 
       setSlotsByDate(normalized)
       setAvailableDates(dates)
+      setSelectedDate((currentDate) => {
+        if (dates.length === 0) return currentDate
+        const currentKey = formatLocalDateKey(currentDate)
+        if (normalized[currentKey]) return currentDate
+        const firstAvailable = parseLocalDateKey([...dates].sort()[0])
+        return firstAvailable ?? currentDate
+      })
       setIsLoadingSlots(false)
     }
 
@@ -204,7 +235,7 @@ export default function Agenda() {
     return () => {
       isMounted = false
     }
-  }, [selectedEventTypeId, calendarMonth, timeZone, selectedDateKey])
+  }, [selectedEventTypeId, timeZone])
 
   useEffect(() => {
     if (!slotsForSelectedDate.includes(selectedSlot)) {
@@ -354,29 +385,43 @@ export default function Agenda() {
               </div>
 
               <div className="grid gap-6 lg:grid-cols-[1.05fr_1fr]">
-                <div className="rounded-[20px] border border-black/10 bg-white p-3 ddfit-datepicker">
-                  <DatePicker
-                    inline
-                    selected={selectedDate}
-                    onChange={(date) =>
-                      date &&
-                      setSelectedDate(
-                        new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0)
+                <div className="rounded-[20px] border border-black/10 bg-white p-5 h-[400px] overflow-y-auto no-scrollbar">
+                  <div className="flex flex-col gap-2">
+                    {nextSevenDays.map((date) => {
+                      const key = formatLocalDateKey(date)
+                      const isSelected = key === selectedDateKey
+                      const hasSlots = availableDateSet.has(key)
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          className={`w-full rounded-[14px] border px-4 py-3 text-left transition ${
+                            isSelected
+                              ? 'border-black bg-black text-white'
+                              : hasSlots
+                                ? 'border-black/15 bg-white text-black hover:border-black/40'
+                                : 'border-black/10 bg-black/[0.03] text-black/45'
+                          }`}
+                          onClick={() => setSelectedDate(date)}
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="text-[14px] font-semibold">
+                              {date.toLocaleDateString([], {
+                                weekday: 'short',
+                                day: 'numeric',
+                                month: 'short'
+                              })}
+                            </span>
+                            <span
+                              className={`text-[11px] uppercase tracking-[0.14em] ${isSelected ? 'text-white/70' : 'text-black/60'}`}
+                            >
+                              {hasSlots ? `${slotsByDate[key]?.length ?? 0} horarios` : 'sin horarios'}
+                            </span>
+                          </div>
+                        </button>
                       )
-                    }
-                    onMonthChange={(date) => date && setCalendarMonth(date)}
-                    minDate={new Date()}
-                    calendarClassName="ddfit-calendar"
-                    dayClassName={(date) =>
-                      availableDateSet.size > 0 && !availableDateSet.has(formatLocalDateKey(date))
-                        ? 'ddfit-day--disabled'
-                        : 'ddfit-day'
-                    }
-                    filterDate={(date) =>
-                      availableDateSet.size === 0 ||
-                      availableDateSet.has(formatLocalDateKey(date))
-                    }
-                  />
+                    })}
+                  </div>
                 </div>
 
                 <div className="rounded-[20px] border border-black/10 bg-white p-5 h-[400px] overflow-y-auto no-scrollbar">
