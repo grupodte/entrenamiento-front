@@ -54,8 +54,12 @@ const buildMonthRange = (date: Date) => {
   }
 }
 
-const formatLocalDateKey = (date: Date) =>
-  date.toLocaleDateString('en-CA', { timeZone: 'UTC' })
+const formatLocalDateKey = (date: Date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 export default function Agenda() {
   const { t } = useTranslation()
@@ -354,7 +358,12 @@ export default function Agenda() {
                   <DatePicker
                     inline
                     selected={selectedDate}
-                    onChange={(date) => date && setSelectedDate(date)}
+                    onChange={(date) =>
+                      date &&
+                      setSelectedDate(
+                        new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0)
+                      )
+                    }
                     onMonthChange={(date) => date && setCalendarMonth(date)}
                     minDate={new Date()}
                     calendarClassName="ddfit-calendar"
