@@ -12,6 +12,8 @@ type BookingSummary = {
 }
 
 type BookingPhase = 'slots' | 'form' | 'success'
+const AVAILABILITY_LOOKAHEAD_DAYS = 30
+const MAX_VISIBLE_AVAILABLE_DAYS = 7
 
 const formatSlotTime = (value: string) => {
   const date = new Date(value)
@@ -101,6 +103,7 @@ export default function Agenda() {
       availableDates
         .slice()
         .sort((a, b) => a.localeCompare(b))
+        .slice(0, MAX_VISIBLE_AVAILABLE_DAYS)
         .map((key) => parseLocalDateKey(key))
         .filter((date): date is Date => Boolean(date)),
     [availableDates]
@@ -152,7 +155,7 @@ export default function Agenda() {
       setError(null)
       setSelectedSlot('')
 
-      const { start, end } = buildNextDaysRange(7)
+      const { start, end } = buildNextDaysRange(AVAILABILITY_LOOKAHEAD_DAYS)
 
       const { data, error: fetchError } = await supabase.functions.invoke('cal', {
         body: {

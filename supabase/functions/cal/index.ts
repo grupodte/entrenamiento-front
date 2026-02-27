@@ -22,6 +22,7 @@ const CAL_API_VERSION_BOOKINGS = Deno.env.get("CAL_API_VERSION_BOOKINGS") ?? "20
 const CAL_API_VERSION_SLOTS = Deno.env.get("CAL_API_VERSION_SLOTS") ?? "2024-09-04";
 const CAL_API_VERSION_EVENT_TYPES = Deno.env.get("CAL_API_VERSION_EVENT_TYPES") ?? "2024-06-14";
 const CAL_WEBHOOK_SECRET = Deno.env.get("CAL_WEBHOOK_SECRET") ?? "";
+const FUNCTION_VERSION = "2026-02-27.3";
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -29,6 +30,7 @@ function jsonResponse(body: unknown, status = 200) {
     headers: {
       ...corsHeaders,
       "Content-Type": "application/json",
+      "x-cal-function-version": FUNCTION_VERSION,
     },
   });
 }
@@ -335,11 +337,18 @@ serve(async (req) => {
       }
 
       case "create_booking": {
-        const booking = await calFetch("/v2/bookings", {
-          method: "POST",
-          version: CAL_API_VERSION_BOOKINGS,
-          body: input,
-        });
+        let booking: unknown;
+        try {
+          booking = await calFetch("/v2/bookings", {
+            method: "POST",
+            version: CAL_API_VERSION_BOOKINGS,
+            body: input,
+          });
+        } catch (createError) {
+          const err = createError as { payload?: unknown; message?: string };
+          console.error("Cal.com create booking failed", err);
+          return errorResponse("CAL_CREATE_BOOKING_FAILED", 502, err.payload ?? err.message);
+        }
 
         let warning: string | null = null;
         try {
@@ -476,6 +485,12 @@ serve(async (req) => {
     }
   } catch (error) {
     const err = error as { status?: number; payload?: unknown; message?: string };
+    console.error("Unhandled error in cal function", {
+      action,
+      message: err.message,
+      status: err.status,
+      payload: err.payload,
+    });
     return errorResponse(err.message ?? "Unexpected error", err.status ?? 500, err.payload);
   }
 });
