@@ -22,7 +22,11 @@ const CAL_API_VERSION_BOOKINGS = Deno.env.get("CAL_API_VERSION_BOOKINGS") ?? "20
 const CAL_API_VERSION_SLOTS = Deno.env.get("CAL_API_VERSION_SLOTS") ?? "2024-09-04";
 const CAL_API_VERSION_EVENT_TYPES = Deno.env.get("CAL_API_VERSION_EVENT_TYPES") ?? "2024-06-14";
 const CAL_WEBHOOK_SECRET = Deno.env.get("CAL_WEBHOOK_SECRET") ?? "";
-const FUNCTION_VERSION = "2026-02-27.3";
+const CAL_ENFORCED_EVENT_TYPE_ID_RAW = Deno.env.get("CAL_ENFORCED_EVENT_TYPE_ID") ?? "";
+const CAL_ENFORCED_EVENT_TYPE_ID = parseEventTypeId(CAL_ENFORCED_EVENT_TYPE_ID_RAW);
+const CAL_ENFORCED_EVENT_TYPE_ID_INVALID =
+  CAL_ENFORCED_EVENT_TYPE_ID_RAW.trim().length > 0 && CAL_ENFORCED_EVENT_TYPE_ID === null;
+const FUNCTION_VERSION = "2026-02-27.5";
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -51,6 +55,15 @@ async function readBody(req: Request) {
 
 function requireEnv(name: string, value: string) {
   if (!value) throw new Error(`Missing env: ${name}`);
+}
+
+function parseEventTypeId(value: unknown) {
+  if (typeof value === "number" && Number.isInteger(value) && value > 0) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value.trim());
+    if (Number.isInteger(parsed) && parsed > 0) return parsed;
+  }
+  return null;
 }
 
 function buildUrl(path: string, query?: Record<string, string | number | boolean | undefined | null>) {
@@ -249,6 +262,93 @@ function normalizeStatus(value: unknown, event?: string) {
   return null;
 }
 
+function toMillis(value: unknown) {
+  if (typeof value !== "string" || !value) return null;
+  const millis = new Date(value).getTime();
+  return Number.isNaN(millis) ? null : millis;
+}
+
+function asRecord(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+function extractBookings(raw: unknown): Array<Record<string, unknown>> {
+  if (!raw) return [];
+
+  if (Array.isArray(raw)) {
+    return raw
+      .map((item) => asRecord(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item));
+  }
+
+  const record = asRecord(raw);
+  if (!record) return [];
+
+  const nestedCandidates: unknown[] = [
+    record.data,
+    record.bookings,
+    record.results,
+    record.items,
+  ];
+
+  const nestedData = asRecord(record.data);
+  if (nestedData) {
+    nestedCandidates.push(nestedData.data, nestedData.bookings, nestedData.results, nestedData.items);
+  }
+
+  for (const candidate of nestedCandidates) {
+    const bookings = extractBookings(candidate);
+    if (bookings.length > 0) return bookings;
+  }
+
+  return [];
+}
+
+function bookingEmail(booking: Record<string, unknown>) {
+  const directEmail = booking.attendeeEmail ?? booking.email;
+  if (typeof directEmail === "string" && directEmail) return directEmail.toLowerCase();
+
+  const attendees = booking.attendees;
+  if (Array.isArray(attendees)) {
+    for (const attendee of attendees) {
+      const record = asRecord(attendee);
+      const email = record?.email;
+      if (typeof email === "string" && email) return email.toLowerCase();
+    }
+  }
+
+  return null;
+}
+
+function bookingStart(booking: Record<string, unknown>) {
+  const value = booking.start ?? booking.startTime;
+  return typeof value === "string" ? value : null;
+}
+
+function findMatchingBooking(
+  bookingsRaw: unknown,
+  expectedStart: string | null,
+  expectedEmail: string | null,
+) {
+  const bookings = extractBookings(bookingsRaw);
+  if (bookings.length === 0) return null;
+
+  const expectedMillis = toMillis(expectedStart);
+  const normalizedEmail = expectedEmail?.toLowerCase() ?? null;
+
+  return bookings.find((booking) => {
+    const start = bookingStart(booking);
+    const bookingMillis = toMillis(start);
+    if (expectedMillis === null || bookingMillis === null) return false;
+    if (Math.abs(bookingMillis - expectedMillis) > 60_000) return false;
+
+    if (!normalizedEmail) return true;
+    const foundEmail = bookingEmail(booking);
+    return foundEmail === normalizedEmail;
+  }) ?? null;
+}
+
 async function verifyWebhookSignature(rawBody: string, signature: string | null) {
   if (!CAL_WEBHOOK_SECRET) return false;
   if (!signature) return false;
@@ -299,6 +399,10 @@ serve(async (req) => {
     return errorResponse("Missing action", 400);
   }
 
+  if (CAL_ENFORCED_EVENT_TYPE_ID_INVALID) {
+    return errorResponse("Invalid env: CAL_ENFORCED_EVENT_TYPE_ID", 500);
+  }
+
   try {
     switch (action) {
       case "health": {
@@ -318,6 +422,12 @@ serve(async (req) => {
         const query = {
           ...(input as Record<string, string | number | boolean | undefined | null>),
         } as Record<string, string | number | boolean | undefined | null>;
+        const requestedEventTypeId = parseEventTypeId(query.eventTypeId);
+        const effectiveEventTypeId = CAL_ENFORCED_EVENT_TYPE_ID ?? requestedEventTypeId;
+        if (!effectiveEventTypeId) {
+          return errorResponse("Missing eventTypeId", 400);
+        }
+        query.eventTypeId = effectiveEventTypeId;
 
         if (query.startTime && !query.start) {
           query.start = query.startTime;
@@ -337,23 +447,53 @@ serve(async (req) => {
       }
 
       case "create_booking": {
+        const attendee = (input?.attendee as Record<string, unknown> | undefined) ?? {};
+        const requestedEmail = (attendee.email as string | undefined) ?? null;
+        const requestedStart = (input?.start as string | undefined) ?? null;
+        const bookingPayload = { ...(input as Record<string, unknown>) };
+        const requestedEventTypeId = parseEventTypeId(bookingPayload.eventTypeId);
+        const effectiveEventTypeId = CAL_ENFORCED_EVENT_TYPE_ID ?? requestedEventTypeId;
+        if (!effectiveEventTypeId) {
+          return errorResponse("Missing eventTypeId", 400);
+        }
+        bookingPayload.eventTypeId = effectiveEventTypeId;
+
         let booking: unknown;
+        const warnings: string[] = [];
         try {
           booking = await calFetch("/v2/bookings", {
             method: "POST",
             version: CAL_API_VERSION_BOOKINGS,
-            body: input,
+            body: bookingPayload,
           });
         } catch (createError) {
-          const err = createError as { payload?: unknown; message?: string };
+          const err = createError as { status?: number; payload?: unknown; message?: string };
           console.error("Cal.com create booking failed", err);
-          return errorResponse("CAL_CREATE_BOOKING_FAILED", 502, err.payload ?? err.message);
+
+          // Cal.com can return 5xx while still creating the booking.
+          if (typeof err.status === "number" && err.status >= 500 && requestedStart && requestedEmail) {
+            try {
+              const listResult = await calFetch("/v2/bookings", {
+                version: CAL_API_VERSION_BOOKINGS,
+                query: { attendeeEmail: requestedEmail },
+              });
+              const recovered = findMatchingBooking(listResult, requestedStart, requestedEmail);
+              if (recovered) {
+                booking = { data: recovered };
+                warnings.push("CAL_CREATE_5XX_BUT_BOOKING_RECOVERED");
+              }
+            } catch (recoveryError) {
+              console.error("Cal.com booking recovery failed", recoveryError);
+            }
+          }
+
+          if (!booking) {
+            return errorResponse("CAL_CREATE_BOOKING_FAILED", 502, err.payload ?? err.message);
+          }
         }
 
-        let warning: string | null = null;
         try {
           const { user, email } = await getUserFromRequest(req);
-          const attendee = (input?.attendee as Record<string, unknown> | undefined) ?? {};
           const guestEmail = (attendee.email as string | undefined) ?? email ?? null;
           const guestName = (attendee.name as string | undefined) ?? null;
           const bookingData = booking?.data as Record<string, unknown> | undefined;
@@ -371,10 +511,10 @@ serve(async (req) => {
           });
         } catch (persistError) {
           console.error("Booking created in Cal.com but local persistence failed", persistError);
-          warning = "BOOKING_CREATED_BUT_PERSIST_FAILED";
+          warnings.push("BOOKING_CREATED_BUT_PERSIST_FAILED");
         }
 
-        return jsonResponse({ data: booking, warning });
+        return jsonResponse({ data: booking, warnings: warnings.length > 0 ? warnings : null });
       }
 
       case "list_bookings": {
