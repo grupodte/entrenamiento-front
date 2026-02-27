@@ -28,7 +28,7 @@ function PostulacionLayout() {
       if (desktopMedia.removeEventListener) {
         desktopMedia.removeEventListener('change', applyOverflow)
       } else {
-        desktopMedia.removeListener(applyOverflow)postulacion laboral
+        desktopMedia.removeListener(applyOverflow)
       }
       document.body.style.overflow = previousBodyOverflow
       document.documentElement.style.overflow = previousHtmlOverflow
