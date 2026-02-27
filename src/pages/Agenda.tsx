@@ -74,6 +74,7 @@ export default function Agenda() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const envEventTypeId = import.meta.env.VITE_CAL_EVENT_TYPE_ID as string | undefined
+  const detectedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
   const [selectedEventTypeId, setSelectedEventTypeId] = useState<string>(
     envEventTypeId ? String(envEventTypeId) : ''
   )
@@ -83,7 +84,7 @@ export default function Agenda() {
   const [selectedSlot, setSelectedSlot] = useState<string>('')
   const [attendeeName, setAttendeeName] = useState('')
   const [attendeeEmail, setAttendeeEmail] = useState('')
-  const [timeZone, setTimeZone] = useState('UTC')
+  const [timeZone] = useState(detectedTimeZone)
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('slots')
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
   const [isBooking, setIsBooking] = useState(false)
@@ -95,21 +96,15 @@ export default function Agenda() {
     [selectedDate]
   )
   const slotsForSelectedDate = slotsByDate[selectedDateKey] ?? []
-  const availableDateSet = useMemo(
-    () => new Set(availableDates),
+  const displayDates = useMemo(
+    () =>
+      availableDates
+        .slice()
+        .sort((a, b) => a.localeCompare(b))
+        .map((key) => parseLocalDateKey(key))
+        .filter((date): date is Date => Boolean(date)),
     [availableDates]
   )
-  const nextSevenDays = useMemo(() => {
-    const base = toLocalNoon(new Date())
-    return Array.from({ length: 7 }, (_, index) =>
-      new Date(base.getFullYear(), base.getMonth(), base.getDate() + index, 12, 0, 0, 0)
-    )
-  }, [])
-
-  useEffect(() => {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
-    if (tz) setTimeZone(tz)
-  }, [])
 
   useEffect(() => {
     let isMounted = true
@@ -218,13 +213,15 @@ export default function Agenda() {
         })
       }
 
+      const sortedDates = Array.from(new Set(dates)).sort((a, b) => a.localeCompare(b))
+
       setSlotsByDate(normalized)
-      setAvailableDates(dates)
+      setAvailableDates(sortedDates)
       setSelectedDate((currentDate) => {
-        if (dates.length === 0) return currentDate
+        if (sortedDates.length === 0) return currentDate
         const currentKey = formatLocalDateKey(currentDate)
         if (normalized[currentKey]) return currentDate
-        const firstAvailable = parseLocalDateKey([...dates].sort()[0])
+        const firstAvailable = parseLocalDateKey(sortedDates[0])
         return firstAvailable ?? currentDate
       })
       setIsLoadingSlots(false)
@@ -386,47 +383,50 @@ export default function Agenda() {
 
               <div className="grid gap-6 lg:grid-cols-[1.05fr_1fr]">
                 <div className="rounded-[20px] border border-black/10 bg-white p-5 h-[400px] overflow-y-auto no-scrollbar">
-                  <div className="flex flex-col gap-2">
-                    {nextSevenDays.map((date) => {
-                      const key = formatLocalDateKey(date)
-                      const isSelected = key === selectedDateKey
-                      const hasSlots = availableDateSet.has(key)
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          className={`w-full rounded-[14px] border px-4 py-3 text-left transition ${
-                            isSelected
-                              ? 'border-black bg-black text-white'
-                              : hasSlots
-                                ? 'border-black/15 bg-white text-black hover:border-black/40'
-                                : 'border-black/10 bg-black/[0.03] text-black/45'
-                          }`}
-                          onClick={() => setSelectedDate(date)}
-                        >
-                          <div className="flex items-center justify-between gap-4">
-                            <span className="text-[14px] font-semibold">
-                              {date.toLocaleDateString([], {
-                                weekday: 'short',
-                                day: 'numeric',
-                                month: 'short'
-                              })}
-                            </span>
-                            <span
-                              className={`text-[11px] uppercase tracking-[0.14em] ${isSelected ? 'text-white/70' : 'text-black/60'}`}
-                            >
-                              {hasSlots ? `${slotsByDate[key]?.length ?? 0} horarios` : 'sin horarios'}
-                            </span>
-                          </div>
-                        </button>
-                      )
-                    })}
-                  </div>
+                  {isLoadingSlots ? null : (
+                    <div className="flex flex-col gap-2">
+                      {displayDates.map((date) => {
+                        const key = formatLocalDateKey(date)
+                        const isSelected = key === selectedDateKey
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            className={`w-full rounded-[14px] border px-4 py-3 text-left transition ${
+                              isSelected
+                                ? 'border-black bg-black text-white'
+                                : 'border-black/15 bg-white text-black hover:border-black/40'
+                            }`}
+                            onClick={() => setSelectedDate(date)}
+                          >
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-[14px] font-semibold">
+                                {date.toLocaleDateString([], {
+                                  weekday: 'short',
+                                  day: 'numeric',
+                                  month: 'short'
+                                })}
+                              </span>
+                              <span
+                                className={`text-[11px] uppercase tracking-[0.14em] ${isSelected ? 'text-white/70' : 'text-black/60'}`}
+                              >
+                                {slotsByDate[key]?.length ?? 0} horarios
+                              </span>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-[20px] border border-black/10 bg-white p-5 h-[400px] overflow-y-auto no-scrollbar">
                   {isLoadingSlots ? (
-                    <p className="text-[13px] opacity-70">{t('agenda.loading')}</p>
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-[13px] opacity-70">{t('agenda.loading')}</p>
+                    </div>
+                  ) : displayDates.length === 0 ? (
+                    <p className="text-[13px] opacity-70">{t('agenda.errors.noAvailability')}</p>
                   ) : slotsForSelectedDate.length === 0 ? (
                     <p className="text-[13px] opacity-70">{t('agenda.noSlots')}</p>
                   ) : (
