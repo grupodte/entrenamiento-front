@@ -14,6 +14,18 @@ type BookingSummary = {
 type BookingPhase = 'slots' | 'form' | 'success'
 const AVAILABILITY_LOOKAHEAD_DAYS = 30
 const MAX_VISIBLE_AVAILABLE_DAYS = 7
+const AVAILABILITY_CACHE_KEY = 'ddfit_agenda_availability_v1'
+const AVAILABILITY_CACHE_TTL_MS = 1000 * 60 * 10
+const DATE_SKELETON_ITEMS = 6
+const SLOT_SKELETON_ITEMS = 8
+
+type AvailabilityCachePayload = {
+  createdAt: number
+  eventTypeId: string
+  timeZone: string
+  slotsByDate: Record<string, string[]>
+  availableDates: string[]
+}
 
 const formatSlotTime = (value: string) => {
   const date = new Date(value)
@@ -72,6 +84,38 @@ const parseLocalDateKey = (key: string) => {
 const toLocalNoon = (date: Date) =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0)
 
+const readAvailabilityCache = (
+  eventTypeId: string,
+  timeZone: string
+): AvailabilityCachePayload | null => {
+  if (typeof window === 'undefined') return null
+
+  try {
+    const rawCache = window.localStorage.getItem(AVAILABILITY_CACHE_KEY)
+    if (!rawCache) return null
+
+    const parsed = JSON.parse(rawCache) as Partial<AvailabilityCachePayload>
+    if (parsed.eventTypeId !== eventTypeId || parsed.timeZone !== timeZone) return null
+    if (typeof parsed.createdAt !== 'number') return null
+    if (Date.now() - parsed.createdAt > AVAILABILITY_CACHE_TTL_MS) return null
+    if (!parsed.slotsByDate || !Array.isArray(parsed.availableDates)) return null
+
+    return parsed as AvailabilityCachePayload
+  } catch {
+    return null
+  }
+}
+
+const saveAvailabilityCache = (payload: AvailabilityCachePayload) => {
+  if (typeof window === 'undefined') return
+
+  try {
+    window.localStorage.setItem(AVAILABILITY_CACHE_KEY, JSON.stringify(payload))
+  } catch {
+    return
+  }
+}
+
 export default function Agenda() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -89,6 +133,8 @@ export default function Agenda() {
   const [timeZone] = useState(detectedTimeZone)
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('slots')
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
+  const [hasFetchedSlots, setHasFetchedSlots] = useState(false)
+  const [hasLoadedSlots, setHasLoadedSlots] = useState(false)
   const [isBooking, setIsBooking] = useState(false)
   const [booking, setBooking] = useState<BookingSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -108,6 +154,7 @@ export default function Agenda() {
         .filter((date): date is Date => Boolean(date)),
     [availableDates]
   )
+  const showInitialLoading = !hasLoadedSlots && (!hasFetchedSlots || isLoadingSlots)
 
   useEffect(() => {
     let isMounted = true
@@ -127,12 +174,14 @@ export default function Agenda() {
 
       if (fetchError) {
         setError('No pudimos cargar la disponibilidad. Intentá de nuevo.')
+        setHasLoadedSlots(true)
         return
       }
 
       const list = (data?.data?.data ?? data?.data ?? []) as Array<{ id: number | string }>
       if (list.length === 0) {
         setError('No hay horarios disponibles por ahora.')
+        setHasLoadedSlots(true)
         return
       }
 
@@ -147,10 +196,29 @@ export default function Agenda() {
   }, [envEventTypeId])
 
   useEffect(() => {
+    if (!selectedEventTypeId) return
+
+    const cache = readAvailabilityCache(selectedEventTypeId, timeZone)
+    if (!cache) return
+
+    setSlotsByDate(cache.slotsByDate)
+    setAvailableDates(cache.availableDates)
+    setSelectedDate((currentDate) => {
+      if (cache.availableDates.length === 0) return currentDate
+      const currentKey = formatLocalDateKey(currentDate)
+      if (cache.slotsByDate[currentKey]) return currentDate
+      const firstAvailable = parseLocalDateKey(cache.availableDates[0])
+      return firstAvailable ?? currentDate
+    })
+    setHasLoadedSlots(true)
+  }, [selectedEventTypeId, timeZone])
+
+  useEffect(() => {
     let isMounted = true
 
     const fetchSlots = async () => {
       if (!selectedEventTypeId) return
+      setHasFetchedSlots(true)
       setIsLoadingSlots(true)
       setError(null)
       setSelectedSlot('')
@@ -171,8 +239,7 @@ export default function Agenda() {
 
       if (fetchError) {
         setError(t('agenda.errors.loadAvailability'))
-        setSlotsByDate({})
-        setAvailableDates([])
+        setHasLoadedSlots(true)
         setIsLoadingSlots(false)
         return
       }
@@ -227,6 +294,14 @@ export default function Agenda() {
         const firstAvailable = parseLocalDateKey(sortedDates[0])
         return firstAvailable ?? currentDate
       })
+      saveAvailabilityCache({
+        createdAt: Date.now(),
+        eventTypeId: selectedEventTypeId,
+        timeZone,
+        slotsByDate: normalized,
+        availableDates: sortedDates
+      })
+      setHasLoadedSlots(true)
       setIsLoadingSlots(false)
     }
 
@@ -386,7 +461,27 @@ export default function Agenda() {
 
               <div className="grid gap-6 lg:grid-cols-[1.05fr_1fr]">
                 <div className="rounded-[20px] border border-black/10 bg-white p-5 h-[400px] overflow-y-auto no-scrollbar">
-                  {isLoadingSlots ? null : (
+                  {showInitialLoading ? (
+                    <div className="flex flex-col gap-2">
+                      {Array.from({ length: DATE_SKELETON_ITEMS }).map((_, index) => (
+                        <div
+                          key={`date-skeleton-${index}`}
+                          className="h-[54px] w-full rounded-[14px] border border-black/8 bg-gradient-to-r from-black/[0.03] via-black/[0.06] to-black/[0.03] animate-pulse"
+                        />
+                      ))}
+                    </div>
+                  ) : displayDates.length === 0 ? (
+                    <div className="h-full flex items-center justify-center">
+                      <div className="w-full rounded-[14px] border border-black/10 bg-black/[0.02] px-4 py-5 text-center">
+                        <p className="m-0 text-[13px] font-medium text-black/80">
+                          {t('agenda.errors.noAvailability')}
+                        </p>
+                        <p className="m-0 mt-1 text-[12px] text-black/55">
+                          Probá de nuevo en unos minutos.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
                     <div className="flex flex-col gap-2">
                       {displayDates.map((date) => {
                         const key = formatLocalDateKey(date)
@@ -424,14 +519,31 @@ export default function Agenda() {
                 </div>
 
                 <div className="rounded-[20px] border border-black/10 bg-white p-5 h-[400px] overflow-y-auto no-scrollbar">
-                  {isLoadingSlots ? (
-                    <div className="h-full flex items-center justify-center">
-                      <p className="text-[13px] opacity-70">{t('agenda.loading')}</p>
+                  {showInitialLoading ? (
+                    <div className="flex flex-col gap-2">
+                      {Array.from({ length: SLOT_SKELETON_ITEMS }).map((_, index) => (
+                        <div
+                          key={`slot-skeleton-${index}`}
+                          className="h-[54px] w-full rounded-[16px] border border-black/8 bg-gradient-to-r from-black/[0.03] via-black/[0.06] to-black/[0.03] animate-pulse"
+                        />
+                      ))}
                     </div>
                   ) : displayDates.length === 0 ? (
-                    <p className="text-[13px] opacity-70">{t('agenda.errors.noAvailability')}</p>
+                    <div className="h-full flex items-center justify-center">
+                      <div className="w-full rounded-[14px] border border-black/10 bg-black/[0.02] px-4 py-5 text-center">
+                        <p className="m-0 text-[13px] font-medium text-black/80">
+                          {t('agenda.errors.noAvailability')}
+                        </p>
+                      </div>
+                    </div>
                   ) : slotsForSelectedDate.length === 0 ? (
-                    <p className="text-[13px] opacity-70">{t('agenda.noSlots')}</p>
+                    <div className="h-full flex items-center justify-center">
+                      <div className="w-full rounded-[14px] border border-black/10 bg-black/[0.02] px-4 py-5 text-center">
+                        <p className="m-0 text-[13px] font-medium text-black/80">
+                          {t('agenda.noSlots')}
+                        </p>
+                      </div>
+                    </div>
                   ) : (
                     <div className="flex flex-col gap-2">
                       {slotsForSelectedDate.map((slot) => (

@@ -164,6 +164,14 @@ function getStepIssues(values: ApplicationFormValues, fields: Array<keyof Applic
   })
 }
 
+function isCompletedValue(value: unknown) {
+  if (value === null || value === undefined) return false
+  if (typeof value === 'string') return value.trim().length > 0
+  if (Array.isArray(value)) return value.length > 0
+  if (typeof value === 'number') return !Number.isNaN(value)
+  return true
+}
+
 export default function PostulacionWizard() {
   const navigate = useNavigate()
   const stored = loadApplication()
@@ -239,6 +247,18 @@ export default function PostulacionWizard() {
 
     const values = form.state.values
     const fields = stepConfig.getFields(values)
+    const missingFields = fields.filter((field) => !isCompletedValue(values[field]))
+
+    if (missingFields.length > 0) {
+      missingFields.forEach((field) => {
+        const instance = form.getFieldInfo(field).instance
+        if (instance && !instance.state.meta.isTouched) {
+          instance.setMeta((prev) => ({ ...prev, isTouched: true }))
+        }
+      })
+      await Promise.all(missingFields.map((field) => form.validateField(field, 'change')))
+      return
+    }
 
     const stepIssues = getStepIssues(values, fields)
     if (stepIssues.length > 0) {
