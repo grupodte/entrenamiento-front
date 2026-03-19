@@ -1,9 +1,59 @@
 @import "tailwindcss";
 
-:root {
-  color-scheme: light;
+/* ── Mux Player — hide all controls, keep click-to-play ─── */
+mux-player:-webkit-full-screen,
+mux-player:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  aspect-ratio: unset !important;
 }
 
+mux-player {
+  --controls: none;
+  --media-control-bar-display: none;
+  --media-pip-button-display: none;
+  --media-airplay-button-display: none;
+  --media-cast-button-display: none;
+  --media-fullscreen-button-display: none;
+  --media-mute-button-display: none;
+  --media-captions-button-display: none;
+  --media-playback-rate-button-display: none;
+  --media-seek-backward-button-display: none;
+  --media-seek-forward-button-display: none;
+  --media-time-display-display: none;
+  --media-time-range-display: none;
+  --media-duration-display-display: none;
+}
+
+/* ── Brand tokens ────────────────────────────────────────── */
+:root {
+  /* Primary */
+  --brand:        #9580A6;
+  --brand-dark:   #7A6A8F;
+  --brand-light:  #EDE9F3;
+  --brand-muted:  #C4BBCE;
+
+  /* Grays (derived from brand gray #69686B) */
+  --gray:         #69686B;
+  --gray-light:   #9D9B9F;
+  --gray-muted:   #C8C6CA;
+
+  /* Surfaces */
+  --bg:           #FEFEFE;
+  --bg-subtle:    #F4F2F7;
+  --bg-dark:      #1A1820;
+
+  /* Text */
+  --text:         #1A1820;
+  --text-secondary: #69686B;
+  --text-muted:   #9D9B9F;
+
+  /* Borders */
+  --border:       #E8E4EE;
+  --border-strong:#C4BBCE;
+}
+
+/* ── Fonts ───────────────────────────────────────────────── */
 @font-face {
   font-family: "BlauerNue";
   src: url("../assets/fonts/BlauerNue-Regular.otf") format("opentype");
@@ -20,12 +70,38 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "ProductSans";
+  src: url("../assets/fonts/ProductSansRegular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ProductSans";
+  src: url("../assets/fonts/ProductSansBold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Base ────────────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+}
+
 body {
   margin: 0;
-  font-family: "BlauerNue", system-ui, sans-serif;
+  font-family: "ProductSans", system-ui, sans-serif;
   font-weight: 400;
-  background: #ebebeb;
-  color: #0b0f1a;
+  background: var(--bg);
+  color: var(--text);
+}
+
+h1, h2, h3, h4 {
+  font-family: "BlauerNue", system-ui, sans-serif;
+  font-weight: 700;
 }
 
 html.postulacion-lock,
@@ -55,9 +131,10 @@ a {
   display: none;
 }
 
+/* ── Datepicker ──────────────────────────────────────────── */
 .ddfit-datepicker .react-datepicker {
   border: 0;
-  font-family: "BlauerNue", system-ui, sans-serif;
+  font-family: "ProductSans", system-ui, sans-serif;
   width: 100%;
 }
 
@@ -72,7 +149,7 @@ a {
 }
 
 .ddfit-calendar .react-datepicker__header {
-  background: #f2f2f2;
+  background: var(--bg-subtle);
   border-bottom: 0;
   padding-top: 12px;
 }
@@ -80,7 +157,7 @@ a {
 .ddfit-calendar .react-datepicker__current-month,
 .ddfit-calendar .react-datepicker__day-name {
   font-weight: 600;
-  color: #0b0f1a;
+  color: var(--text);
 }
 
 .ddfit-calendar .react-datepicker__day-name {
@@ -99,22 +176,22 @@ a {
   margin: 0.15rem;
   border-radius: 0.75rem;
   font-size: 0.85rem;
-  color: #0b0f1a;
+  color: var(--text);
   transition: background 150ms ease, color 150ms ease;
 }
 
 .ddfit-calendar .react-datepicker__day--selected,
 .ddfit-calendar .react-datepicker__day--keyboard-selected {
-  background: #0b0f1a;
+  background: var(--bg-dark);
   color: #ffffff;
 }
 
 .ddfit-calendar .react-datepicker__day:hover {
-  background: rgba(11, 15, 26, 0.1);
+  background: var(--brand-light);
 }
 
 .ddfit-calendar .react-datepicker__navigation-icon::before {
-  border-color: #0b0f1a;
+  border-color: var(--text);
 }
 
 .ddfit-day--disabled {

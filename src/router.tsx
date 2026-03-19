@@ -4,6 +4,7 @@ import { indexRoute } from './routes/index'
 import { landingRoute } from './routes/landing-page'
 import { agendaRoute } from './routes/agenda'
 import { agendaGraciasRoute } from './routes/gracias-agenda'
+import { preCallRoute } from './routes/pre-call'
 import { postulacionRoute } from './routes/postulacion'
 import { postulacionIndexRoute } from './routes/postulacion/index'
 import { postulacionGraciasRoute } from './routes/postulacion/gracias'
@@ -12,6 +13,7 @@ import { postulacionNoSeleccionadoRoute } from './routes/postulacion/no-seleccio
 const routeTree = rootRoute.addChildren([
   indexRoute,
   landingRoute,
+  preCallRoute,
   agendaRoute,
   agendaGraciasRoute,
   postulacionRoute.addChildren([

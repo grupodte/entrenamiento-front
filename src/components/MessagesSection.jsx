@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { useTranslation } from 'react-i18next'
 import messagesBg from '../assets/Imagenes/mensajes reakes/image 297.webp'
 import msg287 from '../assets/Imagenes/mensajes reakes/image 287.webp'
 import msg288 from '../assets/Imagenes/mensajes reakes/image 288.webp'
@@ -141,7 +140,6 @@ const messageItems = [
 ]
 
 export default function MessagesSection() {
-  const { t } = useTranslation()
   const sectionRef = useRef(null)
 
   useEffect(() => {
@@ -225,8 +223,8 @@ export default function MessagesSection() {
           data-title
           className="m-0 text-[26px] sm:text-[32px] md:text-[40px] font-bold leading-none"
         >
-          <span className="block text-[#2f1a3a]">{t('messages.titleLineOne')}</span>
-          <span className="block text-white">{t('messages.titleLineTwo')}</span>
+          <span className="block text-[#2f1a3a]">Mensajes reales.</span>
+          <span className="block text-white">Resultados reales.</span>
         </h2>
       </div>
 
@@ -234,7 +232,7 @@ export default function MessagesSection() {
         {messageItems.map((item, index) => {
           const altText = item.decorative
             ? ''
-            : t('messages.realMessageAlt', { index: item.altIndex })
+            : `Mensaje real ${item.altIndex}`
 
           return (
             <img

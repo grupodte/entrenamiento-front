@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { useTranslation } from 'react-i18next'
 import hAntes from '../assets/Imagenes/casosreales/h-antes.webp'
 import hDespues from '../assets/Imagenes/casosreales/h-despues.webp'
 import mAntes from '../assets/Imagenes/casosreales/m-antes.webp'
@@ -7,21 +6,22 @@ import mDespues from '../assets/Imagenes/casosreales/m-despues.webp'
 
 const caseItems = [
   {
-    key: 'quique',
+    name: 'Quique',
+    result: 'Bajó 35 kg',
     before: hAntes,
     after: hDespues,
   },
   {
-    key: 'maria',
+    name: 'María',
+    result: 'Bajó 11 kg',
     before: mAntes,
     after: mDespues,
   },
 ]
 
 export default function CasesSection() {
-  const { t } = useTranslation()
-  const beforeLabel = t('cases.beforeLabel')
-  const afterLabel = t('cases.afterLabel')
+  const beforeLabel = 'Antes'
+  const afterLabel = 'Después'
   const scrollRef = useRef(null)
 
   useEffect(() => {
@@ -95,35 +95,30 @@ export default function CasesSection() {
         ref={scrollRef}
         className="no-scrollbar flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory md:grid md:grid-cols-2 md:overflow-visible md:pb-0"
       >
-        {caseItems.map((caseItem) => {
-          const name = t(`cases.items.${caseItem.key}.name`)
-          const result = t(`cases.items.${caseItem.key}.result`)
-
-          return (
+        {caseItems.map((caseItem) => (
             <div
-              key={caseItem.key}
+              key={caseItem.name}
               className="relative grid w-[85vw] max-w-[520px] shrink-0 snap-start grid-cols-2 gap-3 pt-6 md:w-auto md:max-w-none md:pt-0"
             >
-              <span className="absolute left-1/2 top-2 -translate-x-1/2 rounded-full bg-[#ff1a1a] px-3 py-1 text-[11px] sm:text-[12px] font-bold uppercase tracking-wide text-black  md:-top-3">
-                {result}
+              <span className="absolute left-1/2 top-2 -translate-x-1/2 rounded-full bg-[#9580A6] px-3 py-1 text-[11px] sm:text-[12px] font-bold uppercase tracking-wide text-white  md:-top-3">
+                {caseItem.result}
               </span>
               <img
                 src={caseItem.before}
-                alt={t('cases.imageAlt', { name, phase: beforeLabel })}
+                alt={`${caseItem.name} ${beforeLabel}`}
                 loading="lazy"
                 decoding="async"
                 className="w-full aspect-[3/4] rounded-[5px] object-cover "
               />
               <img
                 src={caseItem.after}
-                alt={t('cases.imageAlt', { name, phase: afterLabel })}
+                alt={`${caseItem.name} ${afterLabel}`}
                 loading="lazy"
                 decoding="async"
                 className="w-full aspect-[3/4] rounded-[5px] object-cover "
               />
             </div>
-          )
-        })}
+          ))}
       </div>
     </section>
   )

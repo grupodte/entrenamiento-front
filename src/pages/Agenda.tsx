@@ -2,7 +2,6 @@ import type { FormEvent } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { supabase } from '../lib/supabaseClient'
-import { useTranslation } from 'react-i18next'
 
 type BookingSummary = {
   uid?: string
@@ -117,7 +116,6 @@ const saveAvailabilityCache = (payload: AvailabilityCachePayload) => {
 }
 
 export default function Agenda() {
-  const { t } = useTranslation()
   const navigate = useNavigate()
   const envEventTypeId = import.meta.env.VITE_CAL_EVENT_TYPE_ID as string | undefined
   const detectedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -238,7 +236,7 @@ export default function Agenda() {
       if (!isMounted) return
 
       if (fetchError) {
-        setError(t('agenda.errors.loadAvailability'))
+        setError('No pudimos cargar la disponibilidad. Intentá de nuevo.')
         setHasLoadedSlots(true)
         setIsLoadingSlots(false)
         return
@@ -329,15 +327,15 @@ export default function Agenda() {
     setBooking(null)
 
     if (!selectedEventTypeId) {
-      setError(t('agenda.errors.noAvailability'))
+      setError('No hay horarios disponibles por ahora.')
       return
     }
     if (!selectedSlot) {
-      setError(t('agenda.errors.selectSlot'))
+      setError('Seleccioná un horario disponible.')
       return
     }
     if (!attendeeName || !attendeeEmail) {
-      setError(t('agenda.errors.completeForm'))
+      setError('Completá tu nombre y email.')
       return
     }
 
@@ -356,7 +354,7 @@ export default function Agenda() {
     })
 
     if (bookingError) {
-      setError(t('agenda.errors.bookingFailed'))
+      setError('No pudimos confirmar tu cita. Intentá de nuevo.')
       setIsBooking(false)
       return
     }
@@ -386,9 +384,9 @@ export default function Agenda() {
           <div className="space-y-6">
         
             <div>
-              <h1 className="text-[28px] md:text-[34px] font-semibold">{t('agenda.title')}</h1>
+              <h1 className="text-[28px] md:text-[34px] font-semibold">Agendá tu llamada</h1>
               <p className="mt-3 text-[14px] text-white/70 max-w-[260px]">
-                {t('agenda.subtitle')}
+                Elegí un horario disponible para coordinar tu sesión.
               </p>
             </div>
 
@@ -397,7 +395,7 @@ export default function Agenda() {
                 <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                   ⏱
                 </span>
-                <span>{t('agenda.durationTbd')}</span>
+                <span>Duración a confirmar</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
@@ -409,11 +407,11 @@ export default function Agenda() {
           </div>
 
           <div className="mt-6 rounded-[18px] border border-white/15 bg-white/5 p-4 text-[12px]">
-            <p className="m-0 text-white/70">{t('agenda.summary')}</p>
+            <p className="m-0 text-white/70">Resumen</p>
             <p className="m-0 mt-2 text-[14px] font-semibold">
               {selectedSlot
                 ? `${formatSlotDate(selectedSlot)} · ${formatSlotTime(selectedSlot)}`
-                : t('agenda.selectSlot')}
+                : 'Elegí un horario para continuar.'}
             </p>
           </div>
         </div>
@@ -424,9 +422,9 @@ export default function Agenda() {
               <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 text-[24px]">
                 ✓
               </div>
-              <h2 className="text-[22px] font-semibold">{t('agenda.confirmedTitle')}</h2>
+              <h2 className="text-[22px] font-semibold">Cita confirmada</h2>
               <p className="text-[13px] opacity-70 max-w-[360px]">
-                {t('agenda.confirmedMessage')}
+                Te enviamos un correo con los detalles. Si necesitás cambiarla, avisanos con tiempo.
               </p>
               {booking?.start && (
                 <p className="text-[14px] font-semibold">
@@ -439,14 +437,14 @@ export default function Agenda() {
                   className="flex-1 rounded-[14px] border border-black/10 px-4 py-3 text-[13px] uppercase tracking-[0.18em]"
                   onClick={resetFlow}
                 >
-                  {t('agenda.bookAnother')}
+                  Agendar otra
                 </button>
                 <button
                   type="button"
                   className="flex-1 rounded-[14px] bg-black text-white px-4 py-3 text-[13px] uppercase tracking-[0.18em]"
                   onClick={() => (window.location.href = '/')}
                 >
-                  {t('agenda.backHome')}
+                  Ir al inicio
                 </button>
               </div>
             </div>
@@ -454,9 +452,9 @@ export default function Agenda() {
             <div className="flex flex-col gap-6">
               <div>
                 <p className="text-[12px] uppercase tracking-[0.2em] text-black/60">
-                  {t('agenda.stepSelect')}
+                  Seleccioná fecha y hora
                 </p>
-                <h2 className="mt-2 text-[22px] font-semibold">{t('agenda.pickTime')}</h2>
+                <h2 className="mt-2 text-[22px] font-semibold">Elegí el horario disponible</h2>
               </div>
 
               <div className="grid gap-6 lg:grid-cols-[1.05fr_1fr]">
@@ -474,7 +472,7 @@ export default function Agenda() {
                     <div className="h-full flex items-center justify-center">
                       <div className="w-full rounded-[14px] border border-black/10 bg-black/[0.02] px-4 py-5 text-center">
                         <p className="m-0 text-[13px] font-medium text-black/80">
-                          {t('agenda.errors.noAvailability')}
+                          No hay horarios disponibles por ahora.
                         </p>
                         <p className="m-0 mt-1 text-[12px] text-black/55">
                           Probá de nuevo en unos minutos.
@@ -532,7 +530,7 @@ export default function Agenda() {
                     <div className="h-full flex items-center justify-center">
                       <div className="w-full rounded-[14px] border border-black/10 bg-black/[0.02] px-4 py-5 text-center">
                         <p className="m-0 text-[13px] font-medium text-black/80">
-                          {t('agenda.errors.noAvailability')}
+                          No hay horarios disponibles por ahora.
                         </p>
                       </div>
                     </div>
@@ -540,7 +538,7 @@ export default function Agenda() {
                     <div className="h-full flex items-center justify-center">
                       <div className="w-full rounded-[14px] border border-black/10 bg-black/[0.02] px-4 py-5 text-center">
                         <p className="m-0 text-[13px] font-medium text-black/80">
-                          {t('agenda.noSlots')}
+                          No hay horarios para esta fecha.
                         </p>
                       </div>
                     </div>
@@ -555,7 +553,7 @@ export default function Agenda() {
                         >
                           <span>{formatSlotTime(slot)}</span>
                           <span className="text-[11px] text-black/50 uppercase tracking-[0.18em]">
-                            {t('agenda.reserve')}
+                            Reservar
                           </span>
                         </button>
                       ))}
@@ -575,49 +573,49 @@ export default function Agenda() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[12px] uppercase tracking-[0.2em] text-black/60">
-                    {t('agenda.stepFinal')}
+                    Paso final
                   </p>
-                  <h2 className="mt-2 text-[22px] font-semibold">{t('agenda.confirmDetails')}</h2>
+                  <h2 className="mt-2 text-[22px] font-semibold">Confirmá tus datos</h2>
                 </div>
                 <button
                   type="button"
                   className="text-[12px] uppercase tracking-[0.16em] opacity-60 hover:opacity-100"
                   onClick={() => setBookingPhase('slots')}
                 >
-                  {t('agenda.back')}
+                  Volver
                 </button>
               </div>
 
               <div className="rounded-[14px] border border-black/10 bg-[#f7f7f7] p-4 text-[13px]">
-                <p className="m-0 font-semibold">{t('agenda.selectedSlot')}</p>
+                <p className="m-0 font-semibold">Horario seleccionado</p>
                 <p className="m-0 mt-2 opacity-70">
                   {selectedSlot
                     ? `${formatSlotDate(selectedSlot)} · ${formatSlotTime(selectedSlot)}`
-                    : t('agenda.selectSlot')}
+                    : 'Elegí un horario para continuar.'}
                 </p>
               </div>
 
               <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
                 <label className="flex flex-col gap-2 text-[13px]">
-                  {t('agenda.fullName')}
+                  Nombre y apellido
                   <input
                     type="text"
                     className="rounded-[12px] border border-black/20 bg-white px-3 py-2 text-[14px]"
                     value={attendeeName}
                     onChange={(event) => setAttendeeName(event.target.value)}
-                    placeholder={t('agenda.fullNamePlaceholder')}
+                    placeholder="Tu nombre"
                     required
                   />
                 </label>
 
                 <label className="flex flex-col gap-2 text-[13px]">
-                  {t('agenda.email')}
+                  Email
                   <input
                     type="email"
                     className="rounded-[12px] border border-black/20 bg-white px-3 py-2 text-[14px]"
                     value={attendeeEmail}
                     onChange={(event) => setAttendeeEmail(event.target.value)}
-                    placeholder={t('agenda.emailPlaceholder')}
+                    placeholder="tu@email.com"
                     required
                   />
                 </label>
@@ -633,7 +631,7 @@ export default function Agenda() {
                   className="mt-2 rounded-[14px] bg-black text-white px-4 py-3 text-[13px] uppercase tracking-[0.2em] disabled:opacity-60"
                   disabled={isBooking}
                 >
-                  {isBooking ? t('agenda.confirming') : t('agenda.confirm')}
+                  {isBooking ? 'Confirmando...' : 'Confirmar cita'}
                 </button>
               </form>
             </div>

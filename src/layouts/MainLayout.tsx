@@ -20,6 +20,7 @@ export default function MainLayout() {
   const location = useRouterState({ select: (state) => state.location })
   const isHome = location.pathname === '/'
   const isPostulacion = location.pathname === '/postulacion' || location.pathname.startsWith('/postulacion/')
+  const isConversionFunnel = isPostulacion || location.pathname === '/landing-page' || location.pathname === '/pre-call'
   const [homePhase, setHomePhase] = useState(isHome ? 'preload' : 'ready')
 
   useEffect(() => {
@@ -57,9 +58,9 @@ export default function MainLayout() {
 
   const showPreloader = isHome && (homePhase === 'preload' || homePhase === 'preload-exit')
   const preloaderIsExiting = homePhase === 'preload-exit'
-  const showNavbar = (!isHome || ['header', 'hero', 'content'].includes(homePhase)) && !isPostulacion
-  const showFooter = (!isHome || homePhase === 'content') && !isPostulacion
-  const mainContainerClass = isPostulacion
+  const showNavbar = (!isHome || ['header', 'hero', 'content'].includes(homePhase)) && !isConversionFunnel
+  const showFooter = (!isHome || homePhase === 'content') && !isConversionFunnel
+  const mainContainerClass = isConversionFunnel
     ? 'w-full max-w-none mx-auto p-0'
     : 'w-full max-w-none md:max-w-[1350px] mx-auto px-1 sm:px-5 md:px-5 pb-6 md:pb-8'
 
@@ -69,7 +70,7 @@ export default function MainLayout() {
     <div className="min-h-screen flex flex-col">
       {showPreloader && (
         <div
-          className={`fixed inset-0 z-[200] bg-[#ebebeb] transition-[opacity,transform,filter] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`fixed inset-0 z-[200] bg-[#FEFEFE] transition-[opacity,transform,filter] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
             preloaderIsExiting
               ? 'opacity-0 scale-[1.02] blur-[2px]'
               : 'opacity-100 scale-100 blur-0'
@@ -78,7 +79,7 @@ export default function MainLayout() {
         />
       )}
       <Navbar isVisible={showNavbar} />
-      <main className={`flex-1 ${showNavbar ? 'pt-17 md:pt-16' : 'pt-0'}`}>
+      <main className={`${isConversionFunnel ? '' : 'flex-1'} ${showNavbar ? 'pt-17 md:pt-16' : 'pt-0'}`}>
         <div className={mainContainerClass}>
           <HomePhaseContext.Provider value={contextValue}>
             <Outlet />
