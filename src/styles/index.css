@@ -1,6 +1,7 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap");
 
-/* ── Mux Player — hide all controls, keep click-to-play ─── */
+/* Mux Player */
 mux-player:-webkit-full-screen,
 mux-player:fullscreen {
   width: 100vw !important;
@@ -25,83 +26,44 @@ mux-player {
   --media-duration-display-display: none;
 }
 
-/* ── Brand tokens ────────────────────────────────────────── */
+/* Brand tokens */
 :root {
-  /* Primary */
-  --brand:        #9580A6;
-  --brand-dark:   #7A6A8F;
-  --brand-light:  #EDE9F3;
-  --brand-muted:  #C4BBCE;
-
-  /* Grays (derived from brand gray #69686B) */
-  --gray:         #69686B;
-  --gray-light:   #9D9B9F;
-  --gray-muted:   #C8C6CA;
-
-  /* Surfaces */
-  --bg:           #FEFEFE;
-  --bg-subtle:    #F4F2F7;
-  --bg-dark:      #1A1820;
-
-  /* Text */
-  --text:         #1A1820;
+  --brand: #9580A6;
+  --brand-dark: #7A6A8F;
+  --brand-light: #EDE9F3;
+  --brand-muted: #C4BBCE;
+  --gray: #69686B;
+  --gray-light: #9D9B9F;
+  --gray-muted: #C8C6CA;
+  --bg: #FEFEFE;
+  --bg-subtle: #F4F2F7;
+  --bg-dark: #1A1820;
+  --text: #1A1820;
   --text-secondary: #69686B;
-  --text-muted:   #9D9B9F;
-
-  /* Borders */
-  --border:       #E8E4EE;
-  --border-strong:#C4BBCE;
-}
-
-/* ── Fonts ───────────────────────────────────────────────── */
-@font-face {
-  font-family: "BlauerNue";
-  src: url("../assets/fonts/BlauerNue-Regular.otf") format("opentype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "BlauerNue";
-  src: url("../assets/fonts/BlauerNue-Bold.otf") format("opentype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "ProductSans";
-  src: url("../assets/fonts/ProductSansRegular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "ProductSans";
-  src: url("../assets/fonts/ProductSansBold.ttf") format("truetype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* ── Base ────────────────────────────────────────────────── */
-:root {
+  --text-muted: #9D9B9F;
+  --border: #E8E4EE;
+  --border-strong: #C4BBCE;
   color-scheme: light;
 }
 
 body {
   margin: 0;
-  font-family: "ProductSans", system-ui, sans-serif;
+  font-family: "DM Sans", system-ui, sans-serif;
   font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.35;
   background: var(--bg);
   color: var(--text);
 }
 
-h1, h2, h3, h4 {
-  font-family: "BlauerNue", system-ui, sans-serif;
+h1,
+h2,
+h3,
+h4 {
+  font-family: "DM Sans", system-ui, sans-serif;
   font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
 }
 
 html.postulacion-lock,
@@ -131,10 +93,136 @@ a {
   display: none;
 }
 
-/* ── Datepicker ──────────────────────────────────────────── */
+.ios-cta {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 14px 30px rgba(14, 12, 20, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.ios-cta::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.85) 22%,
+    rgba(200, 181, 222, 0.9) 34%,
+    rgba(255, 255, 255, 0.08) 48%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  background-size: 220% 100%;
+  animation: ios-cta-border 3.8s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.ios-cta::after {
+  content: "";
+  position: absolute;
+  top: -140%;
+  left: -30%;
+  width: 56%;
+  height: 380%;
+  transform: rotate(22deg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.22) 48%, rgba(255, 255, 255, 0) 100%);
+  opacity: 0;
+  transition: opacity 220ms ease;
+  animation: ios-cta-sheen 4.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.ios-cta:hover::after {
+  opacity: 1;
+}
+
+.plan-spotlight {
+  position: relative;
+  isolation: isolate;
+}
+
+.plan-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04));
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.plan-spotlight__glow {
+  position: absolute;
+  inset: -18%;
+  border-radius: 28px;
+  background:
+    conic-gradient(
+      from 0deg,
+      rgba(255, 255, 255, 0) 0deg,
+      rgba(255, 255, 255, 0.85) 36deg,
+      rgba(214, 196, 233, 0.95) 72deg,
+      rgba(255, 255, 255, 0.08) 126deg,
+      rgba(255, 255, 255, 0) 180deg,
+      rgba(255, 255, 255, 0) 360deg
+    );
+  filter: blur(26px);
+  opacity: 0.46;
+  transform-origin: center;
+  animation: plan-spotlight-rotate 8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes ios-cta-border {
+  0% {
+    background-position: 200% 50%;
+  }
+  100% {
+    background-position: -20% 50%;
+  }
+}
+
+@keyframes ios-cta-sheen {
+  0%,
+  62%,
+  100% {
+    transform: translateX(-22%) rotate(22deg);
+    opacity: 0;
+  }
+  18%,
+  36% {
+    transform: translateX(240%) rotate(22deg);
+    opacity: 0.9;
+  }
+}
+
+@keyframes plan-spotlight-rotate {
+  0% {
+    transform: rotate(0deg) scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: rotate(180deg) scale(1.04);
+    opacity: 0.54;
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    opacity: 0.4;
+  }
+}
+
+/* Datepicker */
 .ddfit-datepicker .react-datepicker {
   border: 0;
-  font-family: "ProductSans", system-ui, sans-serif;
+  font-family: "DM Sans", system-ui, sans-serif;
   width: 100%;
 }
 
