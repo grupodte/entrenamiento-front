@@ -333,8 +333,8 @@ export default function LandingPage() {
             {/* Video */}
             <div
               ref={videoWrapperRef}
-              className="relative rounded-[10px] sm:rounded-[16px] overflow-hidden bg-[#1A1820] mx-auto w-full"
-              style={isLocked ? { width: 'min(100%, calc(38vh * 16 / 9))' } : undefined}
+              className="relative rounded-[10px] sm:rounded-[10px] overflow-hidden bg-[#1A1820] mx-auto w-full"
+              style={isLocked ? { width: 'min(100%, calc(380vh * 16 / 9))' } : undefined}
             >
               {MUX_PLAYBACK_ID ? (
                 <>
