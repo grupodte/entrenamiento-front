@@ -219,6 +219,105 @@ a {
   }
 }
 
+.hero-reveal {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0) scale(0.985);
+  filter: blur(10px);
+  transition:
+    opacity 720ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 720ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 720ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-reveal.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: blur(0);
+}
+
+.hero-reveal--1 {
+  transition-delay: 120ms;
+}
+
+.hero-reveal--2 {
+  transition-delay: 210ms;
+}
+
+.hero-reveal--3 {
+  transition-delay: 320ms;
+}
+
+.hero-reveal--4 {
+  transition-delay: 430ms;
+}
+
+.liquid-btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.liquid-btn::before {
+  content: "";
+  position: absolute;
+  inset: auto auto -140% -18%;
+  width: 68%;
+  height: 220%;
+  border-radius: 46%;
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.12) 38%, rgba(255, 255, 255, 0) 68%);
+  opacity: 0.95;
+  transform: translate3d(0, 0, 0) rotate(0deg);
+  transition:
+    transform 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    inset 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 320ms ease;
+  pointer-events: none;
+}
+
+.liquid-btn::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.02));
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.liquid-btn:hover::before {
+  inset: auto auto -88% 56%;
+  transform: translate3d(-50%, 0, 0) rotate(36deg);
+  opacity: 1;
+}
+
+.liquid-btn > span {
+  position: relative;
+  z-index: 1;
+}
+
+.liquid-btn--solid {
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: linear-gradient(180deg, rgba(168, 148, 188, 0.92), rgba(126, 104, 149, 0.95));
+  box-shadow:
+    0 18px 38px rgba(21, 16, 29, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.liquid-btn--ghost {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow:
+    0 14px 30px rgba(17, 13, 24, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.liquid-btn--ghost:hover {
+  border-color: rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.08);
+}
+
 /* Datepicker */
 .ddfit-datepicker .react-datepicker {
   border: 0;

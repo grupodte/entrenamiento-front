@@ -35,7 +35,7 @@ export default function FAQSection() {
           Dudas frecuentes
         </p>
         <h2 data-reveal className="text-center text-[#1A1820] text-[28px] sm:text-[36px] md:text-[48px] font-bold leading-none mb-10 sm:mb-12 m-0">
-          Preguntas<br />frecuentes.
+          Preguntas frecuentes.
         </h2>
         <div className="flex flex-col gap-3">
           {faqs.map((faq, i) => (
@@ -66,7 +66,7 @@ export default function FAQSection() {
                 </span>
               </button>
               {open === i && (
-                <div className="relative z-10 px-5 sm:px-6 pb-5 text-center text-[#69686B] text-[13px] sm:text-[14px] leading-relaxed">
+                <div className="relative z-10 px-5 sm:px-6 pb-5 text-center text-[#69686B] text-[13px] sm:text-[14px] leading-[1.5]">
                   {faq.a}
                 </div>
               )}

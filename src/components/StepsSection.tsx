@@ -51,7 +51,7 @@ export default function StepsSection() {
   return (
     <section ref={sectionRef} className="w-full rounded-[10px] sm:rounded-[20px] md:rounded-[28px] bg-[linear-gradient(180deg,#f7f4fb_0%,#f1edf7_100%)] px-4 sm:px-8 md:px-12 py-10 sm:py-14 md:py-20">
       <div className="max-w-5xl mx-auto">
-        <div className="max-w-[620px]">
+        <div className="max-w-[620px] mx-auto text-center">
           <p data-reveal className="text-[#9580A6] text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] mb-3 sm:mb-4 m-0">
             El proceso
           </p>

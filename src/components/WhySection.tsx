@@ -74,10 +74,10 @@ export default function WhySection() {
   return (
     <section ref={sectionRef} className="w-full rounded-[10px] sm:rounded-[20px] md:rounded-[28px] bg-[#FEFEFE] px-3 sm:px-8 md:px-12 py-8 sm:py-14 md:py-20">
       <div className="max-w-5xl mx-auto">
-        <p data-reveal className="text-[#9580A6] text-[10px] sm:text-[12px] font-bold uppercase tracking-[0.15em] mb-2 sm:mb-4 m-0">
+        <p data-reveal className="text-center text-[#9580A6] text-[10px] sm:text-[12px] font-bold uppercase tracking-[0.15em] mb-2 sm:mb-4 m-0">
           Por que DemicheriFitness
         </p>
-        <h2 data-reveal className="text-[#1A1820] text-[26px] sm:text-[36px] md:text-[48px] font-bold leading-[0.96] mb-7 sm:mb-14 m-0">
+        <h2 data-reveal className="text-center text-[#1A1820] text-[26px] sm:text-[36px] md:text-[48px] font-bold leading-[0.96] mb-7 sm:mb-14 m-0">
           Lo que nos diferencia<br />no son las promesas.
         </h2>
 
@@ -106,7 +106,7 @@ export default function WhySection() {
                 <h3 className="text-[#1A1820] text-[18px] sm:text-[23px] font-bold leading-[0.98] tracking-[-0.04em] mb-2 sm:mb-3 m-0 max-w-[12ch] sm:max-w-none">
                   {r.title}
                 </h3>
-                <p className="text-[#4d4660] text-[13px] sm:text-[15px] leading-[1.38] sm:leading-[1.45] tracking-[-0.015em] m-0 max-w-[30ch] sm:max-w-[34ch]">
+                <p className="text-[#4d4660] text-[13px] sm:text-[15px] leading-[1.32] sm:leading-[1.38] tracking-[-0.015em] m-0 max-w-[30ch] sm:max-w-[34ch]">
                   {r.description}
                 </p>
               </div>
