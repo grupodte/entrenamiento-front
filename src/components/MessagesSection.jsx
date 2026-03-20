@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import messagesBg from '../assets/Imagenes/mensajes reakes/image 297.webp'
+import messagesBg from '../assets/Imagenes/SECCION - CORAZONES - COMENTARIO.webp'
 import msg287 from '../assets/Imagenes/mensajes reakes/image 287.webp'
 import msg288 from '../assets/Imagenes/mensajes reakes/image 288.webp'
 import msg289 from '../assets/Imagenes/mensajes reakes/image 289.webp'

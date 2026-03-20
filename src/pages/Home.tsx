@@ -1,6 +1,5 @@
 import { useContext } from 'react'
 import { Link } from '@tanstack/react-router'
-import heroImage from '../assets/Imagenes/image 280.webp'
 import MessagesSection from '../components/MessagesSection.jsx'
 import MethodSection from '../components/MethodSection.jsx'
 import CasesSection from '../components/CasesSection.jsx'
@@ -34,20 +33,24 @@ export default function Home() {
 
       {/* ── 1. HERO ── */}
       <section
-        className={`relative w-full min-h-[500px] sm:min-h-[580px] md:min-h-[680px] flex flex-col items-center justify-center p-6 sm:p-10 md:p-16 bg-cover bg-center rounded-[10px] sm:rounded-[18px] md:rounded-[24px] overflow-hidden transition-[opacity,transform,filter] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`relative w-full min-h-[500px] sm:min-h-[580px] md:min-h-[680px] flex flex-col items-center justify-center p-6 sm:p-10 md:p-16 rounded-[10px] sm:rounded-[18px] md:rounded-[24px] overflow-hidden transition-[opacity,transform,filter] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           heroVisible
             ? 'opacity-100 translate-y-0 blur-0'
             : 'opacity-0 translate-y-4 blur-[4px] pointer-events-none'
         }`}
-        style={{ backgroundImage: `url(${heroImage})` }}
+        style={{
+          background:
+            'linear-gradient(135deg, #c8b8d4 0%, #9580A6 38%, #7A6A8F 68%, #4f445c 100%)',
+        }}
       >
-        <div className="absolute inset-0 bg-[#1A1820]/65" aria-hidden="true" />
-        <div className="relative z-10 flex flex-col items-center text-center max-w-[600px] gap-5 sm:gap-6">
+        <div className="absolute inset-0 bg-[#1A1820]/28" aria-hidden="true" />
+        <div className="relative z-10 flex flex-col items-center text-center max-w-[600px] md:max-w-[760px] gap-5 sm:gap-6">
           <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.22em] m-0">
             DemicheriFitness
           </p>
-          <h1 className="text-white text-[34px] sm:text-[46px] md:text-[62px] font-bold leading-none m-0">
-            De donde estás,<br />a donde querés estar.
+          <h1 className="text-white text-[34px] sm:text-[46px] md:text-[62px] font-bold leading-none tracking-[-0.03em] m-0 md:max-w-[720px]">
+            <span className="block">De donde estás,</span>
+            <span className="block">a donde querés estar.</span>
           </h1>
           <p className="text-white/60 text-[14px] sm:text-[16px] md:text-[17px] leading-snug max-w-[460px] m-0">
             Asesoramiento online de entrenamiento y nutrición. Personalizado, con seguimiento real y resultados concretos en 2 meses.
