@@ -1,6 +1,8 @@
+import { lazy } from 'react'
 import { createRoute } from '@tanstack/react-router'
 import { rootRoute } from './root'
-import AgendaGracias from '../pages/AgendaGracias'
+
+const AgendaGracias = lazy(() => import('../pages/AgendaGracias'))
 
 export const agendaGraciasRoute = createRoute({
   getParentRoute: () => rootRoute,

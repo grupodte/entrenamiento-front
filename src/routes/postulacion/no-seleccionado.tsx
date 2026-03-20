@@ -1,7 +1,9 @@
+import { lazy } from 'react'
 import { createRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { postulacionRoute } from '../postulacion'
-import NoSeleccionadoPage from './NoSeleccionadoPage'
+
+const NoSeleccionadoPage = lazy(() => import('./NoSeleccionadoPage'))
 
 const searchSchema = z.object({
   reason: z.string().optional()

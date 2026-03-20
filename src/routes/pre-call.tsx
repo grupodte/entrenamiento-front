@@ -1,6 +1,8 @@
+import { lazy } from 'react'
 import { createRoute } from '@tanstack/react-router'
 import { rootRoute } from './root'
-import PreCall from '../pages/PreCall'
+
+const PreCall = lazy(() => import('../pages/PreCall'))
 
 export const preCallRoute = createRoute({
   getParentRoute: () => rootRoute,

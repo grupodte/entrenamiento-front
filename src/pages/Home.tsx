@@ -1,7 +1,5 @@
 import { useContext, useEffect, useRef } from 'react'
 import { Link } from '@tanstack/react-router'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import MessagesSection from '../components/MessagesSection.jsx'
 import MethodSection from '../components/MethodSection.jsx'
 import CasesSection from '../components/CasesSection.jsx'
@@ -41,30 +39,37 @@ export default function Home() {
     if (!section) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
-    gsap.registerPlugin(ScrollTrigger)
+    let ctx: { revert: () => void } | null = null
 
-    const ctx = gsap.context(() => {
-      const bg = section.querySelector('[data-for-who-bg]')
-      if (!bg) return
+    Promise.all([
+      import('gsap').then((m) => m.default),
+      import('gsap/ScrollTrigger').then((m) => m.ScrollTrigger),
+    ]).then(([gsap, ScrollTrigger]) => {
+      gsap.registerPlugin(ScrollTrigger)
 
-      gsap.fromTo(
-        bg,
-        { yPercent: -8, scale: 1.08 },
-        {
-          yPercent: 8,
-          scale: 1.14,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: section,
-            start: 'top bottom',
-            end: 'bottom top',
-            scrub: true,
-          },
-        }
-      )
-    }, section)
+      ctx = gsap.context(() => {
+        const bg = section.querySelector('[data-for-who-bg]')
+        if (!bg) return
 
-    return () => ctx.revert()
+        gsap.fromTo(
+          bg,
+          { yPercent: -8, scale: 1.08 },
+          {
+            yPercent: 8,
+            scale: 1.14,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: section,
+              start: 'top bottom',
+              end: 'bottom top',
+              scrub: true,
+            },
+          }
+        )
+      }, section)
+    })
+
+    return () => { ctx?.revert() }
   }, [])
 
 

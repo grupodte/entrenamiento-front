@@ -1,4 +1,4 @@
-import { createContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useEffect, useMemo, useRef, useState, Suspense } from 'react'
 import { Outlet, useRouterState } from '@tanstack/react-router'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -16,12 +16,22 @@ const PRELOADER_EXIT_DURATION = 300
 const HERO_DELAY = 120
 const CONTENT_DELAY = 240
 
+// Skip preloader on the initial cold page load — show it only on SPA navigations back to home.
+// This prevents the preloader from blocking FCP/LCP on first visit.
+function isSpaNavigation(): boolean {
+  if (typeof sessionStorage === 'undefined') return false
+  const visited = sessionStorage.getItem('_app_navigated')
+  sessionStorage.setItem('_app_navigated', '1')
+  return visited === '1'
+}
+
 export default function MainLayout() {
   const location = useRouterState({ select: (state) => state.location })
   const isHome = location.pathname === '/'
   const isPostulacion = location.pathname === '/postulacion' || location.pathname.startsWith('/postulacion/')
   const isConversionFunnel = isPostulacion || location.pathname === '/landing-page' || location.pathname === '/pre-call'
-  const [homePhase, setHomePhase] = useState(isHome ? 'preload' : 'ready')
+  const isSpa = useRef(isSpaNavigation()).current
+  const [homePhase, setHomePhase] = useState(isHome && isSpa ? 'preload' : 'ready')
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -33,6 +43,13 @@ export default function MainLayout() {
     if (!isHome) {
       setHomePhase('ready')
       return
+    }
+
+    // On initial cold load skip straight to ready (no preloader)
+    if (!isSpa) {
+      setHomePhase('hero')
+      const t = setTimeout(() => setHomePhase('content'), CONTENT_DELAY)
+      return () => clearTimeout(t)
     }
 
     setHomePhase('preload')
@@ -82,7 +99,9 @@ export default function MainLayout() {
       <main className={`${isConversionFunnel ? '' : 'flex-1'} ${showNavbar ? 'pt-17 md:pt-16' : 'pt-0'}`}>
         <div className={mainContainerClass}>
           <HomePhaseContext.Provider value={contextValue}>
-            <Outlet />
+            <Suspense fallback={null}>
+              <Outlet />
+            </Suspense>
           </HomePhaseContext.Provider>
         </div>
       </main>
