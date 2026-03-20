@@ -1,8 +1,10 @@
+import { useTextReveal } from '../lib/useTextReveal'
+
 const reasons = [
   {
     number: '01',
     title: 'Plan 100% personalizado',
-    description: 'No hay plantillas. Tu plan se diseña según tu historial, tu cuerpo y tu estilo de vida real.',
+    description: 'No hay plantillas. Tu plan se disena segun tu historial, tu cuerpo y tu estilo de vida real.',
     tone: {
       card: 'from-[#f5effb] via-[#f1e9f9] to-[#ece3f6]',
       glow: 'from-[#b79ccc]/30 to-transparent',
@@ -17,8 +19,8 @@ const reasons = [
   },
   {
     number: '02',
-    title: 'Nutrición sin restricciones absurdas',
-    description: 'Aprendés a comer bien sin pasar hambre. Flexible para que funcione a largo plazo.',
+    title: 'Nutricion sin restricciones absurdas',
+    description: 'Aprendes a comer bien sin pasar hambre. Flexible para que funcione a largo plazo.',
     tone: {
       card: 'from-[#f2edfb] via-[#ece5fa] to-[#e7def7]',
       glow: 'from-[#c3a4d8]/28 to-transparent',
@@ -34,7 +36,7 @@ const reasons = [
   {
     number: '03',
     title: 'Seguimiento real, no automatizado',
-    description: 'Check-ins, ajustes y soporte directo durante todo el proceso. Tenés un coach, no un bot.',
+    description: 'Check-ins, ajustes y soporte directo durante todo el proceso. Tenes un coach, no un bot.',
     tone: {
       card: 'from-[#efeafd] via-[#e8e2fb] to-[#e2d8f7]',
       glow: 'from-[#ac8ed6]/26 to-transparent',
@@ -50,7 +52,7 @@ const reasons = [
   {
     number: '04',
     title: 'Resultados sostenibles',
-    description: 'No prometemos transformaciones en 7 días. En 2 meses cambiás hábitos y ves cambios concretos.',
+    description: 'No prometemos transformaciones en 7 dias. En 2 meses cambias habitos y ves cambios concretos.',
     tone: {
       card: 'from-[#f4effc] via-[#eee7fa] to-[#e8def6]',
       glow: 'from-[#b48fd8]/28 to-transparent',
@@ -67,13 +69,15 @@ const reasons = [
 ]
 
 export default function WhySection() {
+  const sectionRef = useTextReveal()
+
   return (
-    <section className="w-full rounded-[10px] sm:rounded-[20px] md:rounded-[28px] bg-[#FEFEFE] px-3 sm:px-8 md:px-12 py-8 sm:py-14 md:py-20">
+    <section ref={sectionRef} className="w-full rounded-[10px] sm:rounded-[20px] md:rounded-[28px] bg-[#FEFEFE] px-3 sm:px-8 md:px-12 py-8 sm:py-14 md:py-20">
       <div className="max-w-5xl mx-auto">
-        <p className="text-[#9580A6] text-[10px] sm:text-[12px] font-bold uppercase tracking-[0.15em] mb-2 sm:mb-4 m-0">
-          Por qué DemicheriFitness
+        <p data-reveal className="text-center text-[#9580A6] text-[10px] sm:text-[12px] font-bold uppercase tracking-[0.15em] mb-2 sm:mb-4 m-0">
+          Por que DemicheriFitness
         </p>
-        <h2 className="text-[#1A1820] text-[26px] sm:text-[36px] md:text-[48px] font-bold leading-[0.96] mb-7 sm:mb-14 m-0">
+        <h2 data-reveal className="text-center text-[#1A1820] text-[26px] sm:text-[36px] md:text-[48px] font-bold leading-[0.96] mb-7 sm:mb-14 m-0">
           Lo que nos diferencia<br />no son las promesas.
         </h2>
 
@@ -81,6 +85,7 @@ export default function WhySection() {
           {reasons.map((r) => (
             <article
               key={r.number}
+              data-reveal
               className={`group relative overflow-hidden rounded-[20px] sm:rounded-[22px] border border-[#e8e0f2] bg-gradient-to-br ${r.tone.card} p-5 sm:p-7 md:p-8 shadow-[0_10px_24px_rgba(149,128,166,0.08)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform hover:-translate-y-2.5 hover:scale-[1.025] hover:-rotate-[0.6deg] hover:shadow-[0_30px_80px_rgba(149,128,166,0.22)] hover:border-[#d7c8e6]`}
             >
               <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${r.tone.glow} opacity-80 transition-all duration-500 group-hover:opacity-100 group-hover:scale-[1.04]`} />
@@ -101,7 +106,7 @@ export default function WhySection() {
                 <h3 className="text-[#1A1820] text-[18px] sm:text-[23px] font-bold leading-[0.98] tracking-[-0.04em] mb-2 sm:mb-3 m-0 max-w-[12ch] sm:max-w-none">
                   {r.title}
                 </h3>
-                <p className="text-[#4d4660] text-[13px] sm:text-[15px] leading-[1.38] sm:leading-[1.45] tracking-[-0.015em] m-0 max-w-[30ch] sm:max-w-[34ch]">
+                <p className="text-[#4d4660] text-[13px] sm:text-[15px] leading-[1.32] sm:leading-[1.38] tracking-[-0.015em] m-0 max-w-[30ch] sm:max-w-[34ch]">
                   {r.description}
                 </p>
               </div>

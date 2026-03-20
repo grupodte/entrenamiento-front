@@ -67,7 +67,7 @@ export default function MainLayout() {
   const contextValue = useMemo(() => ({ homePhase }), [homePhase])
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col overflow-x-hidden">
       {showPreloader && (
         <div
           className={`fixed inset-0 z-[200] bg-[#FEFEFE] transition-[opacity,transform,filter] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${

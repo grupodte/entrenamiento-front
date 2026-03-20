@@ -1,3 +1,5 @@
+import { useTextReveal } from '../lib/useTextReveal'
+
 const steps = [
   {
     number: '01',
@@ -44,14 +46,16 @@ const steps = [
 ]
 
 export default function StepsSection() {
+  const sectionRef = useTextReveal()
+
   return (
-    <section className="w-full rounded-[10px] sm:rounded-[20px] md:rounded-[28px] bg-[linear-gradient(180deg,#f7f4fb_0%,#f1edf7_100%)] px-4 sm:px-8 md:px-12 py-10 sm:py-14 md:py-20">
+    <section ref={sectionRef} className="w-full rounded-[10px] sm:rounded-[20px] md:rounded-[28px] bg-[linear-gradient(180deg,#f7f4fb_0%,#f1edf7_100%)] px-4 sm:px-8 md:px-12 py-10 sm:py-14 md:py-20">
       <div className="max-w-5xl mx-auto">
-        <div className="max-w-[620px]">
-          <p className="text-[#9580A6] text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] mb-3 sm:mb-4 m-0">
+        <div className="max-w-[620px] mx-auto text-center">
+          <p data-reveal className="text-[#9580A6] text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] mb-3 sm:mb-4 m-0">
             El proceso
           </p>
-          <h2 className="text-[#1A1820] text-[28px] sm:text-[36px] md:text-[48px] font-bold leading-[0.96] tracking-[-0.045em] mb-10 sm:mb-14 m-0">
+          <h2 data-reveal className="text-[#1A1820] text-[28px] sm:text-[36px] md:text-[48px] font-bold leading-[0.96] tracking-[-0.045em] mb-10 sm:mb-14 m-0">
             Cómo empezamos.
           </h2>
         </div>
@@ -62,6 +66,7 @@ export default function StepsSection() {
           {steps.map((step) => (
             <article
               key={step.number}
+              data-reveal
               className="group relative overflow-hidden rounded-[22px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(255,255,255,0.78)_100%)] p-5 sm:p-6 md:p-7 shadow-[0_12px_34px_rgba(122,106,143,0.08)] backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-2 hover:scale-[1.015] hover:shadow-[0_28px_60px_rgba(122,106,143,0.16)]"
             >
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(149,128,166,0.12),transparent_38%)] opacity-80 transition-opacity duration-500 group-hover:opacity-100" />
