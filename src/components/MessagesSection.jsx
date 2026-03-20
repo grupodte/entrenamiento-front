@@ -17,7 +17,7 @@ const messageItems = [
   {
     src: msg287,
     altIndex: 1,
-    className: 'left-[4%] top-[18%] w-[210px] sm:left-[6%] sm:top-[8%] sm:w-[210px] md:w-[400px]',
+    className: 'left-[4%] top-[22%] w-[130px] sm:left-[6%] sm:top-[8%] sm:w-[210px] md:w-[360px]',
     x: -28,
     y: -32,
     rotate: -2,
@@ -26,7 +26,7 @@ const messageItems = [
   {
     src: msg288,
     altIndex: 2,
-    className: 'right-[4%] top-[5%] w-[200px] sm:right-[10%] sm:top-[10%] sm:w-[200px] md:w-[380px]',
+    className: 'right-[4%] top-[8%] w-[135px] sm:right-[10%] sm:top-[10%] sm:w-[200px] md:w-[340px]',
     x: 24,
     y: -26,
     rotate: 2,
@@ -35,7 +35,7 @@ const messageItems = [
   {
     src: msg289,
     altIndex: 3,
-    className: 'right-[4%] top-[30%] w-[200px] sm:left-[6%] sm:top-[36%] sm:w-[200px] md:w-[300px]',
+    className: 'right-[4%] top-[27%] w-[150px] sm:left-[6%] sm:top-[36%] sm:w-[200px] md:w-[270px]',
     x: -18,
     y: 20,
     rotate: -1,
@@ -44,7 +44,7 @@ const messageItems = [
   {
     src: msg290,
     altIndex: 4,
-    className: 'right-[40%] top-[44%] w-[200px] sm:right-auto sm:left-[40%] sm:top-[40%] sm:w-[250px] md:w-[330px]',
+    className: 'right-[34%] top-[43%] w-[150px] sm:right-auto sm:left-[40%] sm:top-[40%] sm:w-[250px] md:w-[300px]',
     x: 16,
     y: -24,
     rotate: 1,
@@ -53,7 +53,7 @@ const messageItems = [
   {
     src: msg291,
     altIndex: 5,
-    className: 'left-[18%] top-[50%] w-[200px] sm:left-auto sm:right-[6%] sm:top-[36%] sm:w-[230px] md:w-[280px]',
+    className: 'left-[9%] top-[50%] w-[140px] sm:left-auto sm:right-[6%] sm:top-[36%] sm:w-[230px] md:w-[255px]',
     x: 20,
     y: 22,
     rotate: -1.5,
@@ -62,7 +62,7 @@ const messageItems = [
   {
     src: msg292,
     altIndex: 6,
-    className: 'left-[8%] bottom-[14%] w-[200px] sm:left-[22%] sm:bottom-[10%] sm:w-[220px] md:w-[300px]',
+    className: 'left-[9%] bottom-[17%] w-[155px] sm:left-[22%] sm:bottom-[10%] sm:w-[220px] md:w-[270px]',
     x: -20,
     y: 28,
     rotate: 2,
@@ -71,7 +71,7 @@ const messageItems = [
   {
     src: msg293,
     altIndex: 7,
-    className: 'right-[8%] bottom-[8%] w-[155px] sm:right-[10%] sm:bottom-[0%] sm:w-[210px] md:w-[300px]',
+    className: 'right-[7%] bottom-[14%] w-[120px] sm:right-[10%] sm:bottom-[0%] sm:w-[210px] md:w-[270px]',
     x: 22,
     y: 30,
     rotate: -2,
@@ -81,7 +81,7 @@ const messageItems = [
     src: heart298,
     alt: '',
     decorative: true,
-    className: 'right-[10%] top-[-5%] w-[60px] sm:right-[18%] sm:top-[-4%] sm:w-[72px] md:w-[90px]',
+    className: 'right-[7%] top-[2%] w-[48px] sm:right-[18%] sm:top-[-4%] sm:w-[72px] md:w-[90px]',
     x: 14,
     y: -22,
     rotate: 50,
@@ -223,7 +223,7 @@ export default function MessagesSection() {
           data-title
           className="m-0 text-[26px] sm:text-[32px] md:text-[40px] font-bold leading-none"
         >
-          <span className="block text-[#2f1a3a]">Mensajes reales.</span>
+          <span className="block text-[#2f1a3a] font-normal">Mensajes reales.</span>
           <span className="block text-white">Resultados reales.</span>
         </h2>
       </div>

@@ -8,6 +8,7 @@ import StepsSection from '../components/StepsSection'
 import PlansSection from '../components/PlansSection'
 import FAQSection from '../components/FAQSection'
 import { HomePhaseContext } from '../layouts/MainLayout'
+import { useTextReveal } from '../lib/useTextReveal'
 
 const forWhoItems = [
   'Querés bajar grasa corporal de forma sostenible, no con dietas de 30 días que no duran.',
@@ -20,6 +21,9 @@ const forWhoItems = [
 
 export default function Home() {
   const { homePhase } = useContext(HomePhaseContext)
+  const forWhoRef = useTextReveal()
+  const coachRef = useTextReveal()
+  const closingCtaRef = useTextReveal({ selector: '[data-closing-cta-item]' })
   const resolvedPhase = homePhase ?? 'content'
   const heroVisible = ['hero', 'content', 'ready'].includes(resolvedPhase)
   const contentVisible = ['content', 'ready'].includes(resolvedPhase)
@@ -27,6 +31,7 @@ export default function Home() {
   const scrollToPlans = () => {
     document.getElementById('planes')?.scrollIntoView({ behavior: 'smooth' })
   }
+
 
   return (
     <div className="flex flex-col gap-1 sm:gap-2">
@@ -52,13 +57,13 @@ export default function Home() {
             <span className="block">De donde estás,</span>
             <span className="block">a donde querés estar.</span>
           </h1>
-          <p className="text-white/60 text-[14px] sm:text-[16px] md:text-[17px] leading-snug max-w-[460px] m-0">
+          <p className="text-white/60 text-[14px] sm:text-[16px] md:text-[17px] leading-snug max-w-[560px] md:max-w-[580px] m-0">
             Asesoramiento online de entrenamiento y nutrición. Personalizado, con seguimiento real y resultados concretos en 2 meses.
           </p>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto pt-1">
             <Link
               to="/postulacion"
-              className="sm:w-auto bg-[#9580A6] text-white font-bold text-[13px] uppercase tracking-widest py-3.5 px-8 rounded-[6px] sm:rounded-[8px] hover:bg-[#7A6A8F] transition-colors text-center"
+              className="relative isolate overflow-hidden sm:w-auto border border-white bg-[#9580A6] px-8 py-3.5 text-center text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_14px_30px_rgba(14,12,20,0.28),inset_0_1px_0_rgba(255,255,255,0.14)] transition-colors hover:bg-[#7A6A8F] rounded-[6px] sm:rounded-[8px]"
             >
               Quiero empezar
             </Link>
@@ -110,19 +115,20 @@ export default function Home() {
 
         {/* ── 7. PARA QUIÉN ES ── */}
         <section
+          ref={forWhoRef}
           className="w-full rounded-[10px] sm:rounded-[20px] md:rounded-[28px] px-4 sm:px-8 md:px-12 py-10 sm:py-14 md:py-20"
           style={{ backgroundColor: '#1A1820' }}
         >
-          <div className="max-w-2xl">
-            <p className="text-[#9580A6] text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.15em] mb-3 sm:mb-4 m-0">
+          <div className="max-w-2xl mx-auto text-center">
+            <p data-reveal className="text-[#9580A6] text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.15em] mb-3 sm:mb-4 m-0">
               Este programa es para vos
             </p>
-            <h2 className="text-white text-[28px] sm:text-[36px] md:text-[48px] font-bold leading-none mb-10 sm:mb-12 m-0">
+            <h2 data-reveal className="text-white text-[28px] sm:text-[36px] md:text-[48px] font-bold leading-none mb-10 sm:mb-12 m-0">
               Si te identificás<br />con esto, seguí leyendo.
             </h2>
-            <ul className="flex flex-col gap-4 m-0 p-0 list-none">
+            <ul className="flex flex-col items-center gap-4 m-0 p-0 list-none">
               {forWhoItems.map((item, i) => (
-                <li key={i} className="flex items-start gap-3 text-[14px] sm:text-[16px] text-white/65 leading-snug">
+                <li key={i} data-reveal className="flex items-start justify-center gap-3 text-center text-[14px] sm:text-[16px] text-white/65 leading-snug max-w-[780px]">
                   <span className="shrink-0 text-[#9580A6] font-bold text-[16px] mt-0.5" aria-hidden="true">→</span>
                   {item}
                 </li>
@@ -132,18 +138,18 @@ export default function Home() {
         </section>
 
         {/* ── 8. AUTORIDAD – Dani / DemicheriFitness ── */}
-        <section className="w-full rounded-[10px] sm:rounded-[20px] md:rounded-[28px] bg-[#FEFEFE] border border-[#E8E4EE] px-4 sm:px-8 md:px-12 py-10 sm:py-14 md:py-20">
-          <div className="max-w-2xl">
-            <p className="text-[#9580A6] text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.15em] mb-3 sm:mb-4 m-0">
+        <section ref={coachRef} className="w-full rounded-[10px] sm:rounded-[20px] md:rounded-[28px] bg-[#FEFEFE] border border-[#E8E4EE] px-4 sm:px-8 md:px-12 py-10 sm:py-14 md:py-20">
+          <div className="max-w-2xl mx-auto text-center">
+            <p data-reveal className="text-[#9580A6] text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.15em] mb-3 sm:mb-4 m-0">
               El coach
             </p>
-            <h2 className="text-[#1A1820] text-[28px] sm:text-[36px] md:text-[48px] font-bold leading-none mb-6 sm:mb-8 m-0">
+            <h2 data-reveal className="text-[#1A1820] text-[28px] sm:text-[36px] md:text-[48px] font-bold leading-none mb-6 sm:mb-8 m-0">
               Dani Demicheri.
             </h2>
-            <p className="text-[#69686B] text-[15px] sm:text-[16px] md:text-[17px] leading-relaxed mb-5 m-0">
+            <p data-reveal className="text-[#69686B] text-[15px] sm:text-[16px] md:text-[17px] leading-relaxed mb-5 m-0">
               Creé DemicheriFitness porque me cansé de ver personas que fracasaban con planes genéricos y promesas imposibles. Después de años trabajando con cuerpos y objetivos muy distintos, desarrollé un método basado en personalización real, seguimiento cercano y adaptación constante.
             </p>
-            <p className="text-[#69686B] text-[15px] sm:text-[16px] md:text-[17px] leading-relaxed m-0">
+            <p data-reveal className="text-[#69686B] text-[15px] sm:text-[16px] md:text-[17px] leading-relaxed m-0">
               No creo en las soluciones mágicas. Creo en el trabajo bien hecho, la constancia y en adaptar el método a cada persona. Eso es exactamente lo que hacemos acá.
             </p>
           </div>
@@ -153,16 +159,17 @@ export default function Home() {
         <PlansSection />
 
         {/* ── 10. CIERRE CON CTA ── */}
-        <section className="w-full rounded-[10px] sm:rounded-[20px] md:rounded-[28px] bg-[#9580A6] px-4 sm:px-8 md:px-12 py-12 sm:py-16 md:py-24 flex flex-col items-center text-center">
-          <h2 className="text-white text-[28px] sm:text-[40px] md:text-[52px] font-bold leading-none mb-4 m-0">
+        <section ref={closingCtaRef} className="relative z-20 -mt-6 sm:-mt-10 md:-mt-14 w-[calc(100%-20px)] sm:w-[calc(100%-40px)] md:w-[calc(100%-64px)] mx-auto rounded-[10px] sm:rounded-[20px] md:rounded-[28px] bg-[#9580A6] px-4 sm:px-8 md:px-12 py-12 sm:py-16 md:py-24 flex flex-col items-center text-center">
+          <h2 data-closing-cta-item className="text-white text-[28px] sm:text-[40px] md:text-[52px] font-bold leading-none mb-4 m-0">
             Los cupos son limitados.<br />La atención es personal.
           </h2>
-          <p className="text-white/60 text-[14px] sm:text-[16px] leading-snug mb-8 max-w-[400px] m-0">
+          <p data-closing-cta-item className="text-white/60 text-[14px] sm:text-[16px] leading-snug mb-8 max-w-[400px] m-0">
             Cada plan incluye seguimiento real. Por eso no tomamos a todos al mismo tiempo.
           </p>
           <Link
             to="/postulacion"
-            className="bg-[#1A1820] text-white font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[6px] sm:rounded-[8px] hover:bg-black transition-colors"
+            data-closing-cta-item
+            className="bg-[#9580A6] text-white font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[6px] sm:rounded-[8px] hover:bg-[#7A6A8F] transition-colors"
           >
             Quiero empezar ahora
           </Link>

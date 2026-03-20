@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { useTextReveal } from '../lib/useTextReveal'
 
 const planCompleto = {
   name: 'Dieta + Rutina',
@@ -27,22 +28,25 @@ const planRutina = {
 }
 
 export default function PlansSection() {
+  const sectionRef = useTextReveal()
+
   return (
     <section
+      ref={sectionRef}
       id="planes"
-      className="relative w-full overflow-hidden rounded-[10px] sm:rounded-[20px] md:rounded-[28px] bg-[#1A1820] px-4 sm:px-8 md:px-12 py-10 sm:py-14 md:py-20"
+      className="relative left-1/2 right-1/2 w-screen -translate-x-1/2 overflow-hidden bg-[#1A1820] px-4 py-10 sm:px-8 sm:py-14 md:px-12 md:py-20"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(149,128,166,0.14),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(149,128,166,0.12),transparent_30%)]" />
 
       <div className="relative z-10 max-w-5xl mx-auto">
-        <p className="text-[#9580A6] text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.15em] mb-3 sm:mb-4 m-0">
+        <p data-reveal className="text-center text-[#9580A6] text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.15em] mb-3 sm:mb-4 m-0">
           Los planes
         </p>
-        <h2 className="text-white text-[28px] sm:text-[36px] md:text-[48px] font-bold leading-[0.96] tracking-[-0.045em] mb-10 sm:mb-14 m-0">
+        <h2 data-reveal className="text-center text-white text-[28px] sm:text-[36px] md:text-[48px] font-bold leading-[0.96] tracking-[-0.045em] mb-10 sm:mb-14 m-0">
           Elegí el que<br />mejor te queda.
         </h2>
 
-        <div className="rounded-[24px] border border-white/[0.08] bg-white/[0.03] px-3 py-3 sm:px-4 sm:py-4 md:px-5 md:py-5 backdrop-blur-[22px] shadow-[0_24px_80px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)]">
+        <div data-reveal className="rounded-[24px] border border-white/[0.08] bg-white/[0.03] px-3 py-3 sm:px-4 sm:py-4 md:px-5 md:py-5 backdrop-blur-[22px] shadow-[0_24px_80px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)]">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 items-stretch">
             <div className="plan-spotlight relative rounded-[20px] sm:rounded-[24px] p-[1px]">
               <div className="plan-spotlight__glow" aria-hidden="true" />
@@ -75,7 +79,7 @@ export default function PlansSection() {
 
                 <Link
                   to="/postulacion"
-                  className="ios-cta relative z-10 block text-center bg-[linear-gradient(180deg,#25202d_0%,#17141d_100%)] text-white font-bold text-[13px] uppercase tracking-[0.16em] py-3.5 px-6 rounded-[6px] sm:rounded-[8px] transition-all duration-300 hover:text-white hover:-translate-y-0.5"
+                  className="ios-cta relative z-10 block text-center bg-[linear-gradient(180deg,#25202d_0%,#17141d_100%)] !text-white font-bold text-[13px] uppercase tracking-[0.16em] py-3.5 px-6 rounded-[6px] sm:rounded-[8px] transition-all duration-300 hover:!text-white hover:-translate-y-0.5"
                 >
                   Empezar con este plan
                 </Link>
@@ -105,7 +109,7 @@ export default function PlansSection() {
 
               <Link
                 to="/postulacion"
-                className="relative z-10 block text-center bg-white text-[#1A1820] font-bold text-[13px] uppercase tracking-[0.16em] py-3.5 px-6 rounded-[6px] sm:rounded-[8px] shadow-[0_14px_28px_rgba(255,255,255,0.08)] hover:bg-[#F4F2F7] transition-all duration-300 hover:-translate-y-0.5"
+                className="relative z-10 block text-center bg-[#9580A6] !text-white font-bold text-[13px] uppercase tracking-[0.16em] py-3.5 px-6 rounded-[6px] sm:rounded-[8px] shadow-[0_14px_28px_rgba(20,16,28,0.18)] hover:bg-[#7A6A8F] hover:!text-white transition-all duration-300 hover:-translate-y-0.5"
               >
                 Empezar con este plan
               </Link>
