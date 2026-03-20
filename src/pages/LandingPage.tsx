@@ -60,13 +60,13 @@ function VideoProgressBar({ progress, unlocked }: { progress: number; unlocked: 
 // ── Lock hint ─────────────────────────────────────────────
 function LockedHint({ progress }: { progress: number }) {
   return (
-    <div className="rounded-[10px] sm:rounded-[14px] border border-[#E8E4EE] bg-[#F4F2F7] px-5 py-4 flex items-start gap-3">
-      <span className="text-[20px] mt-0.5 shrink-0" aria-hidden="true">🔒</span>
+    <div className="rounded-[10px] sm:rounded-[14px] border border-[#E8E4EE] bg-[#F4F2F7] px-4 sm:px-5 py-3 flex items-start gap-2.5">
+      <span className="text-[17px] mt-0.5 shrink-0" aria-hidden="true">🔒</span>
       <div>
-        <p className="text-[#1A1820] text-[13px] sm:text-[14px] font-bold m-0 mb-1">
+        <p className="text-[#1A1820] text-[12px] sm:text-[13px] font-bold m-0 mb-0.5">
           El resto del contenido está más abajo.
         </p>
-        <p className="text-[#69686B] text-[12px] sm:text-[13px] m-0">
+        <p className="text-[#69686B] text-[11px] sm:text-[12px] m-0">
           {progress === 0
             ? 'Mirá el video para desbloquear la información completa del método.'
             : `Seguí mirando hasta el 75% para continuar. Ya vas por el ${progress}%.`}
@@ -229,6 +229,7 @@ export default function LandingPage() {
     try { return localStorage.getItem(LOCK_KEY) === '1' } catch { return false }
   })
   const [isPaused, setIsPaused] = useState(true)
+  const isLocked = !unlocked
   const maxWatched = useRef(0)
   const videoWrapperRef = useRef<HTMLDivElement>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -257,6 +258,28 @@ export default function LandingPage() {
     }
   }, [unlocked])
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    if (!isLocked) return
+
+    const previousBodyOverflow = document.body.style.overflow
+    const previousHtmlOverflow = document.documentElement.style.overflow
+    const previousBodyOverscroll = document.body.style.overscrollBehavior
+    const previousHtmlOverscroll = document.documentElement.style.overscrollBehavior
+
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overscrollBehavior = 'none'
+    document.documentElement.style.overscrollBehavior = 'none'
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow
+      document.documentElement.style.overflow = previousHtmlOverflow
+      document.body.style.overscrollBehavior = previousBodyOverscroll
+      document.documentElement.style.overscrollBehavior = previousHtmlOverscroll
+    }
+  }, [isLocked])
+
   const handleTimeUpdate = (evt: React.SyntheticEvent<HTMLVideoElement>) => {
     const el = evt.currentTarget as HTMLVideoElement
     if (!el.duration) return
@@ -277,126 +300,152 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FEFEFE]">
+    <div className={`${isLocked ? 'h-dvh overflow-hidden' : 'min-h-screen'} flex flex-col bg-[#FEFEFE]`}>
       <FunnelHeader />
 
-      <main className="flex-1 flex flex-col w-full max-w-[820px] mx-auto px-3 sm:px-5 pb-8 md:pb-12 pt-6 sm:pt-8">
-        <div className="flex flex-col gap-3 sm:gap-4">
+      <main
+        className={`flex flex-col w-full mx-auto px-3 sm:px-5 ${
+          isLocked
+            ? 'max-w-[1000px] flex-1 overflow-hidden py-2 sm:py-3'
+            : 'max-w-[820px] flex-1 pt-6 sm:pt-8 pb-8 md:pb-12'
+        }`}
+      >
+        <div className={`flex flex-col ${isLocked ? 'w-full my-auto gap-2 sm:gap-2.5' : 'gap-3 sm:gap-4'}`}>
 
           {/* Hero context */}
-          <div className="py-4 sm:py-6 text-center">
-            <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.2em] mb-3 m-0">
+          <div className={`text-center ${isLocked ? 'max-w-[820px] mx-auto py-0.5 sm:py-1' : 'py-4 sm:py-6'}`}>
+            <p className={`text-[#9580A6] font-bold uppercase tracking-[0.2em] m-0 ${isLocked ? 'text-[10px] mb-2' : 'text-[11px] mb-3'}`}>
               DemicheriFitness
             </p>
-            <h1 className="text-[#1A1820] text-[26px] sm:text-[36px] md:text-[44px] font-bold leading-none mb-3 m-0">
+            <h1 className={`text-[#1A1820] font-bold leading-none mb-3 m-0 ${
+              isLocked ? 'text-[20px] sm:text-[26px] md:text-[30px]' : 'text-[26px] sm:text-[36px] md:text-[44px]'
+            }`}>
               Lo que nadie te dijo<br />sobre entrenar con resultados reales.
             </h1>
-            <p className="text-[#69686B] text-[14px] sm:text-[16px] leading-snug max-w-[500px] mx-auto m-0">
-              Mirá el video antes de continuar. Te explica exactamente cómo funciona el método y por qué la mayoría de las personas no llegan a sus objetivos.
-            </p>
+            {!isLocked && (
+              <p className="text-[#69686B] text-[14px] sm:text-[16px] leading-snug mx-auto m-0 max-w-[500px]">
+                Mirá el video antes de continuar. Te explica exactamente cómo funciona el método y por qué la mayoría de las personas no llegan a sus objetivos.
+              </p>
+            )}
           </div>
 
-          {/* Video */}
-          <div ref={videoWrapperRef} className="relative w-full rounded-[10px] sm:rounded-[16px] overflow-hidden bg-[#1A1820]">
-            {MUX_PLAYBACK_ID ? (
-              <>
-                <MuxPlayer
-                  ref={muxRef}
-                  playbackId={MUX_PLAYBACK_ID}
-                  defaultPlaybackRate={1.2}
-                  nohotkeys
-                  style={{
-                    width: '100%',
-                    display: 'block',
-                    aspectRatio: '16/9',
-                  } as React.CSSProperties}
-                  // @ts-expect-error mux-player extends HTMLVideoElement events
-                  onTimeUpdate={handleTimeUpdate}
-                  metadata={{ video_title: 'DemicheriFitness – Método' }}
-                  accentColor="#9580A6"
-                />
-                {/* Overlay transparente — captura clicks para play/pause */}
-                <div
-                  className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center"
-                  onClick={handleVideoClick}
-                  aria-label="Reproducir / Pausar"
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' || e.key === ' ' ? handleVideoClick() : undefined}
-                >
-                  {/* Botón play central — visible solo cuando está pausado */}
+          <div className={`w-full mx-auto ${isLocked ? 'max-w-[780px]' : ''}`}>
+            {/* Video */}
+            <div
+              ref={videoWrapperRef}
+              className="relative rounded-[10px] sm:rounded-[16px] overflow-hidden bg-[#1A1820] mx-auto w-full"
+              style={isLocked ? { width: 'min(100%, calc(38vh * 16 / 9))' } : undefined}
+            >
+              {MUX_PLAYBACK_ID ? (
+                <>
+                  <MuxPlayer
+                    ref={muxRef}
+                    playbackId={MUX_PLAYBACK_ID}
+                    defaultPlaybackRate={1.2}
+                    nohotkeys
+                    style={{
+                      width: '100%',
+                      display: 'block',
+                      aspectRatio: '16/9',
+                    } as React.CSSProperties}
+                    // @ts-expect-error mux-player extends HTMLVideoElement events
+                    onTimeUpdate={handleTimeUpdate}
+                    metadata={{ video_title: 'DemicheriFitness – Método' }}
+                    accentColor="#9580A6"
+                  />
+                  {/* Overlay transparente — captura clicks para play/pause */}
                   <div
-                    className={`transition-all duration-200 ${
-                      isPaused ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'
-                    }`}
+                    className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center"
+                    onClick={handleVideoClick}
+                    aria-label="Reproducir / Pausar"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' || e.key === ' ' ? handleVideoClick() : undefined}
                   >
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/90 shadow-lg flex items-center justify-center">
-                      <svg
-                        width="28"
-                        height="28"
-                        viewBox="0 0 28 28"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        aria-hidden="true"
-                        className="translate-x-[2px]"
-                      >
-                        <path d="M8 5L23 14L8 23V5Z" fill="#1A1820" />
-                      </svg>
+                    {/* Botón play central — visible solo cuando está pausado */}
+                    <div
+                      className={`transition-all duration-200 ${
+                        isPaused ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'
+                      }`}
+                    >
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/90 shadow-lg flex items-center justify-center">
+                        <svg
+                          width="28"
+                          height="28"
+                          viewBox="0 0 28 28"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden="true"
+                          className="translate-x-[2px]"
+                        >
+                          <path d="M8 5L23 14L8 23V5Z" fill="#1A1820" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
+                  {/* Botón pantalla completa */}
+                  <button
+                    onClick={handleFullscreen}
+                    aria-label="Pantalla completa"
+                    className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded bg-black/50 text-white hover:bg-black/75 transition-colors z-20"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M1 5V1H5M9 1H13V5M13 9V13H9M5 13H1V9" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </>
+              ) : (
+                <div className="w-full aspect-video flex flex-col items-center justify-center gap-3 bg-[#1A1820] text-center px-6">
+                  <div className="w-14 h-14 rounded-full border-2 border-white/20 flex items-center justify-center">
+                    <span className="text-xl text-white/40">▶</span>
+                  </div>
+                  <p className="text-white/40 text-[13px] m-0">
+                    Video no configurado. Agregá{' '}
+                    <code className="bg-white/10 px-1.5 py-0.5 rounded text-[#9580A6]">VITE_MUX_PLAYBACK_ID</code>
+                    {' '}en{' '}
+                    <code className="bg-white/10 px-1.5 py-0.5 rounded text-white/60">.env</code>
+                  </p>
                 </div>
-                {/* Botón pantalla completa */}
-                <button
-                  onClick={handleFullscreen}
-                  aria-label="Pantalla completa"
-                  className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded bg-black/50 text-white hover:bg-black/75 transition-colors z-20"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M1 5V1H5M9 1H13V5M13 9V13H9M5 13H1V9" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              </>
-            ) : (
-              <div className="w-full aspect-video flex flex-col items-center justify-center gap-3 bg-[#1A1820] text-center px-6">
-                <div className="w-14 h-14 rounded-full border-2 border-white/20 flex items-center justify-center">
-                  <span className="text-xl text-white/40">▶</span>
-                </div>
-                <p className="text-white/40 text-[13px] m-0">
-                  Video no configurado. Agregá{' '}
-                  <code className="bg-white/10 px-1.5 py-0.5 rounded text-[#9580A6]">VITE_MUX_PLAYBACK_ID</code>
-                  {' '}en{' '}
-                  <code className="bg-white/10 px-1.5 py-0.5 rounded text-white/60">.env</code>
-                </p>
+              )}
+            </div>
+
+            {/* Progress bar */}
+            <div className={isLocked ? 'mt-2' : 'mt-3'}>
+              <VideoProgressBar progress={videoProgress} unlocked={unlocked} />
+            </div>
+
+            {/* Lock hint */}
+            {!unlocked && (
+              <div className={isLocked ? 'mt-2' : 'mt-3'}>
+                <LockedHint progress={videoProgress} />
               </div>
             )}
           </div>
 
-          {/* Progress bar */}
-          <VideoProgressBar progress={videoProgress} unlocked={unlocked} />
-
-          {/* Lock hint */}
-          {!unlocked && <LockedHint progress={videoProgress} />}
-
           {/* Gated content — smooth reveal */}
           <div
-            className={`transition-all duration-700 ease-out ${
+            className={`grid overflow-hidden transition-[grid-template-rows,opacity,transform] duration-700 ease-out ${
               unlocked
-                ? 'opacity-100 translate-y-0 pointer-events-auto'
-                : 'opacity-0 translate-y-8 pointer-events-none select-none'
+                ? 'grid-rows-[1fr] opacity-100 translate-y-0 pointer-events-auto'
+                : 'grid-rows-[0fr] opacity-0 translate-y-8 pointer-events-none select-none'
             }`}
             aria-hidden={!unlocked}
           >
-            <GatedContent />
+            <div className="min-h-0 overflow-hidden">
+              <GatedContent />
+            </div>
           </div>
 
         </div>
       </main>
 
-      <footer className="w-full shrink-0 border-t border-[#E8E4EE] px-4 py-3 text-center">
-        <p className="text-[11px] text-[#9D9B9F] m-0">
-          © DemicheriFitness · Todos los derechos reservados
-        </p>
-      </footer>
+      {unlocked && (
+        <footer className="w-full shrink-0 border-t border-[#E8E4EE] px-4 py-3 text-center">
+          <p className="text-[11px] text-[#9D9B9F] m-0">
+            © DemicheriFitness · Todos los derechos reservados
+          </p>
+        </footer>
+      )}
     </div>
   )
 }

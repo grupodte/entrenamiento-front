@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import logoSvg from '../assets/DD FIT - LOGO PRINCIPAL.svg'
 
@@ -212,6 +212,19 @@ export default function PreCall() {
     setTimeout(() => transition(step + 1), 320)
   }
 
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow
+    const previousHtmlOverflow = document.documentElement.style.overflow
+
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow
+      document.documentElement.style.overflow = previousHtmlOverflow
+    }
+  }, [])
+
   const handleSubmit = async () => {
     const e: typeof errors = {}
     if (!data.nombre.trim()) e.nombre = 'Requerido'
@@ -229,10 +242,10 @@ export default function PreCall() {
   const progressPct = step === 0 ? 0 : Math.round((step / TOTAL) * 100)
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FEFEFE]">
+    <div className="min-h-full flex flex-col overflow-hidden bg-[#FEFEFE]">
 
       {/* Header */}
-      <header className="w-full px-4 sm:px-8 py-4 flex items-center justify-between border-b border-[#E8E4EE] bg-[#FEFEFE]">
+      <header className="w-full shrink-0 px-4 sm:px-8 py-4 flex items-center justify-between border-b border-[#E8E4EE] bg-[#FEFEFE]">
         <img src={logoSvg} alt="DemicheriFitness" className="h-[20px] w-auto" />
         {step > 0 && (
           <span className="text-[#69686B] text-[11px] font-bold uppercase tracking-[0.15em]">
@@ -242,7 +255,7 @@ export default function PreCall() {
       </header>
 
       {/* Progress bar */}
-      <div className="w-full h-[3px] bg-[#E8E4EE]">
+      <div className="w-full h-[3px] shrink-0 bg-[#E8E4EE]">
         <div
           className="h-full bg-[#9580A6] transition-all duration-500 ease-out"
           style={{ width: `${progressPct}%` }}
@@ -251,14 +264,14 @@ export default function PreCall() {
 
       {/* Content */}
       <main
-        className="flex-1 flex flex-col items-center justify-center px-4 py-12"
+        className="flex-1 min-h-0 flex flex-col mt-20 items-center justify-center overflow-hidden px-4 py-6 sm:py-8"
         style={{
           opacity: visible ? 1 : 0,
           transform: visible ? 'translateY(0)' : 'translateY(10px)',
           transition: 'opacity 0.18s ease, transform 0.18s ease',
         }}
       >
-        <div className="w-full max-w-[560px]">
+        <div className="w-full   max-w-[325px]  md:max-w-[511px] ">
 
           {/* ── Step 0: Bienvenida ── */}
           {step === 0 && (
@@ -496,11 +509,11 @@ export default function PreCall() {
         </div>
       </main>
 
-      <footer className="w-full shrink-0 border-t border-[#E8E4EE] px-4 py-3 text-center">
-        <p className="text-[11px] text-[#9D9B9F] m-0">
-          © DemicheriFitness · Todos los derechos reservados
-        </p>
-      </footer>
+        <footer className="w-full fixed bottom-0 border-t border-[#E8E4EE] bg-[#FEFEFE] px-4 py-3 text-center">
+          <p className="text-[11px] text-[#9D9B9F] m-0">
+            © DemicheriFitness · Todos los derechos reservados
+          </p>
+        </footer>
     </div>
   )
 }

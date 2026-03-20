@@ -78,13 +78,13 @@ export default function MainLayout() {
   const showNavbar = (!isHome || ['header', 'hero', 'content'].includes(homePhase)) && !isConversionFunnel
   const showFooter = (!isHome || homePhase === 'content') && !isConversionFunnel
   const mainContainerClass = isConversionFunnel
-    ? 'w-full max-w-none mx-auto p-0'
+    ? 'w-full max-w-none mx-auto p-0 flex-1 min-h-0'
     : 'w-full max-w-none md:max-w-[1350px] mx-auto px-1 sm:px-5 md:px-5 pb-6 md:pb-8'
 
   const contextValue = useMemo(() => ({ homePhase }), [homePhase])
 
   return (
-    <div className="min-h-screen flex flex-col overflow-x-hidden">
+    <div className="min-h-screen flex flex-col">
       {showPreloader && (
         <div
           className={`fixed inset-0 z-[200] bg-[#FEFEFE] transition-[opacity,transform,filter] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
@@ -96,7 +96,7 @@ export default function MainLayout() {
         />
       )}
       <Navbar isVisible={showNavbar} />
-      <main className={`${isConversionFunnel ? '' : 'flex-1'} ${showNavbar ? 'pt-17 md:pt-16' : 'pt-0'}`}>
+      <main className={`${isConversionFunnel ? 'flex-1 min-h-0 flex flex-col' : 'flex-1'} ${showNavbar ? 'pt-17 md:pt-16' : 'pt-0'}`}>
         <div className={mainContainerClass}>
           <HomePhaseContext.Provider value={contextValue}>
             <Suspense fallback={null}>

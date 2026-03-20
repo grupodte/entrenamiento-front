@@ -47,12 +47,36 @@ mux-player {
 
 body {
   margin: 0;
+  overflow-x: hidden;
   font-family: "DM Sans", system-ui, sans-serif;
   font-weight: 400;
   letter-spacing: -0.015em;
   line-height: 1.35;
   background: var(--bg);
   color: var(--text);
+}
+
+/* ── Custom scrollbar ─────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--brand-muted);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--brand-muted) transparent;
 }
 
 h1,
@@ -72,10 +96,31 @@ body.postulacion-lock {
   -webkit-touch-callout: none;
 }
 
+html.content-protection-enabled,
+body.content-protection-enabled {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 body.postulacion-lock input,
-body.postulacion-lock textarea {
+body.postulacion-lock textarea,
+body.content-protection-enabled input,
+body.content-protection-enabled textarea,
+body.content-protection-enabled [contenteditable="true"],
+body.content-protection-enabled [data-allow-copy="true"] {
   -webkit-user-select: text;
   user-select: text;
+}
+
+body.content-protection-enabled img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+body.content-protection-enabled picture,
+body.content-protection-enabled svg {
+  -webkit-user-drag: none;
 }
 
 a {
