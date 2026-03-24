@@ -173,6 +173,8 @@ async function insertAppointment(payload: {
   start_at?: string | null;
   end_at?: string | null;
   cal_booking_id?: string | null;
+  meet_url?: string | null;
+  precall_data?: unknown;
   payload: unknown;
 }) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return;
@@ -196,6 +198,7 @@ async function updateAppointment(
     end_at?: string | null;
     guest_name?: string | null;
     guest_email?: string | null;
+    meet_url?: string | null;
   },
 ) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return;
@@ -210,6 +213,7 @@ async function updateAppointment(
   if (fields.end_at !== undefined) updatePayload.end_at = fields.end_at;
   if (fields.guest_name !== undefined) updatePayload.guest_name = fields.guest_name;
   if (fields.guest_email !== undefined) updatePayload.guest_email = fields.guest_email;
+  if (fields.meet_url !== undefined) updatePayload.meet_url = fields.meet_url;
 
   if (Object.keys(updatePayload).length === 0) return;
 
@@ -229,6 +233,7 @@ async function updateAppointment(
     end_at: fields.end_at ?? null,
     guest_name: fields.guest_name ?? null,
     guest_email: fields.guest_email ?? null,
+    meet_url: fields.meet_url ?? null,
   });
 }
 
@@ -450,7 +455,11 @@ serve(async (req) => {
         const attendee = (input?.attendee as Record<string, unknown> | undefined) ?? {};
         const requestedEmail = (attendee.email as string | undefined) ?? null;
         const requestedStart = (input?.start as string | undefined) ?? null;
+        const precallData = (input?.precallData as Record<string, unknown> | undefined) ?? null;
         const bookingPayload = { ...(input as Record<string, unknown>) };
+        // Remove precallData from payload sent to Cal.com
+        delete bookingPayload.precallData;
+        
         const requestedEventTypeId = parseEventTypeId(bookingPayload.eventTypeId);
         const effectiveEventTypeId = CAL_ENFORCED_EVENT_TYPE_ID ?? requestedEventTypeId;
         if (!effectiveEventTypeId) {
@@ -499,6 +508,13 @@ serve(async (req) => {
           const bookingData = booking?.data as Record<string, unknown> | undefined;
           const [bookingId] = extractBookingIds(bookingData);
 
+          // Extract meet URL from Cal.com response
+          const meetUrl = (bookingData?.meetUrl as string | undefined) 
+            ?? (bookingData?.meetingUrl as string | undefined)
+            ?? (bookingData?.videoCallData?.url as string | undefined)
+            ?? (bookingData?.location as string | undefined)
+            ?? null;
+
           await insertAppointment({
             user_id: user?.id ?? null,
             guest_name: guestName,
@@ -507,6 +523,8 @@ serve(async (req) => {
             start_at: (bookingData?.start as string | undefined) ?? null,
             end_at: (bookingData?.end as string | undefined) ?? null,
             cal_booking_id: bookingId ?? null,
+            meet_url: meetUrl,
+            precall_data: precallData,
             payload: booking,
           });
         } catch (persistError) {
@@ -606,6 +624,13 @@ serve(async (req) => {
           const guestEmail = (attendee.email as string | undefined) ?? null;
           const startAt = (payload?.startTime as string | undefined) ?? (payload?.start as string | undefined) ?? null;
           const endAt = (payload?.endTime as string | undefined) ?? (payload?.end as string | undefined) ?? null;
+          
+          // Extract meet URL from webhook payload
+          const meetUrl = (payload?.meetUrl as string | undefined) 
+            ?? (payload?.meetingUrl as string | undefined)
+            ?? (payload?.videoCallData?.url as string | undefined)
+            ?? (payload?.location as string | undefined)
+            ?? null;
 
           await updateAppointment(bookingIds, {
             status,
@@ -614,6 +639,7 @@ serve(async (req) => {
             end_at: endAt,
             guest_name: guestName,
             guest_email: guestEmail,
+            meet_url: meetUrl,
           });
         }
 

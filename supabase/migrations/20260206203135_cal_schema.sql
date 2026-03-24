@@ -43,6 +43,8 @@ create table if not exists public.appointments (
   start_at timestamptz,
   end_at timestamptz,
   cal_booking_id text,
+  meet_url text,
+  precall_data jsonb,
   payload jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   constraint appointments_guest_or_user check (user_id is not null or guest_email is not null)
@@ -85,18 +87,21 @@ alter table public.appointments enable row level security;
 alter table public.webhook_events enable row level security;
 
 -- Profiles policies
+drop policy if exists profiles_self_select on public.profiles;
 create policy profiles_self_select
   on public.profiles
   for select
   to authenticated
   using (id = auth.uid() or public.is_cal_admin());
 
+drop policy if exists profiles_self_insert on public.profiles;
 create policy profiles_self_insert
   on public.profiles
   for insert
   to authenticated
   with check (id = auth.uid() or public.is_cal_admin());
 
+drop policy if exists profiles_self_update on public.profiles;
 create policy profiles_self_update
   on public.profiles
   for update
@@ -105,18 +110,21 @@ create policy profiles_self_update
   with check (id = auth.uid() or public.is_cal_admin());
 
 -- Onboarding policies
+drop policy if exists onboarding_self_select on public.onboarding;
 create policy onboarding_self_select
   on public.onboarding
   for select
   to authenticated
   using (user_id = auth.uid() or public.is_cal_admin());
 
+drop policy if exists onboarding_self_insert on public.onboarding;
 create policy onboarding_self_insert
   on public.onboarding
   for insert
   to authenticated
   with check (user_id = auth.uid() or public.is_cal_admin());
 
+drop policy if exists onboarding_self_update on public.onboarding;
 create policy onboarding_self_update
   on public.onboarding
   for update
@@ -125,6 +133,7 @@ create policy onboarding_self_update
   with check (user_id = auth.uid() or public.is_cal_admin());
 
 -- Cal accounts (admin only)
+drop policy if exists cal_accounts_admin_all on public.cal_accounts;
 create policy cal_accounts_admin_all
   on public.cal_accounts
   for all
@@ -133,24 +142,28 @@ create policy cal_accounts_admin_all
   with check (public.is_cal_admin());
 
 -- Appointments policies
+drop policy if exists appointments_insert_anon on public.appointments;
 create policy appointments_insert_anon
   on public.appointments
   for insert
   to anon
   with check (user_id is null and guest_email is not null);
 
+drop policy if exists appointments_insert_auth on public.appointments;
 create policy appointments_insert_auth
   on public.appointments
   for insert
   to authenticated
   with check (user_id = auth.uid() or (user_id is null and guest_email is not null));
 
+drop policy if exists appointments_select_auth on public.appointments;
 create policy appointments_select_auth
   on public.appointments
   for select
   to authenticated
   using (user_id = auth.uid() or public.is_cal_admin());
 
+drop policy if exists appointments_update_auth on public.appointments;
 create policy appointments_update_auth
   on public.appointments
   for update
@@ -159,6 +172,7 @@ create policy appointments_update_auth
   with check (user_id = auth.uid() or public.is_cal_admin());
 
 -- Webhook events (admin only)
+drop policy if exists webhook_events_admin_select on public.webhook_events;
 create policy webhook_events_admin_select
   on public.webhook_events
   for select

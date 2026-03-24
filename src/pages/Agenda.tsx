@@ -26,6 +26,23 @@ type AvailabilityCachePayload = {
   availableDates: string[]
 }
 
+// Pre-call data from localStorage
+type PrecallData = {
+  entrenaDias: string
+  compromiso: string
+  tieneEquipo: string
+  dispuestoInvertir: string
+  obstaculoPrincipal: string
+  porQueAhora: string
+  nombre: string
+  email: string
+  whatsapp: string
+  edad: string
+  zonaHoraria: string
+}
+
+const PRECALL_STORAGE_KEY = 'dmf_precall_data'
+
 const formatSlotTime = (value: string) => {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
@@ -339,6 +356,17 @@ export default function Agenda() {
       return
     }
 
+    // Read pre-call data from localStorage
+    let precallData: PrecallData | null = null
+    try {
+      const stored = localStorage.getItem(PRECALL_STORAGE_KEY)
+      if (stored) {
+        precallData = JSON.parse(stored) as PrecallData
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+
     setIsBooking(true)
     const { data, error: bookingError } = await supabase.functions.invoke('cal', {
       body: {
@@ -349,7 +377,8 @@ export default function Agenda() {
           name: attendeeName,
           email: attendeeEmail,
           timeZone
-        }
+        },
+        precallData
       }
     })
 
@@ -368,6 +397,14 @@ export default function Agenda() {
     })
     setIsBooking(false)
     setBookingPhase('success')
+    
+    // Clear pre-call data from localStorage after successful booking
+    try {
+      localStorage.removeItem(PRECALL_STORAGE_KEY)
+    } catch {
+      // Ignore errors
+    }
+    
     navigate({ to: '/gracias-agenda' })
   }
 
