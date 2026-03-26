@@ -24,16 +24,18 @@ export default function Navbar({ isVisible = true }: { isVisible?: boolean }) {
           <img src={logoSvg} alt="DemicheriFitness" className="h-[22px] w-auto" />
         </Link>
 
-        <Link
-          to="/landing-page"
-          className={`text-[13px] uppercase tracking-[0.12em] transition-colors duration-200 ${
-            pathname === '/landing-page'
-              ? 'text-[#9580A6]'
-              : 'text-[#1A1820]/72 hover:text-[#1A1820]'
-          }`}
-        >
-          Empeza hoy!
-        </Link>
+        {pathname !== '/agenda' && (
+          <Link
+            to="/landing-page"
+            className={`text-[13px] uppercase tracking-[0.12em] transition-colors duration-200 ${
+              pathname === '/landing-page'
+                ? 'text-[#9580A6]'
+                : 'text-[#1A1820]/72 hover:text-[#1A1820]'
+            }`}
+          >
+            Empeza hoy!
+          </Link>
+        )}
       </div>
     </header>
   )
