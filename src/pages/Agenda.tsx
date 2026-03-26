@@ -333,6 +333,20 @@ export default function Agenda() {
     }
   }, [selectedDateKey, slotsForSelectedDate, selectedSlot])
 
+  // Load pre-call data on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(PRECALL_STORAGE_KEY)
+      if (stored) {
+        const precallData = JSON.parse(stored) as PrecallData
+        if (precallData.nombre) setAttendeeName(precallData.nombre)
+        if (precallData.email) setAttendeeEmail(precallData.email)
+      }
+    } catch {
+      // Ignore errors
+    }
+  }, [])
+
   const handleSlotSelect = (slot: string) => {
     setSelectedSlot(slot)
     setBookingPhase('form')
@@ -415,27 +429,31 @@ export default function Agenda() {
   }
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center">
-      <div className="w-full max-w-[1200px] min-h-[640px] md:min-h-[680px] overflow-hidden rounded-[30px] shadow-[0_30px_80px_rgba(0,0,0,0.18)] bg-white grid md:grid-cols-[0.85fr_1.15fr]">
-        <div className="bg-black text-white p-7 md:p-10 flex flex-col justify-between">
+    <div className="min-h-[70vh] flex items-center justify-center bg-[#FEFEFE]">
+      <div className="w-full max-w-[1200px] min-h-[640px] md:min-h-[680px] overflow-hidden rounded-[30px] shadow-[0_30px_80px_rgba(149,128,166,0.15)] bg-[#FEFEFE] grid md:grid-cols-[0.85fr_1.15fr] border border-[#E8E4EE]">
+        <div className="bg-[#F4F2F7] text-[#1A1820] p-7 md:p-10 flex flex-col justify-between border-r border-[#E8E4EE]">
           <div className="space-y-6">
         
             <div>
-              <h1 className="text-[28px] md:text-[34px] font-semibold">Agendá tu llamada</h1>
-              <p className="mt-3 text-[14px] text-white/70 max-w-[260px]">
-                Elegí un horario disponible para coordinar tu sesión.
+              <h1 className="text-[28px] md:text-[34px] font-bold text-[#1A1820]">
+                {bookingPhase === 'form' ? 'Confirmá tu llamada' : 'Agendá tu llamada'}
+              </h1>
+              <p className="mt-3 text-[14px] text-[#69686B] max-w-[260px]">
+                {bookingPhase === 'form' 
+                  ? 'Revisá los datos de tu sesión de evaluación gratuita.' 
+                  : 'Elegí un horario disponible para tu sesión de evaluación.'}
               </p>
             </div>
 
-            <div className="space-y-3 text-[13px] text-white/80">
+            <div className="space-y-3 text-[13px] text-[#69686B]">
               <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                <span className="w-8 h-8 rounded-full bg-[#9580A6]/15 flex items-center justify-center text-[12px] text-[#9580A6]">
                   ⏱
                 </span>
-                <span>Duración a confirmar</span>
+                <span>15-20 minutos</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                <span className="w-8 h-8 rounded-full bg-[#9580A6]/15 flex items-center justify-center text-[10px] text-[#9580A6]">
                   TZ
                 </span>
                 <span className="text-[12px]">{timeZone}</span>
@@ -443,9 +461,17 @@ export default function Agenda() {
             </div>
           </div>
 
-          <div className="mt-6 rounded-[18px] border border-white/15 bg-white/5 p-4 text-[12px]">
-            <p className="m-0 text-white/70">Resumen</p>
-            <p className="m-0 mt-2 text-[14px] font-semibold">
+          <div className="mt-6 rounded-[18px] border border-[#E8E4EE] bg-[#FEFEFE] p-4 text-[12px]">
+            {bookingPhase === 'form' && attendeeName ? (
+              <>
+                <p className="m-0 text-[#9580A6] font-bold uppercase text-[11px] tracking-[0.15em]">Sesión para</p>
+                <p className="m-0 mt-1 text-[14px] font-bold text-[#1A1820]">{attendeeName}</p>
+              </>
+            ) : null}
+            <p className={`m-0 text-[#9580A6] font-bold uppercase text-[11px] tracking-[0.15em] ${bookingPhase === 'form' && attendeeName ? 'mt-3' : ''}`}>
+              {selectedSlot ? 'Horario seleccionado' : 'Resumen'}
+            </p>
+            <p className="m-0 mt-1 text-[14px] font-bold text-[#1A1820]">
               {selectedSlot
                 ? `${formatSlotDate(selectedSlot)} · ${formatSlotTime(selectedSlot)}`
                 : 'Elegí un horario para continuar.'}
@@ -453,32 +479,32 @@ export default function Agenda() {
           </div>
         </div>
 
-        <div className="p-7 md:p-10 h-full flex flex-col justify-center">
+        <div className="p-7 md:p-10 h-full flex flex-col justify-center bg-[#FEFEFE]">
           {bookingPhase === 'success' ? (
             <div className="flex flex-col items-center text-center gap-4 py-10">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 text-[24px]">
+              <div className="w-16 h-16 rounded-full bg-[#9580A6]/15 flex items-center justify-center text-[#9580A6] text-[24px]">
                 ✓
               </div>
-              <h2 className="text-[22px] font-semibold">Cita confirmada</h2>
-              <p className="text-[13px] opacity-70 max-w-[360px]">
+              <h2 className="text-[22px] font-bold text-[#1A1820]">Cita confirmada</h2>
+              <p className="text-[13px] text-[#69686B] max-w-[360px]">
                 Te enviamos un correo con los detalles. Si necesitás cambiarla, avisanos con tiempo.
               </p>
               {booking?.start && (
-                <p className="text-[14px] font-semibold">
+                <p className="text-[14px] font-bold text-[#1A1820]">
                   {formatSlotDate(booking.start)} · {formatSlotTime(booking.start)}
                 </p>
               )}
               <div className="flex flex-col sm:flex-row gap-3 w-full max-w-[320px]">
                 <button
                   type="button"
-                  className="flex-1 rounded-[14px] border border-black/10 px-4 py-3 text-[13px] uppercase tracking-[0.18em]"
+                  className="flex-1 rounded-[14px] border border-[#E8E4EE] px-4 py-3 text-[13px] uppercase tracking-[0.18em] text-[#69686B] hover:border-[#9580A6] hover:text-[#9580A6] transition-colors"
                   onClick={resetFlow}
                 >
                   Agendar otra
                 </button>
                 <button
                   type="button"
-                  className="flex-1 rounded-[14px] bg-black text-white px-4 py-3 text-[13px] uppercase tracking-[0.18em]"
+                  className="flex-1 rounded-[14px] bg-[#9580A6] text-white px-4 py-3 text-[13px] uppercase tracking-[0.18em] hover:bg-[#7A6A8F] transition-colors"
                   onClick={() => (window.location.href = '/')}
                 >
                   Ir al inicio
@@ -488,30 +514,30 @@ export default function Agenda() {
           ) : bookingPhase === 'slots' ? (
             <div className="flex flex-col gap-6">
               <div>
-                <p className="text-[12px] uppercase tracking-[0.2em] text-black/60">
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#9580A6]">
                   Seleccioná fecha y hora
                 </p>
-                <h2 className="mt-2 text-[22px] font-semibold">Elegí el horario disponible</h2>
+                <h2 className="mt-2 text-[22px] font-bold text-[#1A1820]">Elegí el horario disponible</h2>
               </div>
 
               <div className="grid gap-6 lg:grid-cols-[1.05fr_1fr]">
-                <div className="rounded-[20px] border border-black/10 bg-white p-5 h-[400px] overflow-y-auto no-scrollbar">
+                <div className="rounded-[20px] border border-[#E8E4EE] bg-[#FEFEFE] p-5 h-[400px] overflow-y-auto no-scrollbar">
                   {showInitialLoading ? (
                     <div className="flex flex-col gap-2">
                       {Array.from({ length: DATE_SKELETON_ITEMS }).map((_, index) => (
                         <div
                           key={`date-skeleton-${index}`}
-                          className="h-[54px] w-full rounded-[14px] border border-black/8 bg-gradient-to-r from-black/[0.03] via-black/[0.06] to-black/[0.03] animate-pulse"
+                          className="h-[54px] w-full rounded-[14px] border border-[#E8E4EE] bg-gradient-to-r from-[#9580A6]/[0.05] via-[#9580A6]/[0.08] to-[#9580A6]/[0.05] animate-pulse"
                         />
                       ))}
                     </div>
                   ) : displayDates.length === 0 ? (
                     <div className="h-full flex items-center justify-center">
-                      <div className="w-full rounded-[14px] border border-black/10 bg-black/[0.02] px-4 py-5 text-center">
-                        <p className="m-0 text-[13px] font-medium text-black/80">
+                      <div className="w-full rounded-[14px] border border-[#E8E4EE] bg-[#F4F2F7] px-4 py-5 text-center">
+                        <p className="m-0 text-[13px] font-medium text-[#1A1820]">
                           No hay horarios disponibles por ahora.
                         </p>
-                        <p className="m-0 mt-1 text-[12px] text-black/55">
+                        <p className="m-0 mt-1 text-[12px] text-[#69686B]">
                           Probá de nuevo en unos minutos.
                         </p>
                       </div>
@@ -527,13 +553,13 @@ export default function Agenda() {
                             type="button"
                             className={`w-full rounded-[14px] border px-4 py-3 text-left transition ${
                               isSelected
-                                ? 'border-black bg-black text-white'
-                                : 'border-black/15 bg-white text-black hover:border-black/40'
+                                ? 'border-[#9580A6] bg-[#9580A6] text-white'
+                                : 'border-[#E8E4EE] bg-[#FEFEFE] text-[#1A1820] hover:border-[#9580A6]'
                             }`}
                             onClick={() => setSelectedDate(date)}
                           >
                             <div className="flex items-center justify-between gap-4">
-                              <span className="text-[14px] font-semibold">
+                              <span className="text-[14px] font-bold">
                                 {date.toLocaleDateString([], {
                                   weekday: 'short',
                                   day: 'numeric',
@@ -541,7 +567,7 @@ export default function Agenda() {
                                 })}
                               </span>
                               <span
-                                className={`text-[11px] uppercase tracking-[0.14em] ${isSelected ? 'text-white/70' : 'text-black/60'}`}
+                                className={`text-[11px] font-bold uppercase tracking-[0.14em] ${isSelected ? 'text-white/70' : 'text-[#9D9B9F]'}`}
                               >
                                 {slotsByDate[key]?.length ?? 0} horarios
                               </span>
@@ -553,28 +579,28 @@ export default function Agenda() {
                   )}
                 </div>
 
-                <div className="rounded-[20px] border border-black/10 bg-white p-5 h-[400px] overflow-y-auto no-scrollbar">
+                <div className="rounded-[20px] border border-[#E8E4EE] bg-[#FEFEFE] p-5 h-[400px] overflow-y-auto no-scrollbar">
                   {showInitialLoading ? (
                     <div className="flex flex-col gap-2">
                       {Array.from({ length: SLOT_SKELETON_ITEMS }).map((_, index) => (
                         <div
                           key={`slot-skeleton-${index}`}
-                          className="h-[54px] w-full rounded-[16px] border border-black/8 bg-gradient-to-r from-black/[0.03] via-black/[0.06] to-black/[0.03] animate-pulse"
+                          className="h-[54px] w-full rounded-[16px] border border-[#E8E4EE] bg-gradient-to-r from-[#9580A6]/[0.05] via-[#9580A6]/[0.08] to-[#9580A6]/[0.05] animate-pulse"
                         />
                       ))}
                     </div>
                   ) : displayDates.length === 0 ? (
                     <div className="h-full flex items-center justify-center">
-                      <div className="w-full rounded-[14px] border border-black/10 bg-black/[0.02] px-4 py-5 text-center">
-                        <p className="m-0 text-[13px] font-medium text-black/80">
+                      <div className="w-full rounded-[14px] border border-[#E8E4EE] bg-[#F4F2F7] px-4 py-5 text-center">
+                        <p className="m-0 text-[13px] font-medium text-[#1A1820]">
                           No hay horarios disponibles por ahora.
                         </p>
                       </div>
                     </div>
                   ) : slotsForSelectedDate.length === 0 ? (
                     <div className="h-full flex items-center justify-center">
-                      <div className="w-full rounded-[14px] border border-black/10 bg-black/[0.02] px-4 py-5 text-center">
-                        <p className="m-0 text-[13px] font-medium text-black/80">
+                      <div className="w-full rounded-[14px] border border-[#E8E4EE] bg-[#F4F2F7] px-4 py-5 text-center">
+                        <p className="m-0 text-[13px] font-medium text-[#1A1820]">
                           No hay horarios para esta fecha.
                         </p>
                       </div>
@@ -585,11 +611,11 @@ export default function Agenda() {
                         <button
                           key={slot}
                           type="button"
-                          className="w-full rounded-[16px] border border-black/10 px-4 py-3 text-[14px] font-semibold flex items-center justify-between hover:border-black/40 transition"
+                          className="w-full rounded-[16px] border border-[#E8E4EE] bg-[#F4F2F7] px-4 py-3 text-[14px] font-bold flex items-center justify-between hover:border-[#9580A6] hover:bg-[#EDE9F3] transition-colors text-[#1A1820]"
                           onClick={() => handleSlotSelect(slot)}
                         >
                           <span>{formatSlotTime(slot)}</span>
-                          <span className="text-[11px] text-black/50 uppercase tracking-[0.18em]">
+                          <span className="text-[11px] text-[#9580A6] font-bold uppercase tracking-[0.18em]">
                             Reservar
                           </span>
                         </button>
@@ -609,54 +635,43 @@ export default function Agenda() {
             <div className="flex flex-col gap-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[12px] uppercase tracking-[0.2em] text-black/60">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#9580A6]">
                     Paso final
                   </p>
-                  <h2 className="mt-2 text-[22px] font-semibold">Confirmá tus datos</h2>
+                  <h2 className="mt-2 text-[22px] font-bold text-[#1A1820]">Confirmá tu llamada</h2>
                 </div>
                 <button
                   type="button"
-                  className="text-[12px] uppercase tracking-[0.16em] opacity-60 hover:opacity-100"
+                  className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#69686B] hover:text-[#9580A6] transition-colors"
                   onClick={() => setBookingPhase('slots')}
                 >
-                  Volver
+                  ← Volver
                 </button>
               </div>
 
-              <div className="rounded-[14px] border border-black/10 bg-[#f7f7f7] p-4 text-[13px]">
-                <p className="m-0 font-semibold">Horario seleccionado</p>
-                <p className="m-0 mt-2 opacity-70">
-                  {selectedSlot
-                    ? `${formatSlotDate(selectedSlot)} · ${formatSlotTime(selectedSlot)}`
-                    : 'Elegí un horario para continuar.'}
-                </p>
+              {/* Datos de confirmación */}
+              <div className="flex flex-col gap-3">
+                <div className="rounded-[14px] border border-[#E8E4EE] bg-[#F4F2F7] p-4 text-[13px]">
+                  <p className="m-0 font-bold text-[#9580A6] uppercase text-[11px] tracking-[0.15em]">Horario seleccionado</p>
+                  <p className="m-0 mt-2 text-[#1A1820] font-semibold">
+                    {selectedSlot
+                      ? `${formatSlotDate(selectedSlot)} · ${formatSlotTime(selectedSlot)}`
+                      : 'Elegí un horario para continuar.'}
+                  </p>
+                </div>
+
+                <div className="rounded-[14px] border border-[#E8E4EE] bg-[#F4F2F7] p-4 text-[13px]">
+                  <p className="m-0 font-bold text-[#9580A6] uppercase text-[11px] tracking-[0.15em]">Tus datos</p>
+                  <p className="m-0 mt-2 text-[#1A1820] font-semibold">
+                    {attendeeName || 'Sin nombre'}
+                  </p>
+                  <p className="m-0 text-[#69686B]">
+                    {attendeeEmail || 'Sin email'}
+                  </p>
+                </div>
               </div>
 
               <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-                <label className="flex flex-col gap-2 text-[13px]">
-                  Nombre y apellido
-                  <input
-                    type="text"
-                    className="rounded-[12px] border border-black/20 bg-white px-3 py-2 text-[14px]"
-                    value={attendeeName}
-                    onChange={(event) => setAttendeeName(event.target.value)}
-                    placeholder="Tu nombre"
-                    required
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2 text-[13px]">
-                  Email
-                  <input
-                    type="email"
-                    className="rounded-[12px] border border-black/20 bg-white px-3 py-2 text-[14px]"
-                    value={attendeeEmail}
-                    onChange={(event) => setAttendeeEmail(event.target.value)}
-                    placeholder="tu@email.com"
-                    required
-                  />
-                </label>
-
                 {error && (
                   <div className="rounded-[12px] border border-red-500/40 bg-red-50 p-3 text-[13px] text-red-700">
                     {error}
@@ -665,11 +680,15 @@ export default function Agenda() {
 
                 <button
                   type="submit"
-                  className="mt-2 rounded-[14px] bg-black text-white px-4 py-3 text-[13px] uppercase tracking-[0.2em] disabled:opacity-60"
+                  className="mt-2 rounded-[8px] bg-[#9580A6] text-white px-4 py-4 text-[13px] font-bold uppercase tracking-[0.2em] disabled:opacity-60 hover:bg-[#7A6A8F] transition-colors"
                   disabled={isBooking}
                 >
-                  {isBooking ? 'Confirmando...' : 'Confirmar cita'}
+                  {isBooking ? 'Confirmando...' : 'Confirmar mi llamada →'}
                 </button>
+                
+                <p className="text-[11px] text-[#9D9B9F] text-center">
+                  Recibirás un email con el link de Google Meet para la videollamada
+                </p>
               </form>
             </div>
           )}

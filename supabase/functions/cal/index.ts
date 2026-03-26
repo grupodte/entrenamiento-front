@@ -505,15 +505,34 @@ serve(async (req) => {
           const { user, email } = await getUserFromRequest(req);
           const guestEmail = (attendee.email as string | undefined) ?? email ?? null;
           const guestName = (attendee.name as string | undefined) ?? null;
-          const bookingData = booking?.data as Record<string, unknown> | undefined;
+          
+          // Handle different response structures from Cal.com
+          const bookingWrapper = booking as Record<string, unknown> | undefined;
+          const bookingData = (bookingWrapper?.data ?? bookingWrapper) as Record<string, unknown> | undefined;
           const [bookingId] = extractBookingIds(bookingData);
 
-          // Extract meet URL from Cal.com response
-          const meetUrl = (bookingData?.meetUrl as string | undefined) 
-            ?? (bookingData?.meetingUrl as string | undefined)
-            ?? (bookingData?.videoCallData?.url as string | undefined)
-            ?? (bookingData?.location as string | undefined)
-            ?? null;
+          // Extract meet URL from Cal.com response - try multiple paths
+          let meetUrl: string | null = null;
+          if (bookingData) {
+            meetUrl = (bookingData.meetUrl as string | undefined) 
+              ?? (bookingData.meetingUrl as string | undefined)
+              ?? (bookingData.location as string | undefined)
+              ?? null;
+            
+            // Try videoCallData.url if exists
+            if (!meetUrl && bookingData.videoCallData) {
+              const videoData = bookingData.videoCallData as Record<string, unknown>;
+              meetUrl = (videoData.url as string | undefined) ?? null;
+            }
+          }
+
+          console.log("Persisting appointment:", {
+            bookingId,
+            guestEmail,
+            guestName,
+            hasPrecallData: !!precallData,
+            meetUrl,
+          });
 
           await insertAppointment({
             user_id: user?.id ?? null,
@@ -524,9 +543,11 @@ serve(async (req) => {
             end_at: (bookingData?.end as string | undefined) ?? null,
             cal_booking_id: bookingId ?? null,
             meet_url: meetUrl,
-            precall_data: precallData,
+            precall_data: precallData ?? null,
             payload: booking,
           });
+          
+          console.log("Appointment persisted successfully");
         } catch (persistError) {
           console.error("Booking created in Cal.com but local persistence failed", persistError);
           warnings.push("BOOKING_CREATED_BUT_PERSIST_FAILED");

@@ -50,6 +50,10 @@ create table if not exists public.appointments (
   constraint appointments_guest_or_user check (user_id is not null or guest_email is not null)
 );
 
+-- Add new columns if table already existed
+alter table public.appointments add column if not exists meet_url text;
+alter table public.appointments add column if not exists precall_data jsonb;
+
 create index if not exists appointments_user_id_idx on public.appointments(user_id);
 create index if not exists appointments_guest_email_idx on public.appointments(guest_email);
 create index if not exists appointments_cal_booking_id_idx on public.appointments(cal_booking_id);
