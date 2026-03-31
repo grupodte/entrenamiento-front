@@ -26,7 +26,9 @@ const CAL_ENFORCED_EVENT_TYPE_ID_RAW = Deno.env.get("CAL_ENFORCED_EVENT_TYPE_ID"
 const CAL_ENFORCED_EVENT_TYPE_ID = parseEventTypeId(CAL_ENFORCED_EVENT_TYPE_ID_RAW);
 const CAL_ENFORCED_EVENT_TYPE_ID_INVALID =
   CAL_ENFORCED_EVENT_TYPE_ID_RAW.trim().length > 0 && CAL_ENFORCED_EVENT_TYPE_ID === null;
+const LEAD_TABLE_CANDIDATES = ["crm_leads", "leads"] as const;
 const FUNCTION_VERSION = "2026-03-30.1";
+let cachedLeadTableName: (typeof LEAD_TABLE_CANDIDATES)[number] | null = null;
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -170,6 +172,40 @@ function getAdminClient() {
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 }
 
+function isMissingRelationError(error: unknown) {
+  const code = typeof error === "object" && error !== null ? (error as { code?: string }).code : null;
+  if (code === "42P01") return true;
+
+  const message =
+    typeof error === "object" && error !== null ? (error as { message?: string }).message : null;
+  return typeof message === "string" && message.toLowerCase().includes("does not exist");
+}
+
+async function resolveLeadTable(
+  adminClient: ReturnType<typeof createClient>,
+): Promise<(typeof LEAD_TABLE_CANDIDATES)[number]> {
+  if (cachedLeadTableName) return cachedLeadTableName;
+
+  for (const tableName of LEAD_TABLE_CANDIDATES) {
+    const { error } = await adminClient.from(tableName).select("id").limit(1);
+    if (!error) {
+      cachedLeadTableName = tableName;
+      return tableName;
+    }
+    if (!isMissingRelationError(error)) {
+      throw Object.assign(new Error(`Failed to resolve lead table: ${tableName}`), {
+        status: 500,
+        payload: error,
+      });
+    }
+  }
+
+  throw Object.assign(new Error("Lead table not found"), {
+    status: 500,
+    payload: { candidates: LEAD_TABLE_CANDIDATES },
+  });
+}
+
 function normalizeEmail(value: unknown) {
   if (typeof value !== "string") return null;
   const normalized = value.trim().toLowerCase();
@@ -236,9 +272,11 @@ async function findLeadByContact(
     normalizedPhone?: string | null;
   },
 ) {
+  const leadTable = await resolveLeadTable(adminClient);
+
   if (input.leadId) {
     const { data } = await adminClient
-      .from("leads")
+      .from(leadTable)
       .select("*")
       .eq("id", input.leadId)
       .maybeSingle();
@@ -247,7 +285,7 @@ async function findLeadByContact(
 
   if (input.userId) {
     const { data } = await adminClient
-      .from("leads")
+      .from(leadTable)
       .select("*")
       .eq("user_id", input.userId)
       .order("updated_at", { ascending: false })
@@ -258,7 +296,7 @@ async function findLeadByContact(
 
   if (input.normalizedEmail) {
     const { data } = await adminClient
-      .from("leads")
+      .from(leadTable)
       .select("*")
       .eq("normalized_email", input.normalizedEmail)
       .order("updated_at", { ascending: false })
@@ -269,7 +307,7 @@ async function findLeadByContact(
 
   if (input.normalizedPhone) {
     const { data } = await adminClient
-      .from("leads")
+      .from(leadTable)
       .select("*")
       .eq("normalized_phone", input.normalizedPhone)
       .order("updated_at", { ascending: false })
@@ -284,6 +322,7 @@ async function findLeadByContact(
 async function upsertLead(input: LeadUpsertInput) {
   const adminClient = getAdminClient();
   if (!adminClient) return null;
+  const leadTable = await resolveLeadTable(adminClient);
 
   const normalizedEmail = normalizeEmail(input.email);
   const normalizedPhone = normalizePhone(input.phone);
@@ -324,7 +363,7 @@ async function upsertLead(input: LeadUpsertInput) {
 
   if (lead?.id) {
     const { data, error } = await adminClient
-      .from("leads")
+      .from(leadTable)
       .update(payload)
       .eq("id", lead.id)
       .select("*")
@@ -339,7 +378,7 @@ async function upsertLead(input: LeadUpsertInput) {
   }
 
   const { data, error } = await adminClient
-    .from("leads")
+    .from(leadTable)
     .insert({
       ...payload,
       created_at: now,
@@ -694,7 +733,11 @@ serve(async (req) => {
       case "create_booking": {
         const attendee = (input?.attendee as Record<string, unknown> | undefined) ?? {};
         const requestedEmail = (attendee.email as string | undefined) ?? null;
+        const requestedName = (attendee.name as string | undefined) ?? null;
+        const requestedTimeZone = (attendee.timeZone as string | undefined) ?? null;
         const requestedStart = (input?.start as string | undefined) ?? null;
+        const leadId = stringField(input?.leadId);
+        const precallData = asRecord(input?.precallData);
         const bookingPayload = stripBookingLocalFields(input as Record<string, unknown>);
         
         const requestedEventTypeId = parseEventTypeId(bookingPayload.eventTypeId);
@@ -738,8 +781,59 @@ serve(async (req) => {
           }
         }
 
-        // Respond as soon as Cal confirms the booking. The webhook flow updates local
-        // persistence afterwards, which keeps the confirmation step snappy for users.
+        const bookingRecord = asRecord(booking);
+        const bookingData = asRecord(bookingRecord?.data) ?? bookingRecord;
+        const bookingUid =
+          stringField(bookingData?.uid)
+          ?? stringField(bookingData?.id)
+          ?? null;
+        const startAt =
+          stringField(bookingData?.start)
+          ?? stringField(bookingData?.startTime)
+          ?? requestedStart;
+        const endAt =
+          stringField(bookingData?.end)
+          ?? stringField(bookingData?.endTime)
+          ?? null;
+        const meetUrl =
+          stringField(bookingData?.meetUrl)
+          ?? stringField(bookingData?.meetingUrl)
+          ?? stringField(bookingData?.location)
+          ?? null;
+
+        const lead = await upsertLead({
+          leadId,
+          fullName: requestedName,
+          email: requestedEmail,
+          stage: "precall_booked",
+          source: "precall",
+          precallData,
+          agendaData: {
+            attendee: {
+              name: requestedName,
+              email: requestedEmail,
+              timeZone: requestedTimeZone,
+            },
+            booking: bookingData ?? booking,
+          },
+          bookingStatus: "scheduled",
+          lastBookingUid: bookingUid,
+          scheduledStartAt: startAt,
+          scheduledEndAt: endAt,
+          meetUrl,
+        });
+
+        await updateAppointment(extractBookingIds(bookingData ?? bookingRecord ?? {}), {
+          lead_id: lead?.id ?? leadId ?? null,
+          status: "scheduled",
+          payload: booking,
+          start_at: startAt,
+          end_at: endAt,
+          guest_name: requestedName,
+          guest_email: requestedEmail,
+          meet_url: meetUrl,
+        });
+
         return jsonResponse({ data: booking, warnings: warnings.length > 0 ? warnings : null });
       }
 
@@ -813,9 +907,10 @@ serve(async (req) => {
         if (!adminClient) {
           return errorResponse("Server not configured", 500);
         }
+        const leadTable = await resolveLeadTable(adminClient);
 
         const { data, error } = await adminClient
-          .from("leads")
+          .from(leadTable)
           .select("*")
           .order("updated_at", { ascending: false });
         if (error) {
