@@ -27,7 +27,7 @@ const CAL_ENFORCED_EVENT_TYPE_ID = parseEventTypeId(CAL_ENFORCED_EVENT_TYPE_ID_R
 const CAL_ENFORCED_EVENT_TYPE_ID_INVALID =
   CAL_ENFORCED_EVENT_TYPE_ID_RAW.trim().length > 0 && CAL_ENFORCED_EVENT_TYPE_ID === null;
 const LEAD_TABLE_CANDIDATES = ["crm_leads", "leads"] as const;
-const FUNCTION_VERSION = "2026-03-30.1";
+const FUNCTION_VERSION = "2026-03-31.1";
 let cachedLeadTableName: (typeof LEAD_TABLE_CANDIDATES)[number] | null = null;
 
 function jsonResponse(body: unknown, status = 200) {
@@ -369,6 +369,7 @@ async function upsertLead(input: LeadUpsertInput) {
       .select("*")
       .maybeSingle();
     if (error) {
+      console.error("Failed to update lead", { leadTable, payload, error });
       throw Object.assign(new Error("Failed to update lead"), {
         status: 500,
         payload: error,
@@ -386,6 +387,7 @@ async function upsertLead(input: LeadUpsertInput) {
     .select("*")
     .maybeSingle();
   if (error) {
+    console.error("Failed to create lead", { leadTable, payload, error });
     throw Object.assign(new Error("Failed to create lead"), {
       status: 500,
       payload: error,
