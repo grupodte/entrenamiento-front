@@ -239,6 +239,7 @@ export default function PreCall() {
     setErrors({})
 
     setSubmitting(true)
+    let leadId: string | null = null
     try {
       const { data: leadResponse, error } = await supabase.functions.invoke('cal', {
         body: {
@@ -252,13 +253,18 @@ export default function PreCall() {
         throw new Error('PRECALL_PERSIST_FAILED')
       }
 
-      const leadId = leadResponse?.data?.leadId
-      try {
-        localStorage.setItem(PRECALL_STORAGE_KEY, JSON.stringify(data))
-        if (typeof leadId === 'string' && leadId) {
-          localStorage.setItem(PRECALL_LEAD_ID_STORAGE_KEY, leadId)
-        }
-      } catch {}
+      leadId = typeof leadResponse?.data?.leadId === 'string' ? leadResponse.data.leadId : null
+    } catch (error) {
+      // Keep the original booking flow working even if the new lead intake endpoint
+      // is not deployed yet or returns a validation error.
+      console.error('Lead intake unavailable, falling back to local storage only', error)
+    }
+
+    try {
+      localStorage.setItem(PRECALL_STORAGE_KEY, JSON.stringify(data))
+      if (leadId) {
+        localStorage.setItem(PRECALL_LEAD_ID_STORAGE_KEY, leadId)
+      }
     } catch {
       setSubmitError('No pudimos guardar tus datos. Intentá de nuevo.')
       setSubmitting(false)
