@@ -486,6 +486,15 @@ function stringField(value: unknown) {
   return trimmed || null;
 }
 
+function stripBookingLocalFields(input: Record<string, unknown>) {
+  const payload = { ...input };
+  delete payload.precallData;
+  delete payload.leadId;
+  delete payload.action;
+  delete payload.payload;
+  return payload;
+}
+
 function extractBookings(raw: unknown): Array<Record<string, unknown>> {
   if (!raw) return [];
 
@@ -688,10 +697,7 @@ serve(async (req) => {
         const requestedStart = (input?.start as string | undefined) ?? null;
         const precallData = (input?.precallData as Record<string, unknown> | undefined) ?? null;
         const leadId = stringField(input?.leadId);
-        const bookingPayload = { ...(input as Record<string, unknown>) };
-        // Remove precallData from payload sent to Cal.com
-        delete bookingPayload.precallData;
-        delete bookingPayload.leadId;
+        const bookingPayload = stripBookingLocalFields(input as Record<string, unknown>);
         
         const requestedEventTypeId = parseEventTypeId(bookingPayload.eventTypeId);
         const effectiveEventTypeId = CAL_ENFORCED_EVENT_TYPE_ID ?? requestedEventTypeId;
