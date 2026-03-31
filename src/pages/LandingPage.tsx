@@ -318,13 +318,14 @@ export default function LandingPage() {
               DemicheriFitness
             </p>
             <h1 className={`text-[#1A1820] font-bold leading-none mb-3 m-0 ${
-              isLocked ? 'text-[20px] sm:text-[26px] md:text-[30px]' : 'text-[26px] sm:text-[36px] md:text-[44px]'
+              isLocked ? 'text-[24px] sm:text-[28px] md:text-[34px]' : 'text-[32px] sm:text-[44px] md:text-[52px]'
             }`}>
-              Lo que nadie te dijo<br />sobre entrenar con resultados reales.
+              Dani transforma tu cuerpo y tu mentalidad en un programa que no deja excusas.<br />
+              Entrenás con inteligencia, hábitos claros y resultados visibles en 60 días.
             </h1>
             {!isLocked && (
-              <p className="text-[#69686B] text-[14px] sm:text-[16px] leading-snug mx-auto m-0 max-w-[500px]">
-                Mirá el video antes de continuar. Te explica exactamente cómo funciona el método y por qué la mayoría de las personas no llegan a sus objetivos.
+              <p className="text-[#69686B] text-[15px] sm:text-[17px] leading-relaxed mx-auto m-0 max-w-[500px]">
+                En el video te cuenta cómo su método alinea nutrición, entrenamiento guiado y acompañamiento emocional para que dejes de intentarlo solo y llegues al cambio que querés.
               </p>
             )}
           </div>

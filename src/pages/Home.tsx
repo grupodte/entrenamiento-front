@@ -1,5 +1,4 @@
 import { useContext, useEffect, useRef } from 'react'
-import { Link } from '@tanstack/react-router'
 import MessagesSection from '../components/MessagesSection.jsx'
 import MethodSection from '../components/MethodSection.jsx'
 import CasesSection from '../components/CasesSection.jsx'
@@ -101,12 +100,12 @@ export default function Home() {
             Asesoramiento online de entrenamiento y nutrición. Personalizado, con seguimiento real y resultados concretos en 2 meses.
           </p>
           <div className={`hero-reveal hero-reveal--4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto pt-1 ${heroVisible ? 'is-visible' : ''}`}>
-            <Link
-              to="/pre-call"
+            <a
+              href="https://ddfit.vercel.app/landing-page"
               className="liquid-btn liquid-btn--solid sm:w-auto px-8 py-3.5 text-center text-[13px] font-bold uppercase tracking-widest text-white transition-all duration-500 hover:-translate-y-0.5 rounded-[10px] sm:rounded-[12px]"
             >
               <span>Quiero empezar</span>
-            </Link>
+            </a>
             <button
               onClick={scrollToPlans}
               className="liquid-btn liquid-btn--ghost sm:w-auto text-white font-bold text-[13px] uppercase tracking-widest py-3.5 px-8 rounded-[10px] sm:rounded-[12px] transition-all duration-500 hover:-translate-y-0.5"
@@ -212,13 +211,13 @@ export default function Home() {
           <p data-closing-cta-item className="text-white/60 text-[14px] sm:text-[16px] leading-snug mb-8 max-w-[400px] m-0">
             Cada plan incluye seguimiento real. Por eso no tomamos a todos al mismo tiempo.
           </p>
-          <Link
-            to="/pre-call"
+          <a
+            href="https://ddfit.vercel.app/landing-page"
             data-closing-cta-item
             className="liquid-btn liquid-btn--solid text-white font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[10px] sm:rounded-[12px] transition-all duration-500 hover:-translate-y-0.5"
           >
             <span>Quiero empezar ahora</span>
-          </Link>
+          </a>
         </section>
 
         {/* ── 11. FAQ ── */}

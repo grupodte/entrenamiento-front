@@ -42,6 +42,7 @@ type PrecallData = {
 }
 
 const PRECALL_STORAGE_KEY = 'dmf_precall_data'
+const PRECALL_LEAD_ID_STORAGE_KEY = 'dmf_precall_lead_id'
 
 const formatSlotTime = (value: string) => {
   const date = new Date(value)
@@ -372,10 +373,15 @@ export default function Agenda() {
 
     // Read pre-call data from localStorage
     let precallData: PrecallData | null = null
+    let leadId: string | null = null
     try {
       const stored = localStorage.getItem(PRECALL_STORAGE_KEY)
       if (stored) {
         precallData = JSON.parse(stored) as PrecallData
+      }
+      const storedLeadId = localStorage.getItem(PRECALL_LEAD_ID_STORAGE_KEY)
+      if (storedLeadId) {
+        leadId = storedLeadId
       }
     } catch {
       // Ignore parsing errors
@@ -392,7 +398,8 @@ export default function Agenda() {
           email: attendeeEmail,
           timeZone
         },
-        precallData
+        precallData,
+        leadId
       }
     })
 
@@ -415,6 +422,7 @@ export default function Agenda() {
     // Clear pre-call data from localStorage after successful booking
     try {
       localStorage.removeItem(PRECALL_STORAGE_KEY)
+      localStorage.removeItem(PRECALL_LEAD_ID_STORAGE_KEY)
     } catch {
       // Ignore errors
     }

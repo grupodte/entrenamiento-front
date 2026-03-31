@@ -26,7 +26,7 @@ const CAL_ENFORCED_EVENT_TYPE_ID_RAW = Deno.env.get("CAL_ENFORCED_EVENT_TYPE_ID"
 const CAL_ENFORCED_EVENT_TYPE_ID = parseEventTypeId(CAL_ENFORCED_EVENT_TYPE_ID_RAW);
 const CAL_ENFORCED_EVENT_TYPE_ID_INVALID =
   CAL_ENFORCED_EVENT_TYPE_ID_RAW.trim().length > 0 && CAL_ENFORCED_EVENT_TYPE_ID === null;
-const FUNCTION_VERSION = "2026-02-27.5";
+const FUNCTION_VERSION = "2026-03-30.1";
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -165,10 +165,203 @@ async function isAdmin(userId: string | null) {
   return perfilesData?.rol === "admin";
 }
 
+function getAdminClient() {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+}
+
+function normalizeEmail(value: unknown) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  return normalized || null;
+}
+
+function normalizePhone(value: unknown) {
+  if (typeof value !== "string") return null;
+  const digitsOnly = value.replace(/\D/g, "");
+  return digitsOnly.length >= 7 ? digitsOnly : null;
+}
+
+type LeadRow = {
+  id: string;
+  user_id: string | null;
+  full_name: string | null;
+  email: string | null;
+  normalized_email: string | null;
+  phone: string | null;
+  normalized_phone: string | null;
+  stage: string | null;
+  source: string | null;
+  precall_data: unknown;
+  agenda_data: unknown;
+  booking_status: string | null;
+  last_booking_uid: string | null;
+  scheduled_start_at: string | null;
+  scheduled_end_at: string | null;
+  meet_url: string | null;
+};
+
+type LeadUpsertInput = {
+  leadId?: string | null;
+  userId?: string | null;
+  fullName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  stage?: string | null;
+  source?: string | null;
+  precallData?: Record<string, unknown> | null;
+  agendaData?: Record<string, unknown> | null;
+  bookingStatus?: string | null;
+  lastBookingUid?: string | null;
+  scheduledStartAt?: string | null;
+  scheduledEndAt?: string | null;
+  meetUrl?: string | null;
+};
+
+function mergeObjects(...values: Array<Record<string, unknown> | null | undefined>) {
+  const merged: Record<string, unknown> = {};
+  for (const value of values) {
+    if (!value) continue;
+    Object.assign(merged, value);
+  }
+  return merged;
+}
+
+async function findLeadByContact(
+  adminClient: ReturnType<typeof createClient>,
+  input: {
+    leadId?: string | null;
+    userId?: string | null;
+    normalizedEmail?: string | null;
+    normalizedPhone?: string | null;
+  },
+) {
+  if (input.leadId) {
+    const { data } = await adminClient
+      .from("leads")
+      .select("*")
+      .eq("id", input.leadId)
+      .maybeSingle();
+    if (data) return data as LeadRow;
+  }
+
+  if (input.userId) {
+    const { data } = await adminClient
+      .from("leads")
+      .select("*")
+      .eq("user_id", input.userId)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) return data as LeadRow;
+  }
+
+  if (input.normalizedEmail) {
+    const { data } = await adminClient
+      .from("leads")
+      .select("*")
+      .eq("normalized_email", input.normalizedEmail)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) return data as LeadRow;
+  }
+
+  if (input.normalizedPhone) {
+    const { data } = await adminClient
+      .from("leads")
+      .select("*")
+      .eq("normalized_phone", input.normalizedPhone)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) return data as LeadRow;
+  }
+
+  return null;
+}
+
+async function upsertLead(input: LeadUpsertInput) {
+  const adminClient = getAdminClient();
+  if (!adminClient) return null;
+
+  const normalizedEmail = normalizeEmail(input.email);
+  const normalizedPhone = normalizePhone(input.phone);
+  const lead = await findLeadByContact(adminClient, {
+    leadId: input.leadId ?? null,
+    userId: input.userId ?? null,
+    normalizedEmail,
+    normalizedPhone,
+  });
+
+  const nextUserId = input.userId ?? lead?.user_id ?? null;
+  const nextNormalizedEmail = normalizedEmail ?? lead?.normalized_email ?? null;
+  const nextNormalizedPhone = normalizedPhone ?? lead?.normalized_phone ?? null;
+  if (!nextUserId && !nextNormalizedEmail && !nextNormalizedPhone) {
+    throw Object.assign(new Error("Lead requires email, phone, or user"), { status: 400 });
+  }
+
+  const now = new Date().toISOString();
+  const payload = {
+    user_id: nextUserId,
+    full_name: input.fullName ?? lead?.full_name ?? null,
+    email: input.email ?? lead?.email ?? null,
+    normalized_email: nextNormalizedEmail,
+    phone: input.phone ?? lead?.phone ?? null,
+    normalized_phone: nextNormalizedPhone,
+    stage: input.stage ?? lead?.stage ?? "precall_pending",
+    source: input.source ?? lead?.source ?? "precall",
+    precall_data: mergeObjects(asRecord(lead?.precall_data), input.precallData),
+    agenda_data: mergeObjects(asRecord(lead?.agenda_data), input.agendaData),
+    booking_status: input.bookingStatus ?? lead?.booking_status ?? null,
+    last_booking_uid: input.lastBookingUid ?? lead?.last_booking_uid ?? null,
+    scheduled_start_at: input.scheduledStartAt ?? lead?.scheduled_start_at ?? null,
+    scheduled_end_at: input.scheduledEndAt ?? lead?.scheduled_end_at ?? null,
+    meet_url: input.meetUrl ?? lead?.meet_url ?? null,
+    last_contact_at: now,
+    updated_at: now,
+  };
+
+  if (lead?.id) {
+    const { data, error } = await adminClient
+      .from("leads")
+      .update(payload)
+      .eq("id", lead.id)
+      .select("*")
+      .maybeSingle();
+    if (error) {
+      throw Object.assign(new Error("Failed to update lead"), {
+        status: 500,
+        payload: error,
+      });
+    }
+    return (data as LeadRow | null) ?? null;
+  }
+
+  const { data, error } = await adminClient
+    .from("leads")
+    .insert({
+      ...payload,
+      created_at: now,
+    })
+    .select("*")
+    .maybeSingle();
+  if (error) {
+    throw Object.assign(new Error("Failed to create lead"), {
+      status: 500,
+      payload: error,
+    });
+  }
+  return (data as LeadRow | null) ?? null;
+}
+
 async function insertAppointment(payload: {
+  lead_id?: string | null;
   user_id: string | null;
   guest_name: string | null;
   guest_email: string | null;
+  guest_phone?: string | null;
+  guest_phone_normalized?: string | null;
   status?: string | null;
   start_at?: string | null;
   end_at?: string | null;
@@ -177,9 +370,8 @@ async function insertAppointment(payload: {
   precall_data?: unknown;
   payload: unknown;
 }) {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return;
-
-  const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const adminClient = getAdminClient();
+  if (!adminClient) return;
   const { error } = await adminClient.from("appointments").insert(payload);
   if (error) {
     throw Object.assign(new Error("Failed to persist appointment"), {
@@ -192,27 +384,34 @@ async function insertAppointment(payload: {
 async function updateAppointment(
   bookingIds: string[],
   fields: {
+    lead_id?: string | null;
     status?: string | null;
     payload?: unknown;
     start_at?: string | null;
     end_at?: string | null;
     guest_name?: string | null;
     guest_email?: string | null;
+    guest_phone?: string | null;
+    guest_phone_normalized?: string | null;
     meet_url?: string | null;
   },
 ) {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return;
-
-  const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const adminClient = getAdminClient();
+  if (!adminClient) return;
   if (bookingIds.length === 0) return;
 
   const updatePayload: Record<string, unknown> = {};
+  if (fields.lead_id !== undefined) updatePayload.lead_id = fields.lead_id;
   if (fields.status) updatePayload.status = fields.status;
   if (fields.payload) updatePayload.payload = fields.payload;
   if (fields.start_at !== undefined) updatePayload.start_at = fields.start_at;
   if (fields.end_at !== undefined) updatePayload.end_at = fields.end_at;
   if (fields.guest_name !== undefined) updatePayload.guest_name = fields.guest_name;
   if (fields.guest_email !== undefined) updatePayload.guest_email = fields.guest_email;
+  if (fields.guest_phone !== undefined) updatePayload.guest_phone = fields.guest_phone;
+  if (fields.guest_phone_normalized !== undefined) {
+    updatePayload.guest_phone_normalized = fields.guest_phone_normalized;
+  }
   if (fields.meet_url !== undefined) updatePayload.meet_url = fields.meet_url;
 
   if (Object.keys(updatePayload).length === 0) return;
@@ -226,6 +425,7 @@ async function updateAppointment(
   if (data && data.length > 0) return;
 
   await adminClient.from("appointments").insert({
+    lead_id: fields.lead_id ?? null,
     cal_booking_id: bookingIds[0],
     status: fields.status ?? "scheduled",
     payload: fields.payload ?? {},
@@ -233,6 +433,8 @@ async function updateAppointment(
     end_at: fields.end_at ?? null,
     guest_name: fields.guest_name ?? null,
     guest_email: fields.guest_email ?? null,
+    guest_phone: fields.guest_phone ?? null,
+    guest_phone_normalized: fields.guest_phone_normalized ?? null,
     meet_url: fields.meet_url ?? null,
   });
 }
@@ -276,6 +478,12 @@ function toMillis(value: unknown) {
 function asRecord(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
+}
+
+function stringField(value: unknown) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed || null;
 }
 
 function extractBookings(raw: unknown): Array<Record<string, unknown>> {
@@ -451,14 +659,39 @@ serve(async (req) => {
         return jsonResponse({ data });
       }
 
+      case "upsert_lead": {
+        const precallData = asRecord(input?.precallData);
+        if (!precallData) {
+          return errorResponse("Missing precallData", 400);
+        }
+
+        const lead = await upsertLead({
+          leadId: stringField(input?.leadId),
+          fullName: stringField(precallData.nombre),
+          email: stringField(precallData.email),
+          phone: stringField(precallData.whatsapp) ?? stringField(precallData.phone),
+          stage: stringField(input?.stage) ?? "precall_completed",
+          source: stringField(input?.source) ?? "precall",
+          precallData,
+        });
+
+        return jsonResponse({
+          data: {
+            leadId: lead?.id ?? null,
+          },
+        });
+      }
+
       case "create_booking": {
         const attendee = (input?.attendee as Record<string, unknown> | undefined) ?? {};
         const requestedEmail = (attendee.email as string | undefined) ?? null;
         const requestedStart = (input?.start as string | undefined) ?? null;
         const precallData = (input?.precallData as Record<string, unknown> | undefined) ?? null;
+        const leadId = stringField(input?.leadId);
         const bookingPayload = { ...(input as Record<string, unknown>) };
         // Remove precallData from payload sent to Cal.com
         delete bookingPayload.precallData;
+        delete bookingPayload.leadId;
         
         const requestedEventTypeId = parseEventTypeId(bookingPayload.eventTypeId);
         const effectiveEventTypeId = CAL_ENFORCED_EVENT_TYPE_ID ?? requestedEventTypeId;
@@ -505,6 +738,11 @@ serve(async (req) => {
           const { user, email } = await getUserFromRequest(req);
           const guestEmail = (attendee.email as string | undefined) ?? email ?? null;
           const guestName = (attendee.name as string | undefined) ?? null;
+          const guestPhone =
+            stringField(precallData?.whatsapp)
+            ?? stringField(precallData?.phone)
+            ?? null;
+          const guestPhoneNormalized = normalizePhone(guestPhone);
           
           // Handle different response structures from Cal.com
           const bookingWrapper = booking as Record<string, unknown> | undefined;
@@ -528,16 +766,49 @@ serve(async (req) => {
 
           console.log("Persisting appointment:", {
             bookingId,
+            leadId,
             guestEmail,
+            guestPhone,
             guestName,
             hasPrecallData: !!precallData,
             meetUrl,
           });
 
+          const agendaData = {
+            requestedEventTypeId: effectiveEventTypeId,
+            requestedStart,
+            attendee: {
+              name: guestName,
+              email: guestEmail,
+              timeZone: stringField(attendee.timeZone),
+            },
+            booking: bookingData ?? null,
+          };
+
+          const lead = await upsertLead({
+            leadId,
+            userId: user?.id ?? null,
+            fullName: guestName,
+            email: guestEmail,
+            phone: guestPhone,
+            stage: "booked",
+            source: "agenda",
+            precallData,
+            agendaData,
+            bookingStatus: "scheduled",
+            lastBookingUid: bookingId ?? null,
+            scheduledStartAt: (bookingData?.start as string | undefined) ?? null,
+            scheduledEndAt: (bookingData?.end as string | undefined) ?? null,
+            meetUrl,
+          });
+
           await insertAppointment({
+            lead_id: lead?.id ?? null,
             user_id: user?.id ?? null,
             guest_name: guestName,
             guest_email: guestEmail,
+            guest_phone: guestPhone,
+            guest_phone_normalized: guestPhoneNormalized,
             status: "scheduled",
             start_at: (bookingData?.start as string | undefined) ?? null,
             end_at: (bookingData?.end as string | undefined) ?? null,
@@ -615,6 +886,29 @@ serve(async (req) => {
         return jsonResponse({ data });
       }
 
+      case "admin_list_leads": {
+        const { user } = await getUserFromRequest(req);
+        const allowed = await isAdmin(user?.id ?? null);
+        if (!allowed) {
+          return errorResponse("Admin only", 403);
+        }
+
+        const adminClient = getAdminClient();
+        if (!adminClient) {
+          return errorResponse("Server not configured", 500);
+        }
+
+        const { data, error } = await adminClient
+          .from("leads")
+          .select("*")
+          .order("updated_at", { ascending: false });
+        if (error) {
+          return errorResponse("Failed to list leads", 500, error);
+        }
+
+        return jsonResponse({ data });
+      }
+
       case "webhook": {
         const valid = await verifyWebhookSignature(raw, signature);
         if (!valid) {
@@ -625,7 +919,10 @@ serve(async (req) => {
           return errorResponse("Server not configured", 500);
         }
 
-        const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const adminClient = getAdminClient();
+        if (!adminClient) {
+          return errorResponse("Server not configured", 500);
+        }
         const event = String(body.triggerEvent ?? "unknown");
         const payload = body.payload as Record<string, unknown> | undefined;
         const bookingIds = extractBookingIds(payload);
@@ -643,6 +940,10 @@ serve(async (req) => {
           const attendee = attendees[0] ?? {};
           const guestName = (attendee.name as string | undefined) ?? null;
           const guestEmail = (attendee.email as string | undefined) ?? null;
+          const guestPhone =
+            stringField(attendee.phoneNumber)
+            ?? stringField(attendee.phone)
+            ?? null;
           const startAt = (payload?.startTime as string | undefined) ?? (payload?.start as string | undefined) ?? null;
           const endAt = (payload?.endTime as string | undefined) ?? (payload?.end as string | undefined) ?? null;
           
@@ -653,13 +954,33 @@ serve(async (req) => {
             ?? (payload?.location as string | undefined)
             ?? null;
 
+          const lead = await upsertLead({
+            fullName: guestName,
+            email: guestEmail,
+            phone: guestPhone,
+            stage: "booked",
+            source: "agenda",
+            agendaData: {
+              webhookEvent: event,
+              booking: payload ?? null,
+            },
+            bookingStatus: status,
+            lastBookingUid: bookingUid || null,
+            scheduledStartAt: startAt,
+            scheduledEndAt: endAt,
+            meetUrl,
+          });
+
           await updateAppointment(bookingIds, {
+            lead_id: lead?.id ?? null,
             status,
             payload: body,
             start_at: startAt,
             end_at: endAt,
             guest_name: guestName,
             guest_email: guestEmail,
+            guest_phone: guestPhone,
+            guest_phone_normalized: normalizePhone(guestPhone),
             meet_url: meetUrl,
           });
         }

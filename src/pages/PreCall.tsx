@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import logoSvg from '../assets/DD FIT - LOGO PRINCIPAL.svg'
+import { supabase } from '../lib/supabaseClient'
 
 const PRECALL_STORAGE_KEY = 'dmf_precall_data'
+const PRECALL_LEAD_ID_STORAGE_KEY = 'dmf_precall_lead_id'
 
 // ── Types ──────────────────────────────────────────────────
 type Data = {
@@ -194,6 +196,7 @@ export default function PreCall() {
   const [data, setData] = useState<Data>(INITIAL)
   const [errors, setErrors] = useState<Partial<Record<keyof Data, string>>>({})
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const set = (field: keyof Data) => (value: string) =>
     setData(prev => ({ ...prev, [field]: value }))
@@ -226,15 +229,41 @@ export default function PreCall() {
   }, [])
 
   const handleSubmit = async () => {
+    setSubmitError(null)
     const e: typeof errors = {}
     if (!data.nombre.trim()) e.nombre = 'Requerido'
     if (!data.email.trim() || !/\S+@\S+\.\S+/.test(data.email)) e.email = 'Email inválido'
     if (!data.whatsapp.trim()) e.whatsapp = 'Requerido'
     if (!data.edad.trim()) e.edad = 'Requerido'
     if (Object.keys(e).length) { setErrors(e); return }
+    setErrors({})
 
     setSubmitting(true)
-    try { localStorage.setItem(PRECALL_STORAGE_KEY, JSON.stringify(data)) } catch {}
+    try {
+      const { data: leadResponse, error } = await supabase.functions.invoke('cal', {
+        body: {
+          action: 'upsert_lead',
+          source: 'precall',
+          precallData: data
+        }
+      })
+
+      if (error || leadResponse?.error) {
+        throw new Error('PRECALL_PERSIST_FAILED')
+      }
+
+      const leadId = leadResponse?.data?.leadId
+      try {
+        localStorage.setItem(PRECALL_STORAGE_KEY, JSON.stringify(data))
+        if (typeof leadId === 'string' && leadId) {
+          localStorage.setItem(PRECALL_LEAD_ID_STORAGE_KEY, leadId)
+        }
+      } catch {}
+    } catch {
+      setSubmitError('No pudimos guardar tus datos. Intentá de nuevo.')
+      setSubmitting(false)
+      return
+    }
     await new Promise(r => setTimeout(r, 400))
     navigate({ to: '/agenda' })
   }
@@ -500,6 +529,11 @@ export default function PreCall() {
                   {submitting ? 'Guardando...' : 'Agendar mi llamada →'}
                 </button>
               </div>
+              {submitError && (
+                <p className="text-center text-[12px] text-red-500 m-0">
+                  {submitError}
+                </p>
+              )}
               <p className="text-center text-[12px] text-[#9D9B9F] m-0">
                 Después de esto vas a poder elegir el día y horario de tu llamada.
               </p>
