@@ -695,8 +695,6 @@ serve(async (req) => {
         const attendee = (input?.attendee as Record<string, unknown> | undefined) ?? {};
         const requestedEmail = (attendee.email as string | undefined) ?? null;
         const requestedStart = (input?.start as string | undefined) ?? null;
-        const precallData = (input?.precallData as Record<string, unknown> | undefined) ?? null;
-        const leadId = stringField(input?.leadId);
         const bookingPayload = stripBookingLocalFields(input as Record<string, unknown>);
         
         const requestedEventTypeId = parseEventTypeId(bookingPayload.eventTypeId);
@@ -740,96 +738,8 @@ serve(async (req) => {
           }
         }
 
-        try {
-          const { user, email } = await getUserFromRequest(req);
-          const guestEmail = (attendee.email as string | undefined) ?? email ?? null;
-          const guestName = (attendee.name as string | undefined) ?? null;
-          const guestPhone =
-            stringField(precallData?.whatsapp)
-            ?? stringField(precallData?.phone)
-            ?? null;
-          const guestPhoneNormalized = normalizePhone(guestPhone);
-          
-          // Handle different response structures from Cal.com
-          const bookingWrapper = booking as Record<string, unknown> | undefined;
-          const bookingData = (bookingWrapper?.data ?? bookingWrapper) as Record<string, unknown> | undefined;
-          const [bookingId] = extractBookingIds(bookingData);
-
-          // Extract meet URL from Cal.com response - try multiple paths
-          let meetUrl: string | null = null;
-          if (bookingData) {
-            meetUrl = (bookingData.meetUrl as string | undefined) 
-              ?? (bookingData.meetingUrl as string | undefined)
-              ?? (bookingData.location as string | undefined)
-              ?? null;
-            
-            // Try videoCallData.url if exists
-            if (!meetUrl && bookingData.videoCallData) {
-              const videoData = bookingData.videoCallData as Record<string, unknown>;
-              meetUrl = (videoData.url as string | undefined) ?? null;
-            }
-          }
-
-          console.log("Persisting appointment:", {
-            bookingId,
-            leadId,
-            guestEmail,
-            guestPhone,
-            guestName,
-            hasPrecallData: !!precallData,
-            meetUrl,
-          });
-
-          const agendaData = {
-            requestedEventTypeId: effectiveEventTypeId,
-            requestedStart,
-            attendee: {
-              name: guestName,
-              email: guestEmail,
-              timeZone: stringField(attendee.timeZone),
-            },
-            booking: bookingData ?? null,
-          };
-
-          const lead = await upsertLead({
-            leadId,
-            userId: user?.id ?? null,
-            fullName: guestName,
-            email: guestEmail,
-            phone: guestPhone,
-            stage: "booked",
-            source: "agenda",
-            precallData,
-            agendaData,
-            bookingStatus: "scheduled",
-            lastBookingUid: bookingId ?? null,
-            scheduledStartAt: (bookingData?.start as string | undefined) ?? null,
-            scheduledEndAt: (bookingData?.end as string | undefined) ?? null,
-            meetUrl,
-          });
-
-          await insertAppointment({
-            lead_id: lead?.id ?? null,
-            user_id: user?.id ?? null,
-            guest_name: guestName,
-            guest_email: guestEmail,
-            guest_phone: guestPhone,
-            guest_phone_normalized: guestPhoneNormalized,
-            status: "scheduled",
-            start_at: (bookingData?.start as string | undefined) ?? null,
-            end_at: (bookingData?.end as string | undefined) ?? null,
-            cal_booking_id: bookingId ?? null,
-            meet_url: meetUrl,
-            precall_data: precallData ?? null,
-            payload: booking,
-          });
-          
-          console.log("Appointment persisted successfully");
-        } catch (persistError) {
-          console.error("Booking created in Cal.com but local persistence failed", persistError);
-          warnings.push("BOOKING_CREATED_BUT_PERSIST_FAILED");
-        }
-
+        // Respond as soon as Cal confirms the booking. The webhook flow updates local
+        // persistence afterwards, which keeps the confirmation step snappy for users.
         return jsonResponse({ data: booking, warnings: warnings.length > 0 ? warnings : null });
       }
 
@@ -964,8 +874,8 @@ serve(async (req) => {
             fullName: guestName,
             email: guestEmail,
             phone: guestPhone,
-            stage: "booked",
-            source: "agenda",
+            stage: "precall_completed",
+            source: "precall",
             agendaData: {
               webhookEvent: event,
               booking: payload ?? null,
