@@ -27,7 +27,7 @@ const CAL_ENFORCED_EVENT_TYPE_ID = parseEventTypeId(CAL_ENFORCED_EVENT_TYPE_ID_R
 const CAL_ENFORCED_EVENT_TYPE_ID_INVALID =
   CAL_ENFORCED_EVENT_TYPE_ID_RAW.trim().length > 0 && CAL_ENFORCED_EVENT_TYPE_ID === null;
 const LEAD_TABLE_CANDIDATES = ["crm_leads", "leads"] as const;
-const FUNCTION_VERSION = "2026-03-31.1";
+const FUNCTION_VERSION = "2026-04-04.1";
 let cachedLeadTableName: (typeof LEAD_TABLE_CANDIDATES)[number] | null = null;
 
 function jsonResponse(body: unknown, status = 200) {
@@ -435,6 +435,7 @@ async function updateAppointment(
     guest_phone?: string | null;
     guest_phone_normalized?: string | null;
     meet_url?: string | null;
+    precall_data?: unknown;
   },
 ) {
   const adminClient = getAdminClient();
@@ -454,6 +455,7 @@ async function updateAppointment(
     updatePayload.guest_phone_normalized = fields.guest_phone_normalized;
   }
   if (fields.meet_url !== undefined) updatePayload.meet_url = fields.meet_url;
+  if (fields.precall_data !== undefined) updatePayload.precall_data = fields.precall_data;
 
   if (Object.keys(updatePayload).length === 0) return;
 
@@ -477,6 +479,7 @@ async function updateAppointment(
     guest_phone: fields.guest_phone ?? null,
     guest_phone_normalized: fields.guest_phone_normalized ?? null,
     meet_url: fields.meet_url ?? null,
+    precall_data: fields.precall_data ?? null,
   });
 }
 
@@ -525,6 +528,11 @@ function stringField(value: unknown) {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed || null;
+}
+
+function precallPhone(precallData: Record<string, unknown> | null) {
+  if (!precallData) return null;
+  return stringField(precallData.whatsapp) ?? stringField(precallData.phone);
 }
 
 function stripBookingLocalFields(input: Record<string, unknown>) {
@@ -740,6 +748,7 @@ serve(async (req) => {
         const requestedStart = (input?.start as string | undefined) ?? null;
         const leadId = stringField(input?.leadId);
         const precallData = asRecord(input?.precallData);
+        const guestPhone = precallPhone(precallData);
         const bookingPayload = stripBookingLocalFields(input as Record<string, unknown>);
         
         const requestedEventTypeId = parseEventTypeId(bookingPayload.eventTypeId);
@@ -825,6 +834,9 @@ serve(async (req) => {
           meetUrl,
         });
 
+        const appointmentPrecallData = asRecord(lead?.precall_data) ?? precallData;
+        const appointmentGuestPhone = stringField(lead?.phone) ?? guestPhone;
+
         await updateAppointment(extractBookingIds(bookingData ?? bookingRecord ?? {}), {
           lead_id: lead?.id ?? leadId ?? null,
           status: "scheduled",
@@ -833,7 +845,10 @@ serve(async (req) => {
           end_at: endAt,
           guest_name: requestedName,
           guest_email: requestedEmail,
+          guest_phone: appointmentGuestPhone,
+          guest_phone_normalized: normalizePhone(appointmentGuestPhone),
           meet_url: meetUrl,
+          precall_data: appointmentPrecallData,
         });
 
         return jsonResponse({ data: booking, warnings: warnings.length > 0 ? warnings : null });
