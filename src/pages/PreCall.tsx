@@ -11,7 +11,7 @@ type Data = {
   entrenaDias: string       // si | no
   compromiso: string        // 1-5
   tieneEquipo: string       // si | no | parcial
-  dispuestoInvertir: string // si | no | talvez
+  dispuestoInvertir: string
   obstaculoPrincipal: string
   porQueAhora: string
   nombre: string
@@ -384,9 +384,9 @@ export default function PreCall() {
               value={data.dispuestoInvertir}
               onBack={goBack}
               options={[
+                { value: 'rutina-dieta-300', label: 'Rutina + Dieta', desc: 'USD 300 · El paquete completo con ahorro de USD 50' },
                 { value: 'rutina-200', label: 'Solo Rutina', desc: 'USD 200 · Plan de entrenamiento personalizado' },
-                { value: 'dieta-200', label: 'Solo Dieta', desc: 'USD 200 · Plan nutricional completo' },
-                { value: 'dieta-rutina-350', label: 'Dieta + Rutina', desc: 'USD 350 · El paquete completo' },
+                { value: 'dieta-150', label: 'Solo Dieta', desc: 'USD 150 · Plan nutricional completo' },
               ]}
               onChoose={v => choose('dispuestoInvertir', v)}
             />
