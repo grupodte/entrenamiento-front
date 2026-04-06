@@ -101,7 +101,7 @@ export default function Home() {
           </p>
           <div className={`hero-reveal hero-reveal--4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto pt-1 ${heroVisible ? 'is-visible' : ''}`}>
             <a
-              href="/landing-page"
+              href="/pre-call"
               className="liquid-btn liquid-btn--solid sm:w-auto px-8 py-3.5 text-center text-[13px] font-bold uppercase tracking-widest text-white transition-all duration-500 hover:-translate-y-0.5 rounded-[10px] sm:rounded-[12px]"
             >
               <span>Quiero empezar</span>
@@ -212,7 +212,7 @@ export default function Home() {
             Cada plan incluye seguimiento real. Por eso no tomamos a todos al mismo tiempo.
           </p>
           <a
-            href="/landing-page"
+            href="/pre-call"
             data-closing-cta-item
             className="liquid-btn liquid-btn--solid text-white font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[10px] sm:rounded-[12px] transition-all duration-500 hover:-translate-y-0.5"
           >

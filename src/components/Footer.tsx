@@ -17,7 +17,7 @@ export default function Footer({ isVisible = true }: { isVisible?: boolean }) {
         </div>
         <div className="flex gap-4 text-[12px] uppercase tracking-[0.12em] text-[#69686B]">
           <Link to="/" className="hover:text-[#9580A6] transition-colors">Inicio</Link>
-          <Link to="/landing-page" className="hover:text-[#9580A6] transition-colors">Landing Page</Link>
+          <Link to="/pre-call" className="hover:text-[#9580A6] transition-colors">Pre-Call</Link>
           <Link to="/agenda" className="hover:text-[#9580A6] transition-colors">Agenda</Link>
           <Link to="/postulacion" className="hover:text-[#9580A6] transition-colors">Postulacion</Link>
         </div>

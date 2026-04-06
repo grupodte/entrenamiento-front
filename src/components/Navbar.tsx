@@ -26,9 +26,9 @@ export default function Navbar({ isVisible = true }: { isVisible?: boolean }) {
 
         {pathname !== '/agenda' && (
           <Link
-            to="/landing-page"
+            to="/pre-call"
             className={`text-[13px] uppercase tracking-[0.12em] transition-colors duration-200 ${
-              pathname === '/landing-page'
+              pathname === '/pre-call'
                 ? 'text-[#9580A6]'
                 : 'text-[#1A1820]/72 hover:text-[#1A1820]'
             }`}
