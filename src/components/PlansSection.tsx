@@ -77,7 +77,7 @@ export default function PlansSection() {
                 </ul>
 
                 <a
-                  href="https://ddfit.vercel.app/landing-page"
+                  href="/landing-page"
                   className="ios-cta relative z-10 block text-center bg-[linear-gradient(180deg,#25202d_0%,#17141d_100%)] !text-white font-bold text-[13px] uppercase tracking-[0.16em] py-3.5 px-6 rounded-[6px] sm:rounded-[8px] transition-all duration-300 hover:!text-white hover:-translate-y-0.5"
                 >
                   Empezar con este plan
@@ -107,7 +107,7 @@ export default function PlansSection() {
               </ul>
 
               <a
-                href="https://ddfit.vercel.app/landing-page"
+                href="/landing-page"
                 className="relative z-10 block text-center bg-[#9580A6] !text-white font-bold text-[13px] uppercase tracking-[0.16em] py-3.5 px-6 rounded-[6px] sm:rounded-[8px] shadow-[0_14px_28px_rgba(20,16,28,0.18)] hover:bg-[#7A6A8F] hover:!text-white transition-all duration-300 hover:-translate-y-0.5"
               >
                 Empezar con este plan

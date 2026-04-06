@@ -60,19 +60,11 @@ function VideoProgressBar({ progress, unlocked }: { progress: number; unlocked: 
 // ── Lock hint ─────────────────────────────────────────────
 function LockedHint({ progress }: { progress: number }) {
   return (
-    <div className="rounded-[10px] sm:rounded-[14px] border border-[#E8E4EE] bg-[#F4F2F7] px-4 sm:px-5 py-3 flex items-start gap-2.5">
-      <span className="text-[17px] mt-0.5 shrink-0" aria-hidden="true">🔒</span>
-      <div>
-        <p className="text-[#1A1820] text-[12px] sm:text-[13px] font-bold m-0 mb-0.5">
-          El resto del contenido está más abajo.
-        </p>
-        <p className="text-[#69686B] text-[11px] sm:text-[12px] m-0">
-          {progress === 0
-            ? 'Mirá el video para desbloquear la información completa del método.'
-            : `Seguí mirando hasta el 75% para continuar. Ya vas por el ${progress}%.`}
-        </p>
-      </div>
-    </div>
+    <p className="text-center text-[12px] text-[#9D9B9F] tracking-wide m-0">
+      {progress === 0
+        ? 'Mirá el video para desbloquear el contenido completo'
+        : `Seguí mirando — el contenido se desbloquea al 75%`}
+    </p>
   )
 }
 
@@ -100,16 +92,16 @@ function GatedContent() {
       <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#FEFEFE] border border-[#E8E4EE] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
         <div className="text-center">
           <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
-            Esto es lo que viste
+            Por qué funciona
           </p>
           <h2 className="text-[#1A1820] text-[24px] sm:text-[32px] md:text-[40px] font-bold leading-none mb-8 m-0">
-            El método que funciona<br />cuando los otros fallan.
+            No es otro plan genérico.<br />Es tuyo.
           </h2>
           <ul className="flex flex-col gap-4 text-left max-w-lg mx-auto m-0 p-0 list-none">
             {[
-              'Plan personalizado desde el primer día, sin plantillas genéricas.',
-              'Seguimiento real durante los 2 meses completos del proceso.',
-              'Nutrición que se adapta a tu vida real, no al revés.',
+              'Tu plan, no el de otro. Personalizado desde el día uno, sin plantillas que sirven para cualquiera.',
+              'Seguimiento real los 60 días completos — Dani no desaparece a mitad de camino.',
+              'Nutrición que encaja en tu vida real, no te pide que cambies todo de golpe.',
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-3 text-[14px] sm:text-[15px] text-[#1A1820] leading-snug">
                 <span className="shrink-0 text-[#9580A6] font-bold text-[16px] mt-0.5">✓</span>
@@ -138,29 +130,29 @@ function GatedContent() {
       {/* CTA principal */}
       <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#9580A6] px-4 sm:px-8 md:px-10 py-12 sm:py-14 md:py-16 flex flex-col items-center text-center">
         <p className="text-white/65 text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
-          El siguiente paso
+          Los cupos son limitados
         </p>
         <h2 className="text-white text-[24px] sm:text-[32px] md:text-[42px] font-bold leading-none mb-4 m-0">
-          ¿Listo para arrancar?
+          ¿Es este tu momento?
         </h2>
         <p className="text-white/60 text-[14px] sm:text-[15px] leading-snug mb-8 max-w-[400px] m-0">
-          El siguiente paso toma 2 minutos. Te hacemos algunas preguntas para preparar bien tu llamada.
+          En 2 minutos completás el formulario y reservás tu lugar. Dani lo revisa antes de la llamada.
         </p>
         <Link
           to="/pre-call"
-          className="bg-[#1A1820] text-white font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[8px] hover:bg-black transition-colors"
+          className="bg-white text-[#1A1820] font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[8px] hover:bg-white/90 transition-colors"
         >
-          Quiero empezar →
+          Reservar mi lugar →
         </Link>
       </section>
 
       {/* Proceso en 2 pasos */}
       <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#F4F2F7] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
         <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
-          ¿Cómo funciona el próximo paso?
+          ¿Qué pasa después?
         </p>
         <h2 className="text-[#1A1820] text-[24px] sm:text-[32px] md:text-[38px] font-bold leading-none mb-8 m-0">
-          Dos pasos simples.
+          Rápido. Sin vueltas.
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           {[
@@ -187,10 +179,10 @@ function GatedContent() {
       {/* Objeciones */}
       <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#1A1820] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
         <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
-          Antes de arrancar
+          Tus dudas
         </p>
         <h2 className="text-white text-[22px] sm:text-[28px] md:text-[36px] font-bold leading-none mb-8 m-0">
-          Preguntas frecuentes.
+          Las respondemos antes de que preguntes.
         </h2>
         <div className="flex flex-col gap-5">
           {faqs.map((f, i) => (
@@ -205,16 +197,16 @@ function GatedContent() {
       {/* CTA final */}
       <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#FEFEFE] border border-[#E8E4EE] px-4 sm:px-8 md:px-10 py-12 sm:py-14 md:py-16 flex flex-col items-center text-center">
         <h2 className="text-[#1A1820] text-[22px] sm:text-[30px] md:text-[40px] font-bold leading-none mb-3 m-0">
-          Ya viste el método.<br />El resto depende de vos.
+          Ya viste de qué se trata.<br />Ahora es tu turno.
         </h2>
-        <p className="text-[#69686B] text-[14px] sm:text-[15px] leading-snug mb-8 max-w-[360px] m-0">
-          Los cupos son limitados. La atención es personal.
+        <p className="text-[#69686B] text-[14px] sm:text-[15px] leading-snug mb-8 max-w-[380px] m-0">
+          Los cupos son limitados. Cada cliente recibe atención directa de Dani. No es para todos — pero puede ser para vos.
         </p>
         <Link
           to="/pre-call"
           className="bg-[#9580A6] text-white font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[8px] hover:bg-[#7A6A8F] transition-colors"
         >
-          Quiero empezar ahora →
+          Quiero reservar mi lugar →
         </Link>
       </section>
 
@@ -306,36 +298,35 @@ export default function LandingPage() {
       <main
         className={`flex flex-col w-full mx-auto px-3 sm:px-5 ${
           isLocked
-            ? 'max-w-[1000px] flex-1 overflow-hidden py-2 sm:py-3'
+            ? 'max-w-[1200px] flex-1 overflow-hidden py-3 sm:py-4'
             : 'max-w-[820px] flex-1 pt-6 sm:pt-8 pb-8 md:pb-12'
         }`}
       >
-        <div className={`flex flex-col ${isLocked ? 'w-full my-auto gap-2 sm:gap-2.5' : 'gap-3 sm:gap-4'}`}>
+        <div className={`flex flex-col ${isLocked ? 'w-full gap-2 sm:gap-3' : 'gap-3 sm:gap-4'}`}>
 
           {/* Hero context */}
-          <div className={`text-center ${isLocked ? 'max-w-[820px] mx-auto py-0.5 sm:py-1' : 'py-4 sm:py-6'}`}>
+          <div className={`text-center ${isLocked ? 'max-w-[820px] mx-auto py-0' : 'py-4 sm:py-6'}`}>
             <p className={`text-[#9580A6] font-bold uppercase tracking-[0.2em] m-0 ${isLocked ? 'text-[10px] mb-2' : 'text-[11px] mb-3'}`}>
               DemicheriFitness
             </p>
             <h1 className={`text-[#1A1820] font-bold leading-none mb-3 m-0 ${
-              isLocked ? 'text-[24px] sm:text-[28px] md:text-[34px]' : 'text-[32px] sm:text-[44px] md:text-[52px]'
+              isLocked ? 'text-[22px] sm:text-[38px] md:text-[52px]' : 'text-[32px] sm:text-[44px] md:text-[52px]'
             }`}>
-              Dani transforma tu cuerpo y tu mentalidad en un programa que no deja excusas.<br />
-              Entrenás con inteligencia, hábitos claros y resultados visibles en 60 días.
+              Transformá tu cuerpo en 60 días con el único método que no te abandona.
             </h1>
             {!isLocked && (
               <p className="text-[#69686B] text-[15px] sm:text-[17px] leading-relaxed mx-auto m-0 max-w-[500px]">
-                En el video te cuenta cómo su método alinea nutrición, entrenamiento guiado y acompañamiento emocional para que dejes de intentarlo solo y llegues al cambio que querés.
+                Mirá el video. Dani te explica por qué este método funciona cuando todo lo demás falló.
               </p>
             )}
           </div>
 
-          <div className={`w-full mx-auto ${isLocked ? 'max-w-[780px]' : ''}`}>
+          <div className="w-full mx-auto">
             {/* Video */}
             <div
               ref={videoWrapperRef}
               className="relative rounded-[10px] sm:rounded-[10px] overflow-hidden bg-[#1A1820] mx-auto w-full"
-              style={isLocked ? { width: 'min(100%, calc(380vh * 16 / 9))' } : undefined}
+              style={undefined}
             >
               {MUX_PLAYBACK_ID ? (
                 <>
@@ -417,7 +408,7 @@ export default function LandingPage() {
 
             {/* Lock hint */}
             {!unlocked && (
-              <div className={isLocked ? 'mt-2' : 'mt-3'}>
+              <div className="mt-2">
                 <LockedHint progress={videoProgress} />
               </div>
             )}
@@ -440,13 +431,6 @@ export default function LandingPage() {
         </div>
       </main>
 
-      {unlocked && (
-        <footer className="w-full shrink-0 border-t border-[#E8E4EE] px-4 py-3 text-center">
-          <p className="text-[11px] text-[#9D9B9F] m-0">
-            © DemicheriFitness · Todos los derechos reservados
-          </p>
-        </footer>
-      )}
     </div>
   )
 }

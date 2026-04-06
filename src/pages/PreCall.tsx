@@ -330,16 +330,18 @@ export default function PreCall() {
             </div>
           )}
 
-          {/* ── Step 1: Entrena 4 días ── */}
+          {/* ── Step 1: Días de entrenamiento ── */}
           {step === 1 && (
             <StepChoice
               step={1}
-              question="¿Estás dispuesto a entrenar mínimo 4 días por semana durante los próximos 60 días?"
+              question="¿Cuántos días por semana estás dispuesto/a a entrenar los próximos 60 días?"
               value={data.entrenaDias}
               onBack={goBack}
               options={[
-                { value: 'si', label: 'Sí, me comprometo', desc: 'Estoy listo/a para ser constante' },
-                { value: 'no', label: 'No por ahora', desc: 'Mi disponibilidad es menor' },
+                { value: '2', label: '2 días por semana', desc: 'Lo que mi agenda me permite hoy' },
+                { value: '3', label: '3 días por semana', desc: 'Constante y manejable' },
+                { value: '4', label: '4 días por semana', desc: 'Comprometido/a con el proceso' },
+                { value: '5+', label: '5 o más días por semana', desc: 'Todo para dentro' },
               ]}
               onChoose={v => choose('entrenaDias', v)}
             />
@@ -373,18 +375,18 @@ export default function PreCall() {
             />
           )}
 
-          {/* ── Step 4: Inversión ── */}
+          {/* ── Step 4: Plan ── */}
           {step === 4 && (
             <StepChoice
               step={4}
-              question="¿Estás dispuesto/a a invertir en tu transformación durante los próximos 60 días?"
-              hint="Rutina → USD 200 · Dieta + Rutina → USD 350"
+              question="¿Con qué plan te gustaría arrancar?"
+              hint="Podemos ajustarlo en la llamada si tenés dudas."
               value={data.dispuestoInvertir}
               onBack={goBack}
               options={[
-                { value: 'si', label: 'Sí, estoy listo/a para invertir' },
-                { value: 'talvez', label: 'Necesito más información primero' },
-                { value: 'no', label: 'No en este momento' },
+                { value: 'rutina-200', label: 'Solo Rutina', desc: 'USD 200 · Plan de entrenamiento personalizado' },
+                { value: 'dieta-200', label: 'Solo Dieta', desc: 'USD 200 · Plan nutricional completo' },
+                { value: 'dieta-rutina-350', label: 'Dieta + Rutina', desc: 'USD 350 · El paquete completo' },
               ]}
               onChoose={v => choose('dispuestoInvertir', v)}
             />
@@ -392,29 +394,36 @@ export default function PreCall() {
 
           {/* ── Step 5: Obstáculo ── */}
           {step === 5 && (
-            <StepText
+            <StepChoice
               step={5}
-              question="¿Cuál es el obstáculo número 1 que te impidió lograr resultados hasta ahora?"
-              placeholder="Ej: falta de constancia, no saber qué hacer, la alimentación..."
+              question="¿Cuál fue el obstáculo número 1 hasta ahora?"
               value={data.obstaculoPrincipal}
-              onChange={set('obstaculoPrincipal')}
               onBack={goBack}
-              onNext={goNext}
-              canContinue={data.obstaculoPrincipal.trim().length > 2}
+              options={[
+                { value: 'constancia', label: 'Falta de constancia', desc: 'Empiezo y no puedo mantenerlo' },
+                { value: 'guia', label: 'No sé qué hacer', desc: 'Me falta dirección y un plan claro' },
+                { value: 'alimentacion', label: 'La alimentación', desc: 'No sé cómo comer o no puedo sostenerlo' },
+                { value: 'tiempo', label: 'Falta de tiempo', desc: 'Mi agenda no me lo permite fácil' },
+                { value: 'lesion', label: 'Lesiones o limitaciones físicas', desc: 'Mi cuerpo me puso freno' },
+              ]}
+              onChoose={v => choose('obstaculoPrincipal', v)}
             />
           )}
 
           {/* ── Step 6: Por qué ahora ── */}
           {step === 6 && (
-            <StepText
+            <StepChoice
               step={6}
               question="¿Por qué ahora y no el mes que viene?"
-              placeholder="Contanos qué te motivó a dar este paso hoy..."
               value={data.porQueAhora}
-              onChange={set('porQueAhora')}
               onBack={goBack}
-              onNext={goNext}
-              canContinue={data.porQueAhora.trim().length > 2}
+              options={[
+                { value: 'harto', label: 'Estoy harto/a de no ver resultados', desc: 'Ya intenté varias veces y nada funcionó' },
+                { value: 'evento', label: 'Tengo una fecha o evento importante', desc: 'Necesito estar listo/a para algo concreto' },
+                { value: 'decision', label: 'Tomé la decisión y no quiero esperar', desc: 'Si no arranco ahora, no arranco nunca' },
+                { value: 'salud', label: 'Me lo pidió mi salud', desc: 'No es solo estética, es necesidad' },
+              ]}
+              onChoose={v => choose('porQueAhora', v)}
             />
           )}
 
