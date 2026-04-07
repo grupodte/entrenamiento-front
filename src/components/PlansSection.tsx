@@ -30,7 +30,7 @@ const secondaryPlans = [
   },
   {
     name: 'Solo Dieta',
-    price: 'USD 150',
+    price: 'USD 200',
     description: 'Plan nutricional completo',
     duration: '2 meses',
     features: [

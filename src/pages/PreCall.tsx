@@ -386,7 +386,7 @@ export default function PreCall() {
               options={[
                 { value: 'rutina-dieta-300', label: 'Rutina + Dieta', desc: 'USD 300 · El paquete completo con ahorro de USD 50' },
                 { value: 'rutina-200', label: 'Solo Rutina', desc: 'USD 200 · Plan de entrenamiento personalizado' },
-                { value: 'dieta-150', label: 'Solo Dieta', desc: 'USD 150 · Plan nutricional completo' },
+                { value: 'dieta-200', label: 'Solo Dieta', desc: 'USD 200 · Plan nutricional completo' },
               ]}
               onChoose={v => choose('dispuestoInvertir', v)}
             />
