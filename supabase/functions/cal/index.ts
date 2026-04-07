@@ -28,6 +28,7 @@ const CAL_ENFORCED_EVENT_TYPE_ID_INVALID =
   CAL_ENFORCED_EVENT_TYPE_ID_RAW.trim().length > 0 && CAL_ENFORCED_EVENT_TYPE_ID === null;
 const LEAD_TABLE_CANDIDATES = ["crm_leads", "leads"] as const;
 const FUNCTION_VERSION = "2026-04-04.1";
+const ACTIVE_APPOINTMENT_STATUSES = ["scheduled", "confirmed", "accepted", "pending"] as const;
 let cachedLeadTableName: (typeof LEAD_TABLE_CANDIDATES)[number] | null = null;
 
 function jsonResponse(body: unknown, status = 200) {
@@ -237,6 +238,19 @@ type LeadRow = {
   meet_url: string | null;
 };
 
+type AppointmentRow = {
+  id: string;
+  lead_id: string | null;
+  guest_email: string | null;
+  guest_phone: string | null;
+  guest_phone_normalized: string | null;
+  status: string | null;
+  start_at: string | null;
+  end_at: string | null;
+  cal_booking_id: string | null;
+  created_at: string | null;
+};
+
 type LeadUpsertInput = {
   leadId?: string | null;
   userId?: string | null;
@@ -422,6 +436,11 @@ async function insertAppointment(payload: {
   }
 }
 
+function isUniqueViolation(error: unknown) {
+  const code = typeof error === "object" && error !== null ? (error as { code?: string }).code : null;
+  return code === "23505";
+}
+
 async function updateAppointment(
   bookingIds: string[],
   fields: {
@@ -467,7 +486,7 @@ async function updateAppointment(
 
   if (data && data.length > 0) return;
 
-  await adminClient.from("appointments").insert({
+  const insertPayload = {
     lead_id: fields.lead_id ?? null,
     cal_booking_id: bookingIds[0],
     status: fields.status ?? "scheduled",
@@ -480,6 +499,22 @@ async function updateAppointment(
     guest_phone_normalized: fields.guest_phone_normalized ?? null,
     meet_url: fields.meet_url ?? null,
     precall_data: fields.precall_data ?? null,
+  };
+
+  const { error } = await adminClient.from("appointments").insert(insertPayload);
+  if (!error) return;
+
+  if (isUniqueViolation(error)) {
+    await adminClient
+      .from("appointments")
+      .update(updatePayload)
+      .in("cal_booking_id", bookingIds);
+    return;
+  }
+
+  throw Object.assign(new Error("Failed to persist appointment"), {
+    status: 500,
+    payload: error,
   });
 }
 
@@ -533,6 +568,56 @@ function stringField(value: unknown) {
 function precallPhone(precallData: Record<string, unknown> | null) {
   if (!precallData) return null;
   return stringField(precallData.whatsapp) ?? stringField(precallData.phone);
+}
+
+async function listFutureActiveAppointments(
+  adminClient: ReturnType<typeof createClient>,
+  input: {
+    leadId?: string | null;
+    email?: string | null;
+    normalizedPhone?: string | null;
+  },
+) {
+  const now = new Date().toISOString();
+  const selectFields =
+    "id, lead_id, guest_email, guest_phone, guest_phone_normalized, status, start_at, end_at, cal_booking_id, created_at";
+
+  let query = adminClient
+    .from("appointments")
+    .select(selectFields)
+    .gte("start_at", now)
+    .in("status", [...ACTIVE_APPOINTMENT_STATUSES])
+    .order("start_at", { ascending: true })
+    .limit(5);
+
+  if (input.leadId) {
+    query = query.eq("lead_id", input.leadId);
+  } else if (input.email) {
+    query = query.ilike("guest_email", input.email);
+  } else if (input.normalizedPhone) {
+    query = query.eq("guest_phone_normalized", input.normalizedPhone);
+  } else {
+    return [];
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("Failed to inspect future active appointments", { input, error });
+    throw Object.assign(new Error("Failed to inspect active appointments"), {
+      status: 500,
+      payload: error,
+    });
+  }
+
+  const rows = (data as AppointmentRow[] | null) ?? [];
+  const seen = new Set<string>();
+
+  return rows.filter((row) => {
+    const key = row.cal_booking_id ?? row.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function stripBookingLocalFields(input: Record<string, unknown>) {
@@ -749,7 +834,65 @@ serve(async (req) => {
         const leadId = stringField(input?.leadId);
         const precallData = asRecord(input?.precallData);
         const guestPhone = precallPhone(precallData);
+        const normalizedRequestedEmail = normalizeEmail(requestedEmail);
+        const normalizedGuestPhone = normalizePhone(guestPhone);
         const bookingPayload = stripBookingLocalFields(input as Record<string, unknown>);
+
+        if (!requestedName || !requestedEmail || !requestedStart) {
+          return errorResponse("Missing attendee or slot", 400);
+        }
+
+        const adminClient = getAdminClient();
+        if (!adminClient) {
+          return errorResponse("Server not configured", 500);
+        }
+
+        const lead = await findLeadByContact(adminClient, {
+          leadId,
+          normalizedEmail: normalizedRequestedEmail,
+          normalizedPhone: normalizedGuestPhone,
+        });
+
+        if (leadId && !lead) {
+          return errorResponse("LEAD_NOT_FOUND", 409, { leadId });
+        }
+
+        const normalizedPrecallEmail = normalizeEmail(stringField(precallData?.email));
+        if (normalizedPrecallEmail && normalizedRequestedEmail && normalizedPrecallEmail !== normalizedRequestedEmail) {
+          return errorResponse("PRECALL_EMAIL_MISMATCH", 409, {
+            leadId,
+            requestedEmail,
+          });
+        }
+
+        if (lead?.normalized_email && normalizedRequestedEmail && lead.normalized_email !== normalizedRequestedEmail) {
+          return errorResponse("LEAD_EMAIL_MISMATCH", 409, {
+            leadId: lead.id,
+            requestedEmail,
+          });
+        }
+
+        if (lead?.normalized_phone && normalizedGuestPhone && lead.normalized_phone !== normalizedGuestPhone) {
+          return errorResponse("LEAD_PHONE_MISMATCH", 409, {
+            leadId: lead.id,
+          });
+        }
+
+        const conflictingAppointments = await listFutureActiveAppointments(adminClient, {
+          leadId: lead?.id ?? leadId ?? null,
+          email: lead?.id || leadId ? null : normalizedRequestedEmail,
+          normalizedPhone: lead?.id || leadId || normalizedRequestedEmail ? null : normalizedGuestPhone,
+        });
+        const activeConflict = conflictingAppointments[0] ?? null;
+
+        if (activeConflict) {
+          return errorResponse("ACTIVE_BOOKING_EXISTS", 409, {
+            appointmentId: activeConflict.id,
+            bookingUid: activeConflict.cal_booking_id,
+            startAt: activeConflict.start_at,
+            status: activeConflict.status,
+          });
+        }
 
         // If precall data has a phone, include it in the Cal.com attendee object.
         // Cal.com event types configured to require phone will reject bookings without it.
@@ -822,10 +965,11 @@ serve(async (req) => {
           ?? stringField(bookingData?.location)
           ?? null;
 
-        const lead = await upsertLead({
-          leadId,
+        const updatedLead = await upsertLead({
+          leadId: lead?.id ?? leadId,
           fullName: requestedName,
           email: requestedEmail,
+          phone: guestPhone,
           stage: "precall_booked",
           source: "precall",
           precallData,
@@ -844,11 +988,11 @@ serve(async (req) => {
           meetUrl,
         });
 
-        const appointmentPrecallData = asRecord(lead?.precall_data) ?? precallData;
-        const appointmentGuestPhone = stringField(lead?.phone) ?? guestPhone;
+        const appointmentPrecallData = asRecord(updatedLead?.precall_data) ?? precallData;
+        const appointmentGuestPhone = stringField(updatedLead?.phone) ?? guestPhone;
 
         await updateAppointment(extractBookingIds(bookingData ?? bookingRecord ?? {}), {
-          lead_id: lead?.id ?? leadId ?? null,
+          lead_id: updatedLead?.id ?? lead?.id ?? leadId ?? null,
           status: "scheduled",
           payload: booking,
           start_at: startAt,

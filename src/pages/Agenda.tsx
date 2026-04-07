@@ -401,14 +401,26 @@ export default function Agenda() {
     })
 
     if (bookingError) {
+      let errorMessage = 'No pudimos confirmar tu cita. Intentá de nuevo.'
       try {
         const errCtx = (bookingError as { context?: Response }).context
         const errBody = errCtx ? await errCtx.json() : null
         console.error('[Agenda] Cal booking error:', errBody ?? bookingError)
+
+        if (errBody?.error === 'ACTIVE_BOOKING_EXISTS') {
+          errorMessage = 'Ya existe una cita activa para este contacto. Si necesitás cambiarla, reprogramá o cancelá la anterior.'
+        } else if (
+          errBody?.error === 'LEAD_NOT_FOUND' ||
+          errBody?.error === 'PRECALL_EMAIL_MISMATCH' ||
+          errBody?.error === 'LEAD_EMAIL_MISMATCH' ||
+          errBody?.error === 'LEAD_PHONE_MISMATCH'
+        ) {
+          errorMessage = 'No pudimos validar esta agenda con tus datos del pre-call. Volvé a completar el formulario e intentá de nuevo.'
+        }
       } catch {
         console.error('[Agenda] Cal booking error:', bookingError)
       }
-      setError('No pudimos confirmar tu cita. Intentá de nuevo.')
+      setError(errorMessage)
       setIsBooking(false)
       return
     }

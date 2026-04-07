@@ -15,12 +15,6 @@ export default function Footer({ isVisible = true }: { isVisible?: boolean }) {
           </Link>
           <p className="m-0 text-[12px] text-[#69686B]">Entrenamiento, salud y bienestar.</p>
         </div>
-        <div className="flex gap-4 text-[12px] uppercase tracking-[0.12em] text-[#69686B]">
-          <Link to="/" className="hover:text-[#9580A6] transition-colors">Inicio</Link>
-          <Link to="/pre-call" className="hover:text-[#9580A6] transition-colors">Pre-Call</Link>
-          <Link to="/agenda" className="hover:text-[#9580A6] transition-colors">Agenda</Link>
-          <Link to="/postulacion" className="hover:text-[#9580A6] transition-colors">Postulacion</Link>
-        </div>
         <p className="m-0 text-[11px] text-[#9D9B9F]">Todos los derechos reservados.</p>
       </div>
     </footer>
