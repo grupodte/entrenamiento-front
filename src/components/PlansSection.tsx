@@ -63,7 +63,39 @@ export default function PlansSection() {
 
         <div data-reveal className="rounded-[24px] border border-white/[0.08] bg-white/[0.03] px-3 py-3 sm:px-4 sm:py-4 md:px-5 md:py-5 backdrop-blur-[22px] shadow-[0_24px_80px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)]">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 items-stretch">
-            <div className="plan-spotlight relative rounded-[20px] sm:rounded-[24px] p-[1px] md:col-span-1">
+            <div className="relative order-2 md:order-1 overflow-hidden rounded-[20px] sm:rounded-[24px] border border-white/[0.09] bg-[linear-gradient(180deg,rgba(255,255,255,0.07)_0%,rgba(255,255,255,0.05)_100%)] p-5 sm:p-6 md:p-8 flex flex-col backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(149,128,166,0.14),transparent_34%)] opacity-80" />
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/10" />
+
+              <h3 className="relative z-10 text-white text-[22px] sm:text-[24px] md:text-[28px] font-bold leading-[0.98] tracking-[-0.04em] mb-1 m-0">
+                {secondaryPlans[0].name}
+              </h3>
+              <p className="relative z-10 text-white/62 text-[13px] leading-[1.35] mt-3 mb-0">
+                {secondaryPlans[0].description}
+              </p>
+              <div className="relative z-10 text-white text-[40px] sm:text-[48px] font-bold leading-[0.92] tracking-[-0.055em] mt-5 mb-1">
+                {secondaryPlans[0].price}
+              </div>
+              <p className="relative z-10 text-white/46 text-[13px] mb-7 m-0">{secondaryPlans[0].duration}</p>
+
+              <ul className="relative z-10 flex flex-col gap-2.5 mb-8 m-0 p-0 list-none flex-1">
+                {secondaryPlans[0].features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2.5 text-[13px] sm:text-[14px] text-white/78 leading-[1.35] tracking-[-0.015em]">
+                    <span className="shrink-0 text-[#9580A6] font-bold mt-0.5">✓</span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <a
+                href="/pre-call"
+                className="relative z-10 block text-center bg-[#9580A6] !text-white font-bold text-[13px] uppercase tracking-[0.16em] py-3.5 px-6 rounded-[6px] sm:rounded-[8px] shadow-[0_14px_28px_rgba(20,16,28,0.18)] hover:bg-[#7A6A8F] hover:!text-white transition-all duration-300 hover:-translate-y-0.5"
+              >
+                Empezar con este plan
+              </a>
+            </div>
+
+            <div className="plan-spotlight order-1 md:order-2 relative rounded-[20px] sm:rounded-[24px] p-[1px] md:col-span-1">
               <div className="plan-spotlight__glow" aria-hidden="true" />
 
               <div className="relative flex h-full flex-col overflow-hidden rounded-[20px] sm:rounded-[24px] bg-[#9580A6] p-5 sm:p-6 md:p-8 shadow-[0_18px_48px_rgba(149,128,166,0.24)]">
@@ -104,42 +136,37 @@ export default function PlansSection() {
               </div>
             </div>
 
-            {secondaryPlans.map((plan) => (
-              <div
-                key={plan.name}
-                className="relative overflow-hidden rounded-[20px] sm:rounded-[24px] border border-white/[0.09] bg-[linear-gradient(180deg,rgba(255,255,255,0.07)_0%,rgba(255,255,255,0.05)_100%)] p-5 sm:p-6 md:p-8 flex flex-col backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
-              >
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(149,128,166,0.14),transparent_34%)] opacity-80" />
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/10" />
+            <div className="relative order-3 overflow-hidden rounded-[20px] sm:rounded-[24px] border border-white/[0.09] bg-[linear-gradient(180deg,rgba(255,255,255,0.07)_0%,rgba(255,255,255,0.05)_100%)] p-5 sm:p-6 md:p-8 flex flex-col backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(149,128,166,0.14),transparent_34%)] opacity-80" />
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/10" />
 
-                <h3 className="relative z-10 text-white text-[22px] sm:text-[24px] md:text-[28px] font-bold leading-[0.98] tracking-[-0.04em] mb-1 m-0">
-                  {plan.name}
-                </h3>
-                <p className="relative z-10 text-white/62 text-[13px] leading-[1.35] mt-3 mb-0">
-                  {plan.description}
-                </p>
-                <div className="relative z-10 text-white text-[40px] sm:text-[48px] font-bold leading-[0.92] tracking-[-0.055em] mt-5 mb-1">
-                  {plan.price}
-                </div>
-                <p className="relative z-10 text-white/46 text-[13px] mb-7 m-0">{plan.duration}</p>
-
-                <ul className="relative z-10 flex flex-col gap-2.5 mb-8 m-0 p-0 list-none flex-1">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2.5 text-[13px] sm:text-[14px] text-white/78 leading-[1.35] tracking-[-0.015em]">
-                      <span className="shrink-0 text-[#9580A6] font-bold mt-0.5">✓</span>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                <a
-                  href="/pre-call"
-                  className="relative z-10 block text-center bg-[#9580A6] !text-white font-bold text-[13px] uppercase tracking-[0.16em] py-3.5 px-6 rounded-[6px] sm:rounded-[8px] shadow-[0_14px_28px_rgba(20,16,28,0.18)] hover:bg-[#7A6A8F] hover:!text-white transition-all duration-300 hover:-translate-y-0.5"
-                >
-                  Empezar con este plan
-                </a>
+              <h3 className="relative z-10 text-white text-[22px] sm:text-[24px] md:text-[28px] font-bold leading-[0.98] tracking-[-0.04em] mb-1 m-0">
+                {secondaryPlans[1].name}
+              </h3>
+              <p className="relative z-10 text-white/62 text-[13px] leading-[1.35] mt-3 mb-0">
+                {secondaryPlans[1].description}
+              </p>
+              <div className="relative z-10 text-white text-[40px] sm:text-[48px] font-bold leading-[0.92] tracking-[-0.055em] mt-5 mb-1">
+                {secondaryPlans[1].price}
               </div>
-            ))}
+              <p className="relative z-10 text-white/46 text-[13px] mb-7 m-0">{secondaryPlans[1].duration}</p>
+
+              <ul className="relative z-10 flex flex-col gap-2.5 mb-8 m-0 p-0 list-none flex-1">
+                {secondaryPlans[1].features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2.5 text-[13px] sm:text-[14px] text-white/78 leading-[1.35] tracking-[-0.015em]">
+                    <span className="shrink-0 text-[#9580A6] font-bold mt-0.5">✓</span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <a
+                href="/pre-call"
+                className="relative z-10 block text-center bg-[#9580A6] !text-white font-bold text-[13px] uppercase tracking-[0.16em] py-3.5 px-6 rounded-[6px] sm:rounded-[8px] shadow-[0_14px_28px_rgba(20,16,28,0.18)] hover:bg-[#7A6A8F] hover:!text-white transition-all duration-300 hover:-translate-y-0.5"
+              >
+                Empezar con este plan
+              </a>
+            </div>
           </div>
         </div>
       </div>
