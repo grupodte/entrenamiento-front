@@ -750,7 +750,17 @@ serve(async (req) => {
         const precallData = asRecord(input?.precallData);
         const guestPhone = precallPhone(precallData);
         const bookingPayload = stripBookingLocalFields(input as Record<string, unknown>);
-        
+
+        // If precall data has a phone, include it in the Cal.com attendee object.
+        // Cal.com event types configured to require phone will reject bookings without it.
+        if (guestPhone && bookingPayload.attendee && typeof bookingPayload.attendee === "object") {
+          const attendeeRecord = bookingPayload.attendee as Record<string, unknown>;
+          if (!attendeeRecord.phoneNumber) {
+            const digits = guestPhone.replace(/\D/g, "");
+            attendeeRecord.phoneNumber = digits.startsWith("0") ? `+598${digits.slice(1)}` : `+${digits}`;
+          }
+        }
+
         const requestedEventTypeId = parseEventTypeId(bookingPayload.eventTypeId);
         const effectiveEventTypeId = CAL_ENFORCED_EVENT_TYPE_ID ?? requestedEventTypeId;
         if (!effectiveEventTypeId) {

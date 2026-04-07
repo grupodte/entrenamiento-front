@@ -401,6 +401,13 @@ export default function Agenda() {
     })
 
     if (bookingError) {
+      try {
+        const errCtx = (bookingError as { context?: Response }).context
+        const errBody = errCtx ? await errCtx.json() : null
+        console.error('[Agenda] Cal booking error:', errBody ?? bookingError)
+      } catch {
+        console.error('[Agenda] Cal booking error:', bookingError)
+      }
       setError('No pudimos confirmar tu cita. Intentá de nuevo.')
       setIsBooking(false)
       return
