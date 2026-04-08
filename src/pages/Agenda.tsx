@@ -64,6 +64,7 @@ const extractSlots = (raw: unknown): string[] => {
   }
   if (typeof raw === 'object') {
     const record = raw as Record<string, unknown>
+    if ('available' in record && record.available === false) return []
     if (record.start) return [String(record.start)]
     if (record.startTime) return [String(record.startTime)]
     if (record.time) return [String(record.time)]
@@ -74,13 +75,11 @@ const extractSlots = (raw: unknown): string[] => {
 
 const buildNextDaysRange = (days: number) => {
   const now = new Date()
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  start.setHours(0, 0, 0, 0)
-  const end = new Date(start)
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   end.setDate(end.getDate() + Math.max(days - 1, 0))
   end.setHours(23, 59, 59, 999)
   return {
-    start: start.toISOString(),
+    start: now.toISOString(),
     end: end.toISOString()
   }
 }
@@ -217,8 +216,16 @@ export default function Agenda() {
     const cache = readAvailabilityCache(selectedEventTypeId, timeZone)
     if (!cache) return
 
-    setSlotsByDate(cache.slotsByDate)
-    setAvailableDates(cache.availableDates)
+    const nowMs = Date.now()
+    const freshSlotsByDate: Record<string, string[]> = {}
+    for (const [key, slots] of Object.entries(cache.slotsByDate)) {
+      const future = slots.filter((slot) => new Date(slot).getTime() > nowMs)
+      if (future.length > 0) freshSlotsByDate[key] = future
+    }
+    const freshDates = cache.availableDates.filter((d) => Boolean(freshSlotsByDate[d]))
+
+    setSlotsByDate(freshSlotsByDate)
+    setAvailableDates(freshDates)
     setSelectedDate((currentDate) => {
       if (cache.availableDates.length === 0) return currentDate
       const currentKey = formatLocalDateKey(currentDate)
@@ -299,7 +306,15 @@ export default function Agenda() {
         })
       }
 
-      const sortedDates = Array.from(new Set(dates)).sort((a, b) => a.localeCompare(b))
+      const nowMs = Date.now()
+      for (const key of Object.keys(normalized)) {
+        normalized[key] = normalized[key].filter((slot) => new Date(slot).getTime() > nowMs)
+        if (normalized[key].length === 0) delete normalized[key]
+      }
+
+      const sortedDates = Array.from(new Set(dates))
+        .filter((d) => Boolean(normalized[d]))
+        .sort((a, b) => a.localeCompare(b))
 
       setSlotsByDate(normalized)
       setAvailableDates(sortedDates)
