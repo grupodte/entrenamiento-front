@@ -505,7 +505,7 @@ export default function PreCall() {
                       className="bg-[#F4F2F7] border border-[#E8E4EE] rounded-[8px] px-3 py-3 text-[#1A1820] text-[15px] focus:outline-none focus:border-[#9580A6] focus:ring-2 focus:ring-[#9580A6]/15 transition-colors w-[120px] flex-shrink-0 cursor-pointer"
                     >
                       {COUNTRY_PREFIXES.map(p => (
-                        <option key={p.code + p.name} value={p.code}>{p.flag} {p.code} — {p.name}</option>
+                        <option key={p.code + p.name} value={p.code}>{p.flag} {p.code}</option>
                       ))}
                     </select>
                     <input
