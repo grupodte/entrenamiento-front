@@ -16,15 +16,31 @@ type Data = {
   porQueAhora: string
   nombre: string
   email: string
+  whatsappPrefix: string
   whatsapp: string
   edad: string
-  zonaHoraria: string
 }
+
+const COUNTRY_PREFIXES = [
+  { code: '+598', flag: '🇺🇾', name: 'Uruguay' },
+  { code: '+54',  flag: '🇦🇷', name: 'Argentina' },
+  { code: '+56',  flag: '🇨🇱', name: 'Chile' },
+  { code: '+57',  flag: '🇨🇴', name: 'Colombia' },
+  { code: '+52',  flag: '🇲🇽', name: 'México' },
+  { code: '+55',  flag: '🇧🇷', name: 'Brasil' },
+  { code: '+51',  flag: '🇵🇪', name: 'Perú' },
+  { code: '+58',  flag: '🇻🇪', name: 'Venezuela' },
+  { code: '+595', flag: '🇵🇾', name: 'Paraguay' },
+  { code: '+591', flag: '🇧🇴', name: 'Bolivia' },
+  { code: '+593', flag: '🇪🇨', name: 'Ecuador' },
+  { code: '+34',  flag: '🇪🇸', name: 'España' },
+  { code: '+1',   flag: '🇺🇸', name: 'EE.UU. / Canadá' },
+]
 
 const INITIAL: Data = {
   entrenaDias: '', compromiso: '', tieneEquipo: '', dispuestoInvertir: '',
   obstaculoPrincipal: '', porQueAhora: '',
-  nombre: '', email: '', whatsapp: '', edad: '', zonaHoraria: '',
+  nombre: '', email: '', whatsappPrefix: '+598', whatsapp: '', edad: '',
 }
 
 const TOTAL = 7 // pasos con contenido (1-7), el 0 es welcome
@@ -239,13 +255,17 @@ export default function PreCall() {
     setErrors({})
 
     setSubmitting(true)
+    const submitData = {
+      ...data,
+      whatsapp: `${data.whatsappPrefix}${data.whatsapp.trim()}`,
+    }
     let leadId: string | null = null
     try {
       const { data: leadResponse, error } = await supabase.functions.invoke('cal', {
         body: {
           action: 'upsert_lead',
           source: 'precall',
-          precallData: data
+          precallData: submitData
         }
       })
 
@@ -261,7 +281,7 @@ export default function PreCall() {
     }
 
     try {
-      localStorage.setItem(PRECALL_STORAGE_KEY, JSON.stringify(data))
+      localStorage.setItem(PRECALL_STORAGE_KEY, JSON.stringify(submitData))
       if (leadId) {
         localStorage.setItem(PRECALL_LEAD_ID_STORAGE_KEY, leadId)
       }
@@ -478,54 +498,41 @@ export default function PreCall() {
                     WhatsApp <span className="text-[#9580A6]">*</span>
                     <span className="text-[#9D9B9F] font-normal ml-1">(para confirmar tu turno)</span>
                   </label>
-                  <input
-                    type="tel"
-                    value={data.whatsapp}
-                    onChange={e => set('whatsapp')(e.target.value)}
-                    placeholder="+598 99 000 000"
-                    className={inputBase}
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={data.whatsappPrefix}
+                      onChange={e => set('whatsappPrefix')(e.target.value)}
+                      className="bg-[#F4F2F7] border border-[#E8E4EE] rounded-[8px] px-3 py-3 text-[#1A1820] text-[15px] focus:outline-none focus:border-[#9580A6] focus:ring-2 focus:ring-[#9580A6]/15 transition-colors w-[120px] flex-shrink-0 cursor-pointer"
+                    >
+                      {COUNTRY_PREFIXES.map(p => (
+                        <option key={p.code + p.name} value={p.code}>{p.flag} {p.code} — {p.name}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="tel"
+                      value={data.whatsapp}
+                      onChange={e => set('whatsapp')(e.target.value)}
+                      placeholder="99 000 000"
+                      className={`${inputBase} flex-1 min-w-0`}
+                    />
+                  </div>
                   {errors.whatsapp && <p className="text-red-500 text-[12px] mt-1 m-0">{errors.whatsapp}</p>}
                 </div>
 
-                {/* Edad + Zona horaria */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[#1A1820] text-[13px] font-bold mb-1.5">
-                      Edad <span className="text-[#9580A6]">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      min="16" max="80"
-                      value={data.edad}
-                      onChange={e => set('edad')(e.target.value)}
-                      placeholder="Ej: 28"
-                      className={inputBase}
-                    />
-                    {errors.edad && <p className="text-red-500 text-[12px] mt-1 m-0">{errors.edad}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-[#1A1820] text-[13px] font-bold mb-1.5">
-                      Zona horaria
-                      <span className="text-[#9D9B9F] font-normal ml-1">(opcional)</span>
-                    </label>
-                    <select
-                      value={data.zonaHoraria}
-                      onChange={e => set('zonaHoraria')(e.target.value)}
-                      className={`${inputBase} cursor-pointer appearance-none`}
-                    >
-                      <option value="">Seleccioná</option>
-                      <option value="UY">Uruguay (UYT)</option>
-                      <option value="AR">Argentina (ART)</option>
-                      <option value="CL">Chile (CLT)</option>
-                      <option value="CO">Colombia (COT)</option>
-                      <option value="MX">México (CST)</option>
-                      <option value="ES">España (CET)</option>
-                      <option value="US-EST">EE.UU. Este (EST)</option>
-                      <option value="US-PST">EE.UU. Oeste (PST)</option>
-                      <option value="otra">Otra</option>
-                    </select>
-                  </div>
+                {/* Edad */}
+                <div>
+                  <label className="block text-[#1A1820] text-[13px] font-bold mb-1.5">
+                    Edad <span className="text-[#9580A6]">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="16" max="80"
+                    value={data.edad}
+                    onChange={e => set('edad')(e.target.value)}
+                    placeholder="Ej: 28"
+                    className={inputBase}
+                  />
+                  {errors.edad && <p className="text-red-500 text-[12px] mt-1 m-0">{errors.edad}</p>}
                 </div>
               </div>
 
