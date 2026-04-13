@@ -250,28 +250,6 @@ export default function LandingPage() {
     }
   }, [unlocked])
 
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    if (!isLocked) return
-
-    const previousBodyOverflow = document.body.style.overflow
-    const previousHtmlOverflow = document.documentElement.style.overflow
-    const previousBodyOverscroll = document.body.style.overscrollBehavior
-    const previousHtmlOverscroll = document.documentElement.style.overscrollBehavior
-
-    document.body.style.overflow = 'hidden'
-    document.documentElement.style.overflow = 'hidden'
-    document.body.style.overscrollBehavior = 'none'
-    document.documentElement.style.overscrollBehavior = 'none'
-
-    return () => {
-      document.body.style.overflow = previousBodyOverflow
-      document.documentElement.style.overflow = previousHtmlOverflow
-      document.body.style.overscrollBehavior = previousBodyOverscroll
-      document.documentElement.style.overscrollBehavior = previousHtmlOverscroll
-    }
-  }, [isLocked])
-
   const handleTimeUpdate = (evt: React.SyntheticEvent<HTMLVideoElement>) => {
     const el = evt.currentTarget as HTMLVideoElement
     if (!el.duration) return
@@ -292,13 +270,13 @@ export default function LandingPage() {
   }
 
   return (
-    <div className={`${isLocked ? 'h-dvh overflow-hidden' : 'min-h-screen'} flex flex-col bg-[#FEFEFE]`}>
+    <div className="min-h-[100dvh] flex flex-col bg-[#FEFEFE]">
       <FunnelHeader />
 
       <main
         className={`flex flex-col w-full mx-auto px-3 sm:px-5 ${
           isLocked
-            ? 'max-w-[1200px] flex-1 overflow-hidden py-3 sm:py-4'
+            ? 'max-w-[1200px] flex-1 py-3 sm:py-4'
             : 'max-w-[820px] flex-1 pt-6 sm:pt-8 pb-8 md:pb-12'
         }`}
       >
