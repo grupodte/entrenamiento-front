@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import logoSvg from '../assets/DD FIT - LOGO PRINCIPAL.svg'
 import { supabase } from '../lib/supabaseClient'
@@ -213,6 +213,7 @@ export default function PreCall() {
   const [errors, setErrors] = useState<Partial<Record<keyof Data, string>>>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const contentRef = useRef<HTMLElement | null>(null)
 
   const set = (field: keyof Data) => (value: string) =>
     setData(prev => ({ ...prev, [field]: value }))
@@ -243,6 +244,10 @@ export default function PreCall() {
       document.documentElement.style.overflow = previousHtmlOverflow
     }
   }, [])
+
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+  }, [step])
 
   const handleSubmit = async () => {
     setSubmitError(null)
@@ -297,7 +302,7 @@ export default function PreCall() {
   const progressPct = step === 0 ? 0 : Math.round((step / TOTAL) * 100)
 
   return (
-    <div className="min-h-full flex flex-col overflow-hidden bg-[#FEFEFE]">
+    <div className="h-dvh flex flex-col overflow-hidden bg-[#FEFEFE]">
 
       {/* Header */}
       <header className="w-full shrink-0 px-4 sm:px-8 py-4 flex items-center justify-between border-b border-[#E8E4EE] bg-[#FEFEFE]">
@@ -319,14 +324,15 @@ export default function PreCall() {
 
       {/* Content */}
       <main
-        className="flex-1 min-h-0 flex flex-col mt-20 items-center justify-center overflow-hidden px-4 py-6 sm:py-8"
+        ref={contentRef}
+        className="flex-1 min-h-0 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8"
         style={{
           opacity: visible ? 1 : 0,
           transform: visible ? 'translateY(0)' : 'translateY(10px)',
           transition: 'opacity 0.18s ease, transform 0.18s ease',
         }}
       >
-        <div className="w-full   max-w-[325px]  md:max-w-[511px] ">
+        <div className="mx-auto flex min-h-full w-full max-w-[325px] flex-col justify-center md:max-w-[511px]">
 
           {/* ── Step 0: Bienvenida ── */}
           {step === 0 && (
@@ -565,11 +571,11 @@ export default function PreCall() {
         </div>
       </main>
 
-        <footer className="w-full fixed bottom-0 border-t border-[#E8E4EE] bg-[#FEFEFE] px-4 py-3 text-center">
-          <p className="text-[11px] text-[#9D9B9F] m-0">
-            © DemicheriFitness · Todos los derechos reservados
-          </p>
-        </footer>
+      <footer className="w-full shrink-0 border-t border-[#E8E4EE] bg-[#FEFEFE] px-4 py-3 text-center">
+        <p className="text-[11px] text-[#9D9B9F] m-0">
+          © DemicheriFitness · Todos los derechos reservados
+        </p>
+      </footer>
     </div>
   )
 }
