@@ -28,6 +28,21 @@ const CAL_ENFORCED_EVENT_TYPE_ID_INVALID =
   CAL_ENFORCED_EVENT_TYPE_ID_RAW.trim().length > 0 && CAL_ENFORCED_EVENT_TYPE_ID === null;
 const LEAD_TABLE_CANDIDATES = ["crm_leads", "leads"] as const;
 const FUNCTION_VERSION = "2026-04-04.1";
+
+// Maps the landing's internal stage values to the admin CRM estado_lead values.
+// The admin pipeline uses estado_lead; the landing tracks finer-grained stage internally.
+// On lead INSERT we write estado_lead so the admin sees the correct pipeline status.
+// On UPDATE we intentionally skip estado_lead to preserve any changes the admin made.
+const STAGE_TO_ESTADO_LEAD: Record<string, string> = {
+  precall_pending: "pre_call",
+  precall_completed: "pre_call",
+  precall_booked: "pre_call",
+};
+
+function stageToEstadoLead(stage: string | null | undefined): string {
+  if (!stage) return "pre_call";
+  return STAGE_TO_ESTADO_LEAD[stage] ?? "pre_call";
+}
 const ACTIVE_APPOINTMENT_STATUSES = ["scheduled", "confirmed", "accepted", "pending"] as const;
 let cachedLeadTableName: (typeof LEAD_TABLE_CANDIDATES)[number] | null = null;
 
@@ -396,6 +411,9 @@ async function upsertLead(input: LeadUpsertInput) {
     .from(leadTable)
     .insert({
       ...payload,
+      // estado_lead is the admin CRM pipeline column. We set it only on INSERT so the
+      // admin can freely change it later without the landing overwriting their edits.
+      estado_lead: stageToEstadoLead(payload.stage),
       created_at: now,
     })
     .select("*")
