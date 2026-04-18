@@ -12,7 +12,7 @@ type BookingSummary = {
 
 type BookingPhase = 'slots' | 'form' | 'success'
 const AVAILABILITY_LOOKAHEAD_DAYS = 30
-const MAX_VISIBLE_AVAILABLE_DAYS = 7
+const MAX_VISIBLE_AVAILABLE_DAYS = 3
 const AVAILABILITY_CACHE_KEY = 'ddfit_agenda_availability_v1'
 const AVAILABILITY_CACHE_TTL_MS = 1000 * 60 * 10
 const DATE_SKELETON_ITEMS = 6
@@ -32,6 +32,7 @@ type PrecallData = {
   compromiso: string
   tieneEquipo: string
   dispuestoInvertir: string
+  dispone99Mensuales: string
   obstaculoPrincipal: string
   porQueAhora: string
   nombre: string

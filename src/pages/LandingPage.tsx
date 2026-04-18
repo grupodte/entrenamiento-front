@@ -1,221 +1,414 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import MuxPlayer from '@mux/mux-player-react'
 import logoSvg from '../assets/DD FIT - LOGO PRINCIPAL.svg'
+import CasesSection from '../components/CasesSection.jsx'
 
-type HeroVariant = 'base' | 'a' | 'b'
+// ── Config ────────────────────────────────────────────────
+const MUX_PLAYBACK_ID = import.meta.env.VITE_MUX_PLAYBACK_ID as string | undefined
+const LOCK_KEY = 'dmf_landing_unlocked_v1'
+const MAX_SEEK_AHEAD_SECONDS = 5
 
-type HeroCopy = {
-  headline: string
-  headlineSecondLine: string
-  subheadline: string
-  body: string
-}
-
-const HERO_VARIANTS: Record<HeroVariant, HeroCopy> = {
-  base: {
-    headline: 'Las apps de fitness no funcionan porque no te conocen.',
-    headlineSecondLine: 'Demicheri, sí.',
-    subheadline:
-      'Un programa de entrenamiento y nutrición diseñado para vos, con seguimiento directo de un profesional de la salud seguido por más de 260.000 personas.',
-    body:
-      'No es una app genérica. Es el método que Demicheri aplica con sus clientes, ahora accesible desde tu celular: rutinas personalizadas, plan de alimentación y acceso directo por WhatsApp cuando lo necesitás.',
-  },
-  a: {
-    headline: 'Ya probaste las apps. Ya probaste las dietas. El problema no eras vos.',
-    headlineSecondLine: 'El problema es que ninguna estaba hecha para vos. El Método Demicheri sí.',
-    subheadline:
-      'Demicheri es profesional de la salud con 260K seguidores, y ahora podés tener su método en tu celular: rutinas a medida, nutrición real y WhatsApp directo cuando lo necesitás.',
-    body:
-      'Programa personalizado para 2 meses, sin excusas genéricas: entrenamiento, nutrición y seguimiento directo para que avances de verdad.',
-  },
-  b: {
-    headline: 'El método que Demicheri aplica con sus clientes. Ahora para vos.',
-    headlineSecondLine: 'Acceso directo, sin intermediarios.',
-    subheadline:
-      'Entrenamiento + nutrición personalizada + seguimiento directo, todo desde la app. Por $300 los 2 meses.',
-    body:
-      '260K personas lo siguen porque funciona. Ahora podés acceder al mismo sistema: programa para tu cuerpo, plan sostenible y acceso por WhatsApp cuando lo necesitás.',
-  },
-}
-
-const VALUE_FEATURES = [
-  {
-    title: 'Entrenamiento diseñado para tu cuerpo',
-    description:
-      'No rutinas genéricas. Tu programa se arma en base a tus datos físicos, tu objetivo y tu frecuencia disponible.',
-  },
-  {
-    title: 'Nutrición que podés sostener',
-    description:
-      'Un plan de alimentación real, no una dieta de 3 días. Hecho para integrarse a tu vida, no para reemplazarla.',
-  },
-  {
-    title: 'Demicheri en tu WhatsApp',
-    description:
-      'Dudas, ajustes, bloqueos: le escribís directamente. Acceso al profesional sin turno y sin espera.',
-  },
-] as const
-
-const TESTIMONIAL_PLACEHOLDERS = [
-  'PLACEHOLDER: "Nombre, resultado concreto en X semanas"',
-  'PLACEHOLDER: "Nombre, cambio de hábito y mejora física"',
-  'PLACEHOLDER: "Nombre, objetivo cumplido y tiempo logrado"',
-] as const
-
+// ── Minimal funnel header ─────────────────────────────────
 function FunnelHeader() {
   return (
     <header className="w-full px-4 sm:px-8 py-4 flex items-center justify-between border-b border-[#E8E4EE] bg-[#FEFEFE]">
       <img src={logoSvg} alt="DemicheriFitness" className="h-[20px] w-auto" />
-      <span className="text-[#69686B] text-[11px] font-bold uppercase tracking-[0.18em]">Método Demicheri</span>
+      <span className="text-[#69686B] text-[11px] font-bold uppercase tracking-[0.18em]">
+        Método DemicheriFitness
+      </span>
     </header>
   )
 }
 
-function resolveHeroVariant(): HeroVariant {
-  if (typeof window === 'undefined') return 'base'
-
-  const raw = new URLSearchParams(window.location.search).get('v')?.toLowerCase()
-  if (raw === 'a' || raw === 'b') return raw
-
-  return 'base'
+// ── Progress bar ──────────────────────────────────────────
+function VideoProgressBar({ progress, unlocked }: { progress: number; unlocked: boolean }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="relative h-1.5 bg-[#E8E4EE] rounded-full overflow-hidden">
+        <div
+          className="absolute left-0 top-0 h-full rounded-full transition-all duration-300"
+          style={{ width: `${progress}%`, backgroundColor: unlocked ? '#22c55e' : '#9580A6' }}
+        />
+        {!unlocked && (
+          <div
+            className="absolute top-0 h-full w-[2px] bg-[#1A1820]/25"
+            style={{ left: '75%' }}
+            aria-hidden="true"
+          />
+        )}
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] text-[#69686B]">
+          {unlocked ? (
+            <span className="text-green-600 font-bold">✓ Contenido desbloqueado</span>
+          ) : (
+            <>
+              <span className="font-bold text-[#1A1820]">{progress}%</span> reproducido · desbloqueo al{' '}
+              <span className="font-bold text-[#9580A6]">75%</span>
+            </>
+          )}
+        </span>
+        {!unlocked && progress > 0 && progress < 75 && (
+          <span className="text-[11px] text-[#9D9B9F]">Faltan {75 - progress}%</span>
+        )}
+      </div>
+    </div>
+  )
 }
 
+// ── Lock hint ─────────────────────────────────────────────
+function LockedHint({ progress }: { progress: number }) {
+  return (
+    <p className="text-center text-[12px] text-[#9D9B9F] tracking-wide m-0">
+      {progress === 0
+        ? 'Mirá el video para desbloquear el contenido completo'
+        : `Seguí mirando — el contenido se desbloquea al 75%`}
+    </p>
+  )
+}
+
+// ── Gated content ─────────────────────────────────────────
+function GatedContent() {
+  const faqs = [
+    {
+      q: '¿Cuánto tiempo lleva ver resultados?',
+      a: 'En las primeras semanas ya notás cambios en energía y hábitos. Los cambios físicos visibles aparecen entre las semanas 4 y 8, dependiendo de tu punto de partida.',
+    },
+    {
+      q: '¿Necesito ir al gimnasio?',
+      a: 'No necesariamente. El plan se arma según lo que tenés disponible. Lo importante es tener algo con qué trabajar.',
+    },
+    {
+      q: '¿Qué pasa si tengo poco tiempo?',
+      a: 'El método está pensado para funcionar en agendas reales. Si tenés 3 días a la semana, lo hacemos funcionar.',
+    },
+  ]
+
+  return (
+    <div className="flex flex-col gap-1 sm:gap-2 mt-1 sm:mt-2">
+
+      {/* Propuesta resumida */}
+      <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#FEFEFE] border border-[#E8E4EE] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
+        <div className="text-center">
+          <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
+            Por qué funciona
+          </p>
+          <h2 className="text-[#1A1820] text-[24px] sm:text-[32px] md:text-[40px] font-bold leading-none mb-8 m-0">
+            No es otro plan genérico.<br />Es tuyo.
+          </h2>
+          <ul className="flex flex-col gap-4 text-left max-w-lg mx-auto m-0 p-0 list-none">
+            {[
+              'Tu plan, no el de otro. Personalizado desde el día uno, sin plantillas que sirven para cualquiera.',
+              'Seguimiento real los 60 días completos — Dani no desaparece a mitad de camino.',
+              'Nutrición que encaja en tu vida real, no te pide que cambies todo de golpe.',
+            ].map((item, i) => (
+              <li key={i} className="flex items-start gap-3 text-[14px] sm:text-[15px] text-[#1A1820] leading-snug">
+                <span className="shrink-0 text-[#9580A6] font-bold text-[16px] mt-0.5">✓</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Resultados reales */}
+      <div
+        className="w-full rounded-[10px] sm:rounded-[20px] px-4 sm:px-8 md:px-10 pt-8 sm:pt-10 pb-0"
+        style={{ backgroundColor: '#F4F2F7' }}
+      >
+        <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-2 m-0">
+          Casos reales
+        </p>
+        <h2 className="text-[#1A1820] text-[24px] sm:text-[32px] md:text-[38px] font-bold leading-none m-0">
+          Resultados concretos.<br />
+          <span className="text-[#C4BBCE]">No promesas.</span>
+        </h2>
+        <CasesSection />
+      </div>
+
+      {/* CTA principal */}
+      <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#9580A6] px-4 sm:px-8 md:px-10 py-12 sm:py-14 md:py-16 flex flex-col items-center text-center">
+        <p className="text-white/65 text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
+          Los cupos son limitados
+        </p>
+        <h2 className="text-white text-[24px] sm:text-[32px] md:text-[42px] font-bold leading-none mb-4 m-0">
+          ¿Es este tu momento?
+        </h2>
+        <p className="text-white/60 text-[14px] sm:text-[15px] leading-snug mb-8 max-w-[400px] m-0">
+          En 2 minutos completás el formulario y reservás tu lugar. Dani lo revisa antes de la llamada.
+        </p>
+        <Link
+          to="/pre-call"
+          className="bg-white text-[#1A1820] font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[8px] hover:bg-white/90 transition-colors"
+        >
+          Reservar mi lugar →
+        </Link>
+      </section>
+
+      {/* Proceso en 2 pasos */}
+      <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#F4F2F7] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
+        <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
+          ¿Qué pasa después?
+        </p>
+        <h2 className="text-[#1A1820] text-[24px] sm:text-[32px] md:text-[38px] font-bold leading-none mb-8 m-0">
+          Rápido. Sin vueltas.
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          {[
+            {
+              n: '01',
+              title: 'Formulario breve',
+              desc: 'Completás unas preguntas rápidas para que podamos preparar bien la llamada. Toma menos de 2 minutos.',
+            },
+            {
+              n: '02',
+              title: 'Agendás tu llamada',
+              desc: 'Elegís el día y horario que mejor te queda. En la llamada definimos si el método es para vos.',
+            },
+          ].map((s) => (
+            <div key={s.n} className="bg-[#FEFEFE] border border-[#E8E4EE] rounded-[8px] sm:rounded-[14px] p-5 sm:p-6">
+              <span className="block text-[#9580A6] text-[40px] font-bold leading-none mb-3">{s.n}</span>
+              <h3 className="text-[#1A1820] text-[16px] sm:text-[17px] font-bold leading-tight mb-2 m-0">{s.title}</h3>
+              <p className="text-[#69686B] text-[13px] sm:text-[14px] leading-relaxed m-0">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Objeciones */}
+      <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#1A1820] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
+        <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
+          Tus dudas
+        </p>
+        <h2 className="text-white text-[22px] sm:text-[28px] md:text-[36px] font-bold leading-none mb-8 m-0">
+          Las respondemos antes de que preguntes.
+        </h2>
+        <div className="flex flex-col gap-5">
+          {faqs.map((f, i) => (
+            <div key={i} className="border-t border-white/[0.08] pt-5">
+              <p className="text-white font-bold text-[14px] sm:text-[15px] mb-1.5 m-0">{f.q}</p>
+              <p className="text-white/50 text-[13px] sm:text-[14px] leading-relaxed m-0">{f.a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA final */}
+      <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#FEFEFE] border border-[#E8E4EE] px-4 sm:px-8 md:px-10 py-12 sm:py-14 md:py-16 flex flex-col items-center text-center">
+        <h2 className="text-[#1A1820] text-[22px] sm:text-[30px] md:text-[40px] font-bold leading-none mb-3 m-0">
+          Ya viste de qué se trata.<br />Ahora es tu turno.
+        </h2>
+        <p className="text-[#69686B] text-[14px] sm:text-[15px] leading-snug mb-8 max-w-[380px] m-0">
+          Los cupos son limitados. Cada cliente recibe atención directa de Dani. No es para todos — pero puede ser para vos.
+        </p>
+        <Link
+          to="/pre-call"
+          className="bg-[#9580A6] text-white font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[8px] hover:bg-[#7A6A8F] transition-colors"
+        >
+          Quiero reservar mi lugar →
+        </Link>
+      </section>
+
+    </div>
+  )
+}
+
+// ── Main page ─────────────────────────────────────────────
 export default function LandingPage() {
-  const [variant] = useState<HeroVariant>(resolveHeroVariant)
-  const hero = HERO_VARIANTS[variant]
+  const [videoProgress, setVideoProgress] = useState(0)
+  const [unlocked, setUnlocked] = useState(() => {
+    try { return localStorage.getItem(LOCK_KEY) === '1' } catch { return false }
+  })
+  const [isPaused, setIsPaused] = useState(true)
+  const isLocked = !unlocked
+  const maxWatched = useRef(0)
+  const videoWrapperRef = useRef<HTMLDivElement>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const muxRef = useRef<any>(null)
+
+  const handleVideoClick = () => {
+    const el = muxRef.current
+    if (!el) return
+    if (el.paused) { el.play(); setIsPaused(false) }
+    else { el.pause(); setIsPaused(true) }
+  }
+
+  const handleFullscreen = () => {
+    const el = muxRef.current ?? videoWrapperRef.current
+    if (!el) return
+    if (document.fullscreenElement) {
+      document.exitFullscreen()
+    } else {
+      el.requestFullscreen()
+    }
+  }
+
+  useEffect(() => {
+    if (unlocked) {
+      try { localStorage.setItem(LOCK_KEY, '1') } catch {}
+    }
+  }, [unlocked])
+
+  const handleTimeUpdate = (evt: React.SyntheticEvent<HTMLVideoElement>) => {
+    const el = evt.currentTarget as HTMLVideoElement
+    if (!el.duration) return
+
+    // Prevent significant seek-ahead
+    if (el.currentTime > maxWatched.current + MAX_SEEK_AHEAD_SECONDS) {
+      el.currentTime = maxWatched.current
+      return
+    }
+
+    maxWatched.current = Math.max(maxWatched.current, el.currentTime)
+    const pct = Math.min(Math.round((maxWatched.current / el.duration) * 100), 100)
+    setVideoProgress(pct)
+
+    if (pct >= 75 && !unlocked) {
+      setUnlocked(true)
+    }
+  }
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-[#FEFEFE]">
       <FunnelHeader />
 
-      <main className="w-full max-w-[1120px] mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-10 md:py-14 flex flex-col gap-4 sm:gap-6 md:gap-8">
-        <section className="rounded-[16px] sm:rounded-[20px] bg-[#F4F2F7] border border-[#E8E4EE] p-6 sm:p-10 md:p-12">
-          <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.2em] mb-3 sm:mb-4 m-0">
-            Método Demicheri
-          </p>
-          <h1 className="text-[#1A1820] text-[30px] sm:text-[46px] md:text-[56px] font-bold leading-[0.92] tracking-[-0.03em] m-0 max-w-[860px]">
-            {hero.headline}
-            <br />
-            <span className="text-[#9580A6]">{hero.headlineSecondLine}</span>
-          </h1>
-          <p className="text-[#2A2731] text-[16px] sm:text-[20px] leading-snug max-w-[820px] mt-6 mb-0">
-            {hero.subheadline}
-          </p>
-          <p className="text-[#69686B] text-[15px] sm:text-[17px] leading-relaxed max-w-[860px] mt-4 mb-0">{hero.body}</p>
+      <main
+        className={`flex flex-col w-full mx-auto px-3 sm:px-5 ${
+          isLocked
+            ? 'max-w-[1200px] flex-1 py-3 sm:py-4'
+            : 'max-w-[820px] flex-1 pt-6 sm:pt-8 pb-8 md:pb-12'
+        }`}
+      >
+        <div className={`flex flex-col ${isLocked ? 'w-full gap-2 sm:gap-3' : 'gap-3 sm:gap-4'}`}>
 
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-8">
-            <Link
-              to="/pre-call"
-              className="inline-flex items-center justify-center bg-[#9580A6] text-white font-bold text-[12px] sm:text-[13px] uppercase tracking-[0.14em] py-4 px-6 rounded-[10px] hover:bg-[#7A6A8F] transition-colors"
+          {/* Hero context */}
+          <div className={`text-center ${isLocked ? 'max-w-[820px] mx-auto py-0' : 'py-4 sm:py-6'}`}>
+            <p className={`text-[#9580A6] font-bold uppercase tracking-[0.2em] m-0 ${isLocked ? 'text-[10px] mb-2' : 'text-[11px] mb-3'}`}>
+              DemicheriFitness
+            </p>
+            <h1 className={`text-[#1A1820] font-bold leading-none mb-3 m-0 ${
+              isLocked ? 'text-[22px] sm:text-[38px] md:text-[52px]' : 'text-[32px] sm:text-[44px] md:text-[52px]'
+            }`}>
+              Transformá tu cuerpo en 60 días con el único método que no te abandona.
+            </h1>
+            {!isLocked && (
+              <p className="text-[#69686B] text-[15px] sm:text-[17px] leading-relaxed mx-auto m-0 max-w-[500px]">
+                Mirá el video. Dani te explica por qué este método funciona cuando todo lo demás falló.
+              </p>
+            )}
+          </div>
+
+          <div className="w-full mx-auto">
+            {/* Video */}
+            <div
+              ref={videoWrapperRef}
+              className="relative rounded-[10px] sm:rounded-[10px] overflow-hidden bg-[#1A1820] mx-auto w-full"
+              style={undefined}
             >
-              Empezar mi ciclo - $300 por 2 meses
-            </Link>
-            <a
-              href="#metodo"
-              className="inline-flex items-center justify-center border border-[#1A1820]/15 text-[#1A1820] font-bold text-[12px] sm:text-[13px] uppercase tracking-[0.1em] py-4 px-6 rounded-[10px] hover:bg-white transition-colors"
-            >
-              Ver cómo funciona antes de decidir
-            </a>
+              {MUX_PLAYBACK_ID ? (
+                <>
+                  <MuxPlayer
+                    ref={muxRef}
+                    playbackId={MUX_PLAYBACK_ID}
+                    defaultPlaybackRate={1.2}
+                    nohotkeys
+                    style={{
+                      width: '100%',
+                      display: 'block',
+                      aspectRatio: '16/9',
+                    } as React.CSSProperties}
+                    // @ts-expect-error mux-player extends HTMLVideoElement events
+                    onTimeUpdate={handleTimeUpdate}
+                    metadata={{ video_title: 'DemicheriFitness – Método' }}
+                    accentColor="#9580A6"
+                  />
+                  {/* Overlay transparente — captura clicks para play/pause */}
+                  <div
+                    className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center"
+                    onClick={handleVideoClick}
+                    aria-label="Reproducir / Pausar"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' || e.key === ' ' ? handleVideoClick() : undefined}
+                  >
+                    {/* Botón play central — visible solo cuando está pausado */}
+                    <div
+                      className={`transition-all duration-200 ${
+                        isPaused ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'
+                      }`}
+                    >
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/90 shadow-lg flex items-center justify-center">
+                        <svg
+                          width="28"
+                          height="28"
+                          viewBox="0 0 28 28"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden="true"
+                          className="translate-x-[2px]"
+                        >
+                          <path d="M8 5L23 14L8 23V5Z" fill="#1A1820" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Botón pantalla completa */}
+                  <button
+                    onClick={handleFullscreen}
+                    aria-label="Pantalla completa"
+                    className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded bg-black/50 text-white hover:bg-black/75 transition-colors z-20"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M1 5V1H5M9 1H13V5M13 9V13H9M5 13H1V9" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </>
+              ) : (
+                <div className="w-full aspect-video flex flex-col items-center justify-center gap-3 bg-[#1A1820] text-center px-6">
+                  <div className="w-14 h-14 rounded-full border-2 border-white/20 flex items-center justify-center">
+                    <span className="text-xl text-white/40">▶</span>
+                  </div>
+                  <p className="text-white/40 text-[13px] m-0">
+                    Video no configurado. Agregá{' '}
+                    <code className="bg-white/10 px-1.5 py-0.5 rounded text-[#9580A6]">VITE_MUX_PLAYBACK_ID</code>
+                    {' '}en{' '}
+                    <code className="bg-white/10 px-1.5 py-0.5 rounded text-white/60">.env</code>
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Progress bar */}
+            <div className={isLocked ? 'mt-2' : 'mt-3'}>
+              <VideoProgressBar progress={videoProgress} unlocked={unlocked} />
+            </div>
+
+            {/* Lock hint */}
+            {!unlocked && (
+              <div className="mt-2">
+                <LockedHint progress={videoProgress} />
+              </div>
+            )}
           </div>
-        </section>
 
-        <section id="metodo" className="rounded-[16px] sm:rounded-[20px] border border-[#E8E4EE] bg-white p-6 sm:p-10 md:p-12">
-          <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.2em] mb-3 m-0">Propuesta de valor</p>
-          <h2 className="text-[#1A1820] text-[26px] sm:text-[36px] md:text-[42px] font-bold leading-none m-0 mb-8 sm:mb-10">
-            Un sistema pensado para sostener resultados, no para motivarte 3 días.
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
-            {VALUE_FEATURES.map((feature) => (
-              <article
-                key={feature.title}
-                className="rounded-[12px] border border-[#E8E4EE] bg-[#FEFEFE] p-5 sm:p-6 flex flex-col gap-3"
-              >
-                <span className="inline-flex w-8 h-8 rounded-full items-center justify-center bg-[#F4F2F7] text-[#9580A6] font-bold text-[13px]">
-                  ✓
-                </span>
-                <h3 className="text-[#1A1820] text-[18px] sm:text-[20px] font-bold leading-tight m-0">{feature.title}</h3>
-                <p className="text-[#69686B] text-[14px] sm:text-[15px] leading-relaxed m-0">{feature.description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-[16px] sm:rounded-[20px] bg-[#1A1820] text-white p-6 sm:p-10 md:p-12">
-          <p className="text-white/55 text-[11px] font-bold uppercase tracking-[0.2em] mb-3 m-0">Pricing</p>
-          <h2 className="text-[26px] sm:text-[36px] md:text-[42px] font-bold leading-tight m-0 max-w-[820px]">
-            ¿Cuánto cuesta tener un profesional de tu lado por 2 meses?
-          </h2>
-
-          <div className="mt-8 overflow-x-auto">
-            <table className="w-full min-w-[720px] border-separate border-spacing-0 text-left">
-              <thead>
-                <tr>
-                  <th className="px-4 py-3 border border-white/20 text-[12px] uppercase tracking-[0.12em] text-white/70">Plan</th>
-                  <th className="px-4 py-3 border border-white/20 text-[12px] uppercase tracking-[0.12em] text-white/70">Incluye</th>
-                  <th className="px-4 py-3 border border-white/20 text-[12px] uppercase tracking-[0.12em] text-white/70">Precio</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="px-4 py-3 border border-white/20 text-[15px] font-semibold">Solo entrenamiento</td>
-                  <td className="px-4 py-3 border border-white/20 text-[14px] text-white/80">Rutinas + seguimiento de progreso + WhatsApp</td>
-                  <td className="px-4 py-3 border border-white/20 text-[15px] font-bold">$200</td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-3 border border-white/20 text-[15px] font-semibold">Solo nutrición</td>
-                  <td className="px-4 py-3 border border-white/20 text-[14px] text-white/80">Plan de alimentación + ajustes + WhatsApp</td>
-                  <td className="px-4 py-3 border border-white/20 text-[15px] font-bold">$200</td>
-                </tr>
-                <tr className="bg-[#2A2731]">
-                  <td className="px-4 py-3 border border-white/20 text-[15px] font-semibold">Método completo ⭐ Más elegido</td>
-                  <td className="px-4 py-3 border border-white/20 text-[14px] text-white/80">Entrenamiento + Nutrición + WhatsApp</td>
-                  <td className="px-4 py-3 border border-white/20 text-[15px] font-bold">
-                    <span className="line-through text-white/45 mr-2">$400</span>
-                    <span className="text-[#9EF2B5]">$300</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          {/* Gated content — smooth reveal */}
+          <div
+            className={`grid overflow-hidden transition-[grid-template-rows,opacity,transform] duration-700 ease-out ${
+              unlocked
+                ? 'grid-rows-[1fr] opacity-100 translate-y-0 pointer-events-auto'
+                : 'grid-rows-[0fr] opacity-0 translate-y-8 pointer-events-none select-none'
+            }`}
+            aria-hidden={!unlocked}
+          >
+            <div className="min-h-0 overflow-hidden">
+              <GatedContent />
+            </div>
           </div>
 
-          <p className="text-white/75 text-[14px] sm:text-[15px] leading-relaxed mt-6 mb-0">
-            Ciclos de 2 meses, el tiempo mínimo para que un hábito se instale de verdad.
-          </p>
-
-          <div className="mt-8 flex flex-col gap-3">
-            <Link
-              to="/pre-call"
-              className="inline-flex w-full sm:w-fit items-center justify-center bg-white text-[#1A1820] font-bold text-[12px] sm:text-[13px] uppercase tracking-[0.1em] py-4 px-6 rounded-[10px] hover:bg-white/90 transition-colors"
-            >
-              Empezar con el Método completo - $300
-            </Link>
-            <p className="text-white/60 text-[13px] m-0">o elegir un solo módulo si preferís arrancar de a uno</p>
-          </div>
-        </section>
-
-        <section className="rounded-[16px] sm:rounded-[20px] border border-[#E8E4EE] bg-white p-6 sm:p-10 md:p-12">
-          <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.2em] mb-3 m-0">Prueba social</p>
-          <h2 className="text-[#1A1820] text-[26px] sm:text-[34px] md:text-[40px] font-bold leading-tight m-0 max-w-[860px]">
-            Más de 260.000 personas siguen el método de Demicheri en Instagram.
-          </h2>
-          <p className="text-[#69686B] text-[15px] leading-relaxed mt-4 mb-0">
-            Estos testimonios deben reemplazarse por casos reales con nombre, resultado y tiempo para maximizar conversión.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mt-7">
-            {TESTIMONIAL_PLACEHOLDERS.map((placeholder) => (
-              <article
-                key={placeholder}
-                className="rounded-[12px] border border-dashed border-[#D8D2DF] bg-[#FCFBFE] p-5 sm:p-6 flex flex-col gap-3"
-              >
-                <div className="w-11 h-11 rounded-full bg-[#E8E4EE]" aria-hidden="true" />
-                <p className="text-[#1A1820] text-[14px] leading-relaxed m-0">{placeholder}</p>
-              </article>
-            ))}
-          </div>
-        </section>
+        </div>
       </main>
+
     </div>
   )
 }

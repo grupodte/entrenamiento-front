@@ -8,11 +8,12 @@ const PRECALL_LEAD_ID_STORAGE_KEY = 'dmf_precall_lead_id'
 
 // ── Types ──────────────────────────────────────────────────
 type Data = {
-  entrenaDias: string       // si | no
-  compromiso: string        // 1-5
+  entrenaDias: string       // 2x | 3x | +3x
+  compromiso: string        // 1-5 (salud de la alimentación)
   tieneEquipo: string       // si | no | parcial
-  dispuestoInvertir: string
-  obstaculoPrincipal: string
+  dispuestoInvertir: string // rutina | dieta | rutina-dieta
+  dispone99Mensuales: string // si | no
+  obstaculoPrincipal: string // lesión o insuficiencia (respuesta abierta corta)
   porQueAhora: string
   nombre: string
   email: string
@@ -39,11 +40,12 @@ const COUNTRY_PREFIXES = [
 
 const INITIAL: Data = {
   entrenaDias: '', compromiso: '', tieneEquipo: '', dispuestoInvertir: '',
+  dispone99Mensuales: '',
   obstaculoPrincipal: '', porQueAhora: '',
   nombre: '', email: '', whatsappPrefix: '+598', whatsapp: '', edad: '',
 }
 
-const TOTAL = 7 // pasos con contenido (1-7), el 0 es welcome
+const TOTAL = 8 // pasos con contenido (1-8), el 0 es welcome
 
 const inputBase =
   'w-full bg-[#F4F2F7] border border-[#E8E4EE] rounded-[8px] px-4 py-3 text-[#1A1820] text-[15px] placeholder:text-[#9D9B9F] focus:outline-none focus:border-[#9580A6] focus:ring-2 focus:ring-[#9580A6]/15 transition-colors'
@@ -124,7 +126,7 @@ function StepScale({
   onBack: () => void
   onChoose: (v: string) => void
 }) {
-  const labels = ['Nada', 'Poco', 'Regular', 'Bastante', 'Total']
+  const labels = ['Muy baja', 'Baja', 'Media', 'Buena', 'Muy buena']
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -158,16 +160,18 @@ function StepScale({
 }
 
 function StepText({
-  step, question, placeholder, value, onChange, onBack, onNext, canContinue,
+  step, question, placeholder, hint, value, onChange, onBack, onNext, canContinue, maxLength = 120,
 }: {
   step: number
   question: string
   placeholder: string
+  hint?: string
   value: string
   onChange: (v: string) => void
   onBack: () => void
   onNext: () => void
   canContinue: boolean
+  maxLength?: number
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -176,14 +180,16 @@ function StepText({
         <h2 className="text-[#1A1820] text-[22px] sm:text-[30px] font-bold leading-tight m-0">
           {question}
         </h2>
+        {hint && <p className="text-[#69686B] text-[13px] mt-2 m-0">{hint}</p>}
       </div>
-      <textarea
+      <input
+        type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        rows={3}
+        maxLength={maxLength}
         autoFocus
-        className={`${inputBase} resize-none`}
+        className={inputBase}
       />
       <div className="flex gap-3">
         <button
@@ -360,25 +366,23 @@ export default function PreCall() {
           {step === 1 && (
             <StepChoice
               step={1}
-              question="¿Cuántos días por semana estás dispuesto/a a entrenar los próximos 60 días?"
+              question="¿Cuántos días por semana estás dispuesto/a a entrenar?"
               value={data.entrenaDias}
               onBack={goBack}
               options={[
-                { value: '2', label: '2 días por semana', desc: 'Lo que mi agenda me permite hoy' },
-                { value: '3', label: '3 días por semana', desc: 'Constante y manejable' },
-                { value: '4', label: '4 días por semana', desc: 'Comprometido/a con el proceso' },
-                { value: '5+', label: '5 o más días por semana', desc: 'Todo para dentro' },
+                { value: '2x', label: '2 x semana' },
+                { value: '3x', label: '3 x semana' },
+                { value: '+3x', label: '+3 x semana' },
               ]}
               onChoose={v => choose('entrenaDias', v)}
             />
           )}
 
-          {/* ── Step 2: Compromiso alimentación ── */}
+          {/* ── Step 2: Alimentación actual ── */}
           {step === 2 && (
             <StepScale
               step={2}
-              question="¿Qué tan comprometido/a estás con cambiar tus hábitos de alimentación?"
-              hint="No se trata de hacer dieta estricta — se trata de cambiar hábitos reales."
+              question="Del 1 al 5: ¿Qué tan saludable es tu alimentación hoy?"
               value={data.compromiso}
               onBack={goBack}
               onChoose={v => choose('compromiso', v)}
@@ -401,45 +405,57 @@ export default function PreCall() {
             />
           )}
 
-          {/* ── Step 4: Plan ── */}
+          {/* ── Step 4: Apoyo principal ── */}
           {step === 4 && (
             <StepChoice
               step={4}
-              question="¿Con qué plan te gustaría arrancar?"
-              hint="Podemos ajustarlo en la llamada si tenés dudas."
+              question="¿Con cuál de estas opciones necesitás mayor apoyo hoy?"
               value={data.dispuestoInvertir}
               onBack={goBack}
               options={[
-                { value: 'rutina-dieta-300', label: 'Rutina + Dieta', desc: 'USD 300 · El paquete completo con ahorro de USD 50' },
-                { value: 'rutina-200', label: 'Solo Rutina', desc: 'USD 200 · Plan de entrenamiento personalizado' },
-                { value: 'dieta-200', label: 'Solo Dieta', desc: 'USD 200 · Plan nutricional completo' },
+                { value: 'rutina', label: 'Rutina' },
+                { value: 'dieta', label: 'Dieta' },
+                { value: 'rutina-dieta', label: 'Rutina y dieta' },
               ]}
               onChoose={v => choose('dispuestoInvertir', v)}
             />
           )}
 
-          {/* ── Step 5: Obstáculo ── */}
+          {/* ── Step 5: Presupuesto mínimo ── */}
           {step === 5 && (
             <StepChoice
               step={5}
-              question="¿Cuál fue el obstáculo número 1 hasta ahora?"
-              value={data.obstaculoPrincipal}
+              question="¿Disponés de al menos USD 99 mensuales para tu plan?"
+              value={data.dispone99Mensuales}
               onBack={goBack}
               options={[
-                { value: 'constancia', label: 'Falta de constancia', desc: 'Empiezo y no puedo mantenerlo' },
-                { value: 'guia', label: 'No sé qué hacer', desc: 'Me falta dirección y un plan claro' },
-                { value: 'alimentacion', label: 'La alimentación', desc: 'No sé cómo comer o no puedo sostenerlo' },
-                { value: 'tiempo', label: 'Falta de tiempo', desc: 'Mi agenda no me lo permite fácil' },
-                { value: 'lesion', label: 'Lesiones o limitaciones físicas', desc: 'Mi cuerpo me puso freno' },
+                { value: 'si', label: 'Sí, dispongo de al menos USD 99 mensuales' },
+                { value: 'no', label: 'No, hoy no llego a ese monto' },
               ]}
-              onChoose={v => choose('obstaculoPrincipal', v)}
+              onChoose={v => choose('dispone99Mensuales', v)}
             />
           )}
 
-          {/* ── Step 6: Por qué ahora ── */}
+          {/* ── Step 6: Lesión o insuficiencia ── */}
           {step === 6 && (
-            <StepChoice
+            <StepText
               step={6}
+              question="¿Tenés algún tipo de lesión o insuficiencia?"
+              hint="Respuesta abierta corta."
+              placeholder="Ej: molestia de rodilla, hernia lumbar, ninguna"
+              value={data.obstaculoPrincipal}
+              onChange={v => set('obstaculoPrincipal')(v)}
+              onBack={goBack}
+              onNext={goNext}
+              canContinue={data.obstaculoPrincipal.trim().length > 0}
+              maxLength={120}
+            />
+          )}
+
+          {/* ── Step 7: Por qué ahora ── */}
+          {step === 7 && (
+            <StepChoice
+              step={7}
               question="¿Por qué ahora y no el mes que viene?"
               value={data.porQueAhora}
               onBack={goBack}
@@ -453,11 +469,11 @@ export default function PreCall() {
             />
           )}
 
-          {/* ── Step 7: Datos de contacto ── */}
-          {step === 7 && (
+          {/* ── Step 8: Datos de contacto ── */}
+          {step === 8 && (
             <div className="flex flex-col gap-6">
               <div>
-                <StepMeta step={7} />
+                <StepMeta step={8} />
                 <h2 className="text-[#1A1820] text-[24px] sm:text-[32px] font-bold leading-tight m-0">
                   ¿A dónde te enviamos la confirmación?
                 </h2>
