@@ -10,12 +10,16 @@ const caseItems = [
     result: 'Bajó 35 kg',
     before: hAntes,
     after: hDespues,
+    quote: '"Antes evitaba espejos, evitaba fotos, evitaba salidas. Había probado de todo y siempre terminaba igual: solo con la culpa. Con Dani fue distinto desde la primera semana — no me dejó caer cuando más quería soltar. Hoy bajé 35 kilos, pero lo que más me cambió fue cómo me siento conmigo mismo."',
+    author: 'Quique, 41 años',
   },
   {
     name: 'María',
     result: 'Bajó 11 kg',
     before: mAntes,
     after: mDespues,
+    quote: '"No era la primera vez que intentaba bajar de peso. Pero sí la primera vez que alguien me preguntaba cómo me sentía, no solo cuánto pesaba. Eso hizo toda la diferencia. En 60 días bajé 11 kilos y aprendí a comer sin miedo."',
+    author: 'María, 29 años',
   },
 ]
 
@@ -88,19 +92,19 @@ export default function CasesSection() {
   }, [])
 
   return (
-    <section
-      className="w-full rounded-[10px] sm:rounded-[20px] md:rounded-[28px] px-4 sm:px-8 md:px-12 py-6 sm:py-8 md:py-10"
-    >
+    <section className="w-full rounded-[10px] sm:rounded-[20px] md:rounded-[28px] px-4 sm:px-8 md:px-12 py-6 sm:py-8 md:py-10">
       <div
         ref={scrollRef}
         className="no-scrollbar flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory md:grid md:grid-cols-2 md:overflow-visible md:pb-0"
       >
         {caseItems.map((caseItem) => (
-            <div
-              key={caseItem.name}
-              className="relative grid w-[85vw] max-w-[520px] shrink-0 snap-start grid-cols-2 gap-3 pt-6 md:w-auto md:max-w-none md:pt-0"
-            >
-              <span className="absolute left-1/2 top-2 -translate-x-1/2 rounded-full bg-[#9580A6] px-3 py-1 text-[11px] sm:text-[12px] font-bold uppercase tracking-wide text-white  md:-top-3">
+          <div
+            key={caseItem.name}
+            className="flex flex-col w-[85vw] max-w-[520px] shrink-0 snap-start gap-4 pt-6 md:w-auto md:max-w-none md:pt-0"
+          >
+            {/* Fotos antes/después */}
+            <div className="relative grid grid-cols-2 gap-3">
+              <span className="absolute left-1/2 top-2 -translate-x-1/2 rounded-full bg-[#9580A6] px-3 py-1 text-[11px] sm:text-[12px] font-bold uppercase tracking-wide text-white md:-top-3 z-10">
                 {caseItem.result}
               </span>
               <img
@@ -108,17 +112,26 @@ export default function CasesSection() {
                 alt={`${caseItem.name} ${beforeLabel}`}
                 loading="lazy"
                 decoding="async"
-                className="w-full aspect-[3/4] rounded-[5px] object-cover "
+                className="w-full aspect-[3/4] rounded-[5px] object-cover"
               />
               <img
                 src={caseItem.after}
                 alt={`${caseItem.name} ${afterLabel}`}
                 loading="lazy"
                 decoding="async"
-                className="w-full aspect-[3/4] rounded-[5px] object-cover "
+                className="w-full aspect-[3/4] rounded-[5px] object-cover"
               />
             </div>
-          ))}
+
+            {/* Cita del cliente */}
+            <div className="border-l-[3px] border-[#9580A6] pl-4">
+              <p className="text-[#1A1820] text-[13px] sm:text-[14px] leading-relaxed italic m-0">
+                {caseItem.quote}
+              </p>
+              <p className="text-[#9580A6] font-bold text-[12px] mt-2 m-0">— {caseItem.author}</p>
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   )

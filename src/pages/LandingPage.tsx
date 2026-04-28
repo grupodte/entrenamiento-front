@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import MuxPlayer from '@mux/mux-player-react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useGSAP } from '@gsap/react'
 import logoSvg from '../assets/DD FIT - LOGO PRINCIPAL.svg'
 import CasesSection from '../components/CasesSection.jsx'
+
+gsap.registerPlugin(ScrollTrigger, useGSAP)
 
 // ── Config ────────────────────────────────────────────────
 const MUX_PLAYBACK_ID = import.meta.env.VITE_MUX_PLAYBACK_ID as string | undefined
@@ -15,7 +20,7 @@ function FunnelHeader() {
     <header className="w-full px-4 sm:px-8 py-4 flex items-center justify-between border-b border-[#E8E4EE] bg-[#FEFEFE]">
       <img src={logoSvg} alt="DemicheriFitness" className="h-[20px] w-auto" />
       <span className="text-[#69686B] text-[11px] font-bold uppercase tracking-[0.18em]">
-        Método DemicheriFitness
+        Método Demicheri
       </span>
     </header>
   )
@@ -70,6 +75,8 @@ function LockedHint({ progress }: { progress: number }) {
 
 // ── Gated content ─────────────────────────────────────────
 function GatedContent() {
+  const containerRef = useRef<HTMLDivElement>(null)
+
   const faqs = [
     {
       q: '¿Cuánto tiempo lleva ver resultados?',
@@ -77,44 +84,110 @@ function GatedContent() {
     },
     {
       q: '¿Necesito ir al gimnasio?',
-      a: 'No necesariamente. El plan se arma según lo que tenés disponible. Lo importante es tener algo con qué trabajar.',
+      a: 'No necesariamente. El programa se arma según lo que tenés disponible — para gimnasio o para casa. Lo definimos juntos en la llamada.',
     },
     {
       q: '¿Qué pasa si tengo poco tiempo?',
       a: 'El método está pensado para funcionar en agendas reales. Si tenés 3 días a la semana, lo hacemos funcionar.',
     },
+    {
+      q: '¿Cuánto cuesta el programa?',
+      a: 'El valor se define en la llamada de diagnóstico, según tu situación y lo que necesitás. No hay un precio fijo porque no hay dos casos iguales. Lo que sí podés saber: la llamada es gratis y sin compromiso. Si después de hablar sentís que no es para vos, no pasa nada.',
+    },
+    {
+      q: '¿Qué pasa si en algún momento no puedo seguir el ritmo?',
+      a: 'Eso es exactamente para lo que está Dani. Si una semana se te complica el trabajo, la familia, la cabeza — ajustamos. El programa se adapta a tu vida real, no al revés. No existe el "me quedé afuera".',
+    },
   ]
 
-  return (
-    <div className="flex flex-col gap-1 sm:gap-2 mt-1 sm:mt-2">
+  useGSAP(() => {
+    const sections = containerRef.current?.querySelectorAll('.reveal-section')
+    if (!sections) return
 
-      {/* Propuesta resumida */}
-      <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#FEFEFE] border border-[#E8E4EE] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
+    sections.forEach((section) => {
+      gsap.from(section, {
+        opacity: 0,
+        y: 40,
+        duration: 0.7,
+        ease: 'power2.out',
+        scrollTrigger: {
+          trigger: section,
+          start: 'top 88%',
+          toggleActions: 'play none none none',
+        },
+      })
+    })
+
+    // Stagger en los bullets del método
+    gsap.from('.method-bullet', {
+      opacity: 0,
+      x: -20,
+      duration: 0.5,
+      stagger: 0.12,
+      ease: 'power2.out',
+      scrollTrigger: {
+        trigger: '.method-bullets',
+        start: 'top 85%',
+        toggleActions: 'play none none none',
+      },
+    })
+  }, { scope: containerRef })
+
+  return (
+    <div ref={containerRef} className="flex flex-col gap-1 sm:gap-2 mt-1 sm:mt-2">
+
+      {/* Por qué funciona — El Método Demicheri */}
+      <section className="reveal-section w-full rounded-[10px] sm:rounded-[20px] bg-[#FEFEFE] border border-[#E8E4EE] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
         <div className="text-center">
           <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
             Por qué funciona
           </p>
-          <h2 className="text-[#1A1820] text-[24px] sm:text-[32px] md:text-[40px] font-bold leading-none mb-8 m-0">
-            No es otro plan genérico.<br />Es tuyo.
+          <h2 className="text-[#1A1820] text-[24px] sm:text-[32px] md:text-[40px] font-bold leading-none mb-3 m-0">
+            El Método Demicheri
           </h2>
-          <ul className="flex flex-col gap-4 text-left max-w-lg mx-auto m-0 p-0 list-none">
+          <p className="text-[#69686B] text-[14px] sm:text-[15px] leading-relaxed mb-8 max-w-[460px] mx-auto m-0">
+            No es otro plan genérico. No es una plantilla que sirve para cualquiera.<br />Es un sistema diseñado para tu cuerpo, tu vida y tu punto de partida.
+          </p>
+          <ul className="method-bullets flex flex-col gap-4 text-left max-w-lg mx-auto m-0 p-0 list-none">
             {[
-              'Tu plan, no el de otro. Personalizado desde el día uno, sin plantillas que sirven para cualquiera.',
-              'Seguimiento real los 60 días completos — Dani no desaparece a mitad de camino.',
-              'Nutrición que encaja en tu vida real, no te pide que cambies todo de golpe.',
+              { check: '✓', text: 'Tu plan, no el de otro. Personalizado desde el día uno — porque lo que funciona para otro puede estar saboteando tu progreso sin que lo sepas.' },
+              { check: '✓', text: 'Dani no desaparece al tercer día. Tenés acceso directo los 60 días completos. Un mensaje, una duda, un día malo — no estás solo.' },
+              { check: '✓', text: 'Nutrición que podés sostener. Sin prohibiciones absurdas ni planes de 1.200 calorías. Aprendés a comer para transformarte, no para sobrevivir la semana.' },
+              { check: '✓', text: 'Seguimiento real, no una app. Revisamos tu evolución juntos. Si algo no funciona, lo cambiamos antes de que el daño esté hecho.' },
+              { check: '✓', text: 'Entrenamiento desde donde estás. No importa si hace años que no te movés — el programa empieza donde estás vos, no donde debería estar alguien imaginario.' },
             ].map((item, i) => (
-              <li key={i} className="flex items-start gap-3 text-[14px] sm:text-[15px] text-[#1A1820] leading-snug">
-                <span className="shrink-0 text-[#9580A6] font-bold text-[16px] mt-0.5">✓</span>
-                {item}
+              <li key={i} className="method-bullet flex items-start gap-3 text-[14px] sm:text-[15px] text-[#1A1820] leading-snug">
+                <span className="shrink-0 text-[#9580A6] font-bold text-[16px] mt-0.5">{item.check}</span>
+                {item.text}
               </li>
             ))}
           </ul>
         </div>
       </section>
 
+      {/* Historia — Epiphany Bridge */}
+      <section className="reveal-section w-full rounded-[10px] sm:rounded-[20px] bg-[#F4F2F7] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
+        <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
+          Por qué Dani creó esto
+        </p>
+        <h2 className="text-[#1A1820] text-[22px] sm:text-[28px] md:text-[34px] font-bold leading-tight mb-6 m-0">
+          La historia detrás del método
+        </h2>
+        <div className="max-w-[600px]">
+          <p className="text-[#1A1820] text-[15px] sm:text-[16px] leading-relaxed m-0 border-l-[3px] border-[#9580A6] pl-5 italic">
+            "Pasé años viendo la misma historia repetirse. Personas motivadas, con ganas reales de cambiar, que arrancaban con un plan y a las tres semanas lo dejaban. No porque fueran débiles. Sino porque cuando la vida se complicó, no había nadie del otro lado.
+            <br /><br />
+            Yo mismo lo viví — empecé siguiendo planes de internet y me perdí cien veces antes de entender que el conocimiento solo no alcanza. Necesitás a alguien que te acompañe en tiempo real.
+            <br /><br />
+            Eso me llevó a diseñar algo diferente: un programa donde yo estoy presente los 60 días completos. No te mando un PDF y desaparezco. Estoy ahí. Desde que empecé a trabajar así, los resultados de mis clientes dejaron de ser la excepción. Empezaron a ser la norma."
+          </p>
+          <p className="text-[#9580A6] font-bold text-[13px] mt-4 m-0">— Dani Demicheri, coach personal</p>
+        </div>
+      </section>
+
       {/* Resultados reales */}
       <div
-        className="w-full rounded-[10px] sm:rounded-[20px] px-4 sm:px-8 md:px-10 pt-8 sm:pt-10 pb-0"
+        className="reveal-section w-full rounded-[10px] sm:rounded-[20px] px-4 sm:px-8 md:px-10 pt-8 sm:pt-10 pb-0"
         style={{ backgroundColor: '#F4F2F7' }}
       >
         <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-2 m-0">
@@ -128,43 +201,51 @@ function GatedContent() {
       </div>
 
       {/* CTA principal */}
-      <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#9580A6] px-4 sm:px-8 md:px-10 py-12 sm:py-14 md:py-16 flex flex-col items-center text-center">
+      <section className="reveal-section w-full rounded-[10px] sm:rounded-[20px] bg-[#9580A6] px-4 sm:px-8 md:px-10 py-12 sm:py-14 md:py-16 flex flex-col items-center text-center">
         <p className="text-white/65 text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
-          Los cupos son limitados
+          Cupos limitados — atención 1:1 real
         </p>
         <h2 className="text-white text-[24px] sm:text-[32px] md:text-[42px] font-bold leading-none mb-4 m-0">
-          ¿Es este tu momento?
+          Si llegaste hasta acá, algo en vos sabe que es el momento.
         </h2>
-        <p className="text-white/60 text-[14px] sm:text-[15px] leading-snug mb-8 max-w-[400px] m-0">
-          En 2 minutos completás el formulario y reservás tu lugar. Dani lo revisa antes de la llamada.
+        <p className="text-white/70 text-[14px] sm:text-[15px] leading-snug mb-2 max-w-[420px] m-0">
+          Los cupos son limitados porque Dani trabaja con atención 1:1 real — no escala con más clientes si no puede acompañarlos bien. Cuando se llena, se llena.
+        </p>
+        <p className="text-white/50 text-[13px] leading-snug mb-8 max-w-[380px] m-0">
+          Una llamada de 20 minutos, sin costo, sin presión. Contás tu situación, Dani te dice si el programa es para vos.
         </p>
         <Link
           to="/pre-call"
           className="bg-white text-[#1A1820] font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[8px] hover:bg-white/90 transition-colors"
         >
-          Reservar mi lugar →
+          Reservar mi llamada de diagnóstico →
         </Link>
       </section>
 
-      {/* Proceso en 2 pasos */}
-      <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#F4F2F7] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
+      {/* Proceso en 3 pasos */}
+      <section className="reveal-section w-full rounded-[10px] sm:rounded-[20px] bg-[#F4F2F7] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
         <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
           ¿Qué pasa después?
         </p>
         <h2 className="text-[#1A1820] text-[24px] sm:text-[32px] md:text-[38px] font-bold leading-none mb-8 m-0">
-          Rápido. Sin vueltas.
+          Así empieza tu transformación
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {[
             {
               n: '01',
-              title: 'Formulario breve',
-              desc: 'Completás unas preguntas rápidas para que podamos preparar bien la llamada. Toma menos de 2 minutos.',
+              title: 'Contás tu situación',
+              desc: 'Completás unas preguntas rápidas para que Dani entienda tu punto de partida antes de hablar. No es una encuesta genérica — son 5 preguntas que hacen la diferencia.',
             },
             {
               n: '02',
-              title: 'Agendás tu llamada',
-              desc: 'Elegís el día y horario que mejor te queda. En la llamada definimos si el método es para vos.',
+              title: 'Hablás con Dani',
+              desc: 'Elegís el horario que te queda bien. Es una conversación real, sin scripts, sin presión. Dani escucha tu caso y te dice con honestidad si el programa es la solución.',
+            },
+            {
+              n: '03',
+              title: 'Arrancás en 48 horas',
+              desc: 'Si decidís avanzar, en menos de dos días tenés tu plan listo y personalizado. Desde ese momento, Dani está disponible. Empieza el acompañamiento real.',
             },
           ].map((s) => (
             <div key={s.n} className="bg-[#FEFEFE] border border-[#E8E4EE] rounded-[8px] sm:rounded-[14px] p-5 sm:p-6">
@@ -176,8 +257,8 @@ function GatedContent() {
         </div>
       </section>
 
-      {/* Objeciones */}
-      <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#1A1820] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
+      {/* FAQ */}
+      <section className="reveal-section w-full rounded-[10px] sm:rounded-[20px] bg-[#1A1820] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
         <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
           Tus dudas
         </p>
@@ -195,18 +276,22 @@ function GatedContent() {
       </section>
 
       {/* CTA final */}
-      <section className="w-full rounded-[10px] sm:rounded-[20px] bg-[#FEFEFE] border border-[#E8E4EE] px-4 sm:px-8 md:px-10 py-12 sm:py-14 md:py-16 flex flex-col items-center text-center">
+      <section className="reveal-section w-full rounded-[10px] sm:rounded-[20px] bg-[#FEFEFE] border border-[#E8E4EE] px-4 sm:px-8 md:px-10 py-12 sm:py-14 md:py-16 flex flex-col items-center text-center">
         <h2 className="text-[#1A1820] text-[22px] sm:text-[30px] md:text-[40px] font-bold leading-none mb-3 m-0">
-          Ya viste de qué se trata.<br />Ahora es tu turno.
+          En 60 días podés estar del otro lado.<br />
+          <span className="text-[#9580A6]">La pregunta es si arrancás hoy.</span>
         </h2>
-        <p className="text-[#69686B] text-[14px] sm:text-[15px] leading-snug mb-8 max-w-[380px] m-0">
-          Los cupos son limitados. Cada cliente recibe atención directa de Dani. No es para todos — pero puede ser para vos.
+        <p className="text-[#69686B] text-[14px] sm:text-[15px] leading-snug mb-4 max-w-[400px] m-0">
+          Cada mes que pasa sin un plan real es un mes más cargando con lo mismo. No hace falta que estés listo al cien por ciento — hace falta que des el primer paso.
+        </p>
+        <p className="text-[#9580A6] text-[13px] font-bold mb-8 max-w-[380px] m-0">
+          Imaginá llegar al día 60 sintiéndote diferente en tu cuerpo, en tu energía, en cómo te ves. Eso empieza con una conversación de 20 minutos.
         </p>
         <Link
           to="/pre-call"
-          className="bg-[#9580A6] text-white font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[8px] hover:bg-[#7A6A8F] transition-colors"
+          className="bg-[#1A1820] text-white font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[8px] hover:bg-[#2e2b36] transition-colors"
         >
-          Quiero reservar mi lugar →
+          Quiero hablar con Dani →
         </Link>
       </section>
 
@@ -254,7 +339,6 @@ export default function LandingPage() {
     const el = evt.currentTarget as HTMLVideoElement
     if (!el.duration) return
 
-    // Prevent significant seek-ahead
     if (el.currentTime > maxWatched.current + MAX_SEEK_AHEAD_SECONDS) {
       el.currentTime = maxWatched.current
       return
@@ -282,7 +366,7 @@ export default function LandingPage() {
       >
         <div className={`flex flex-col ${isLocked ? 'w-full gap-2 sm:gap-3' : 'gap-3 sm:gap-4'}`}>
 
-          {/* Hero context */}
+          {/* Hero */}
           <div className={`text-center ${isLocked ? 'max-w-[820px] mx-auto py-0' : 'py-4 sm:py-6'}`}>
             <p className={`text-[#9580A6] font-bold uppercase tracking-[0.2em] m-0 ${isLocked ? 'text-[10px] mb-2' : 'text-[11px] mb-3'}`}>
               DemicheriFitness
@@ -290,11 +374,11 @@ export default function LandingPage() {
             <h1 className={`text-[#1A1820] font-bold leading-none mb-3 m-0 ${
               isLocked ? 'text-[22px] sm:text-[38px] md:text-[52px]' : 'text-[32px] sm:text-[44px] md:text-[52px]'
             }`}>
-              Transformá tu cuerpo en 60 días con el único método que no te abandona.
+              Transformá tu cuerpo en 60 días — con alguien que no desaparece cuando las cosas se ponen difíciles.
             </h1>
             {!isLocked && (
-              <p className="text-[#69686B] text-[15px] sm:text-[17px] leading-relaxed mx-auto m-0 max-w-[500px]">
-                Mirá el video. Dani te explica por qué este método funciona cuando todo lo demás falló.
+              <p className="text-[#69686B] text-[15px] sm:text-[17px] leading-relaxed mx-auto m-0 max-w-[520px]">
+                Imaginá terminar estos 60 días sintiéndote liviano, con energía de sobra y mirándote al espejo sin esquivar lo que ves. Sin dieta de moda. Sin romperte. Solo con un plan tuyo y alguien que estuvo ahí cada día.
               </p>
             )}
           </div>
@@ -304,7 +388,6 @@ export default function LandingPage() {
             <div
               ref={videoWrapperRef}
               className="relative rounded-[10px] sm:rounded-[10px] overflow-hidden bg-[#1A1820] mx-auto w-full"
-              style={undefined}
             >
               {MUX_PLAYBACK_ID ? (
                 <>
@@ -323,7 +406,6 @@ export default function LandingPage() {
                     metadata={{ video_title: 'DemicheriFitness – Método' }}
                     accentColor="#9580A6"
                   />
-                  {/* Overlay transparente — captura clicks para play/pause */}
                   <div
                     className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center"
                     onClick={handleVideoClick}
@@ -332,7 +414,6 @@ export default function LandingPage() {
                     tabIndex={0}
                     onKeyDown={(e) => e.key === 'Enter' || e.key === ' ' ? handleVideoClick() : undefined}
                   >
-                    {/* Botón play central — visible solo cuando está pausado */}
                     <div
                       className={`transition-all duration-200 ${
                         isPaused ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'
@@ -353,7 +434,6 @@ export default function LandingPage() {
                       </div>
                     </div>
                   </div>
-                  {/* Botón pantalla completa */}
                   <button
                     onClick={handleFullscreen}
                     aria-label="Pantalla completa"
