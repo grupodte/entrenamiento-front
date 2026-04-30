@@ -234,7 +234,17 @@ export default function PreCall() {
 
   // Auto-advance after choice selection
   const choose = (field: keyof Data, value: string) => {
-    setData(prev => ({ ...prev, [field]: value }))
+    const nextData = { ...data, [field]: value }
+    setData(nextData)
+    if (field === 'dispone99Mensuales' && value === 'no') {
+      try {
+        localStorage.setItem(PRECALL_STORAGE_KEY, JSON.stringify(nextData))
+      } catch {
+        // Non-blocking: this page does not need persisted data to render.
+      }
+      setTimeout(() => navigate({ to: '/no-es-el-momento' }), 320)
+      return
+    }
     setTimeout(() => transition(step + 1), 320)
   }
 
@@ -425,12 +435,12 @@ export default function PreCall() {
           {step === 5 && (
             <StepChoice
               step={5}
-              question="¿Disponés de al menos USD 99 mensuales para tu plan?"
+              question="El proceso personalizado dura 8 semanas. La inversión mínima es de USD 200. ¿Está dentro de tus posibilidades?"
               value={data.dispone99Mensuales}
               onBack={goBack}
               options={[
-                { value: 'si', label: 'Sí, dispongo de al menos USD 99 mensuales' },
-                { value: 'no', label: 'No, hoy no llego a ese monto' },
+                { value: 'si', label: 'Sí' },
+                { value: 'no', label: 'No es el momento' },
               ]}
               onChoose={v => choose('dispone99Mensuales', v)}
             />
