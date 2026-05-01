@@ -30,6 +30,7 @@ export default function MainLayout() {
   const isHome = location.pathname === '/'
   const isPostulacion = location.pathname === '/postulacion' || location.pathname.startsWith('/postulacion/')
   const isConversionFunnel = isPostulacion || location.pathname === '/landing-page' || location.pathname === '/pre-call' || location.pathname === '/no-es-el-momento'
+  const isScrollLocked = isPostulacion
   const isSpa = useRef(isSpaNavigation()).current
   const [homePhase, setHomePhase] = useState(isHome && isSpa ? 'preload' : 'ready')
 
@@ -40,7 +41,7 @@ export default function MainLayout() {
   }, [location.pathname])
 
   useEffect(() => {
-    if (!isConversionFunnel) return
+    if (!isScrollLocked) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     document.documentElement.style.overflow = 'hidden'
@@ -48,7 +49,7 @@ export default function MainLayout() {
       document.body.style.overflow = prev
       document.documentElement.style.overflow = ''
     }
-  }, [isConversionFunnel])
+  }, [isScrollLocked])
 
   useEffect(() => {
     if (!isHome) {
@@ -89,7 +90,7 @@ export default function MainLayout() {
   const showNavbar = (!isHome || ['header', 'hero', 'content'].includes(homePhase)) && !isConversionFunnel
   const showFooter = (!isHome || homePhase === 'content') && !isConversionFunnel
   const mainContainerClass = isConversionFunnel
-    ? 'w-full max-w-none mx-auto p-0 flex-1 min-h-0'
+    ? 'w-full max-w-none mx-auto p-0'
     : 'w-full max-w-none md:max-w-[1350px] mx-auto px-1 sm:px-5 md:px-5 pb-6 md:pb-8'
 
   const contextValue = useMemo(() => ({ homePhase }), [homePhase])
@@ -107,7 +108,7 @@ export default function MainLayout() {
         />
       )}
       <Navbar isVisible={showNavbar} />
-      <main className={`${isConversionFunnel ? 'flex-1 min-h-0 flex flex-col' : 'flex-1'} ${showNavbar ? 'pt-17 md:pt-16' : 'pt-0'}`}>
+      <main className={`${isConversionFunnel ? '' : 'flex-1'} ${showNavbar ? 'pt-17 md:pt-16' : 'pt-0'}`}>
         <div className={mainContainerClass}>
           <HomePhaseContext.Provider value={contextValue}>
             <Suspense fallback={null}>

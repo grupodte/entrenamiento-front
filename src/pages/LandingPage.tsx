@@ -43,33 +43,59 @@ function VideoProgressBar({ progress, unlocked }: { progress: number; unlocked: 
           />
         )}
       </div>
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] text-[#69686B]">
+      <div className="flex items-center justify-center">
+        <span className="text-[11px] text-[#9D9B9F]">
           {unlocked ? (
-            <span className="text-green-600 font-bold">✓ Contenido desbloqueado</span>
+            <span className="text-green-600 font-medium">✓ Contenido desbloqueado</span>
           ) : (
-            <>
-              <span className="font-bold text-[#1A1820]">{progress}%</span> reproducido · desbloqueo al{' '}
-              <span className="font-bold text-[#9580A6]">75%</span>
-            </>
+            <>Mirá el video para desbloquear el contenido</>
           )}
         </span>
-        {!unlocked && progress > 0 && progress < 75 && (
-          <span className="text-[11px] text-[#9D9B9F]">Faltan {75 - progress}%</span>
-        )}
       </div>
     </div>
   )
 }
 
-// ── Lock hint ─────────────────────────────────────────────
-function LockedHint({ progress }: { progress: number }) {
+
+// ── Scroll hint ───────────────────────────────────────────
+function ScrollHint({ active }: { active: boolean }) {
+  const arrowRef = useRef<HTMLDivElement>(null)
+  const [hidden, setHidden] = useState(false)
+
+  useEffect(() => {
+    if (!active) { setHidden(false); return }
+    const onScroll = () => { if (window.scrollY > 80) setHidden(true) }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [active])
+
+  useGSAP(() => {
+    if (!arrowRef.current) return
+    gsap.to(arrowRef.current, {
+      y: 6,
+      duration: 0.8,
+      ease: 'sine.inOut',
+      repeat: -1,
+      yoyo: true,
+    })
+  }, { scope: arrowRef })
+
   return (
-    <p className="text-center text-[12px] text-[#9D9B9F] tracking-wide m-0">
-      {progress === 0
-        ? 'Mirá el video para desbloquear el contenido completo'
-        : `Seguí mirando — el contenido se desbloquea al 75%`}
-    </p>
+    <div
+      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1.5 transition-[opacity,transform] duration-500 ${
+        active && !hidden ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
+      }`}
+      aria-hidden="true"
+    >
+      <span className="text-[10px] text-[#9D9B9F] uppercase tracking-widest bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-[#E8E4EE]">
+        Scrolleá para ver más
+      </span>
+      <div ref={arrowRef}>
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 6L9 12L15 6" stroke="#C4BBCE" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
+    </div>
   )
 }
 
@@ -110,9 +136,10 @@ function GatedContent() {
         y: 40,
         duration: 0.7,
         ease: 'power2.out',
+        immediateRender: false,
         scrollTrigger: {
           trigger: section,
-          start: 'top 88%',
+          start: 'top 95%',
           toggleActions: 'play none none none',
         },
       })
@@ -125,9 +152,10 @@ function GatedContent() {
       duration: 0.5,
       stagger: 0.12,
       ease: 'power2.out',
+      immediateRender: false,
       scrollTrigger: {
         trigger: '.method-bullets',
-        start: 'top 85%',
+        start: 'top 95%',
         toggleActions: 'play none none none',
       },
     })
@@ -289,7 +317,7 @@ function GatedContent() {
         </p>
         <Link
           to="/pre-call"
-          className="bg-[#1A1820] text-white font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[8px] hover:bg-[#2e2b36] transition-colors"
+          className="bg-[#9580A6] text-white font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[8px] hover:bg-[#7A6A8F] transition-colors"
         >
           Quiero hablar con Dani →
         </Link>
@@ -306,7 +334,6 @@ export default function LandingPage() {
     try { return localStorage.getItem(LOCK_KEY) === '1' } catch { return false }
   })
   const [isPaused, setIsPaused] = useState(true)
-  const isLocked = !unlocked
   const maxWatched = useRef(0)
   const videoWrapperRef = useRef<HTMLDivElement>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -332,6 +359,9 @@ export default function LandingPage() {
   useEffect(() => {
     if (unlocked) {
       try { localStorage.setItem(LOCK_KEY, '1') } catch {}
+      // Wait for the 700ms grid transition to finish, then recalculate all ScrollTrigger positions
+      const t = setTimeout(() => ScrollTrigger.refresh(), 750)
+      return () => clearTimeout(t)
     }
   }, [unlocked])
 
@@ -354,40 +384,36 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-[#FEFEFE]">
+    <div className="min-h-[100dvh] bg-[#FEFEFE]">
       <FunnelHeader />
 
-      <main
-        className={`flex flex-col w-full mx-auto px-3 sm:px-5 ${
-          isLocked
-            ? 'max-w-[1200px] flex-1 py-3 sm:py-4'
-            : 'max-w-[820px] flex-1 pt-6 sm:pt-8 pb-8 md:pb-12'
-        }`}
-      >
-        <div className={`flex flex-col ${isLocked ? 'w-full gap-2 sm:gap-3' : 'gap-3 sm:gap-4'}`}>
+      <main className="flex flex-col w-full max-w-[820px] mx-auto px-3 sm:px-5 pt-6 sm:pt-8 pb-8 md:pb-12">
+        <div className="flex flex-col gap-3 sm:gap-4">
 
           {/* Hero */}
-          <div className={`text-center ${isLocked ? 'max-w-[820px] mx-auto py-0' : 'py-4 sm:py-6'}`}>
-            <p className={`text-[#9580A6] font-bold uppercase tracking-[0.2em] m-0 ${isLocked ? 'text-[10px] mb-2' : 'text-[11px] mb-3'}`}>
+          <div className="text-center py-2 sm:py-4">
+            <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.2em] mb-3 m-0">
               DemicheriFitness
             </p>
-            <h1 className={`text-[#1A1820] font-bold leading-none mb-3 m-0 ${
-              isLocked ? 'text-[22px] sm:text-[38px] md:text-[52px]' : 'text-[32px] sm:text-[44px] md:text-[52px]'
-            }`}>
-              Transformá tu cuerpo en 60 días — con alguien que no desaparece cuando las cosas se ponen difíciles.
+            <h1 className="text-[#1A1820] text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-none mb-3 m-0">
+              No sos el problema. Es que nadie te estaba mirando a vos.
             </h1>
-            {!isLocked && (
-              <p className="text-[#69686B] text-[15px] sm:text-[17px] leading-relaxed mx-auto m-0 max-w-[520px]">
-                Imaginá terminar estos 60 días sintiéndote liviano, con energía de sobra y mirándote al espejo sin esquivar lo que ves. Sin dieta de moda. Sin romperte. Solo con un plan tuyo y alguien que estuvo ahí cada día.
-              </p>
-            )}
+            <div className={`grid transition-[grid-template-rows,opacity] duration-500 ease-out ${
+              unlocked ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+            }`}>
+              <div className="min-h-0 overflow-hidden">
+                <p className="text-[#69686B] text-[15px] sm:text-[17px] leading-relaxed mx-auto m-0 max-w-[520px] pt-1 pb-2">
+                  Imaginá terminar estos 60 días sintiéndote liviano, con energía de sobra y mirándote al espejo sin esquivar lo que ves. Sin dieta de moda. Sin romperte. Solo con un plan tuyo y alguien que estuvo ahí cada día.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="w-full mx-auto">
             {/* Video */}
             <div
               ref={videoWrapperRef}
-              className="relative rounded-[10px] sm:rounded-[10px] overflow-hidden bg-[#1A1820] mx-auto w-full"
+              className="relative rounded-[10px] overflow-hidden bg-[#1A1820] mx-auto w-full"
             >
               {MUX_PLAYBACK_ID ? (
                 <>
@@ -460,17 +486,16 @@ export default function LandingPage() {
             </div>
 
             {/* Progress bar */}
-            <div className={isLocked ? 'mt-2' : 'mt-3'}>
-              <VideoProgressBar progress={videoProgress} unlocked={unlocked} />
-            </div>
-
-            {/* Lock hint */}
             {!unlocked && (
               <div className="mt-2">
-                <LockedHint progress={videoProgress} />
+                <VideoProgressBar progress={videoProgress} unlocked={unlocked} />
               </div>
             )}
+
           </div>
+
+          {/* Scroll hint — aparece al desbloquear el contenido */}
+          <ScrollHint active={unlocked} />
 
           {/* Gated content — smooth reveal */}
           <div
