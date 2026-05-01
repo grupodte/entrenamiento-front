@@ -1,8 +1,15 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import logoSvg from '../assets/DD FIT - LOGO PRINCIPAL.svg'
 
 export default function NoEsElMomento() {
   const navigate = useNavigate()
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 30)
+    return () => clearTimeout(t)
+  }, [])
 
   return (
     <div className="h-dvh flex flex-col overflow-hidden bg-[#FEFEFE]">
@@ -13,12 +20,15 @@ export default function NoEsElMomento() {
         </span>
       </header>
 
-      <div className="w-full h-[3px] shrink-0 bg-[#E8E4EE]">
-        <div className="h-full w-[63%] bg-[#9580A6]" />
-      </div>
-
       <main className="flex-1 min-h-0 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
-        <div className="mx-auto flex min-h-full w-full max-w-[325px] flex-col justify-center md:max-w-[511px]">
+        <div
+          className="mx-auto flex min-h-full w-full max-w-[325px] flex-col justify-center md:max-w-[511px]"
+          style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateY(0)' : 'translateY(12px)',
+            transition: 'opacity 0.28s ease, transform 0.28s ease',
+          }}
+        >
           <section className="flex flex-col text-center gap-6">
             <div>
               <p className="m-0 mb-3 text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.2em]">

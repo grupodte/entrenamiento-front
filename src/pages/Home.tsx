@@ -6,6 +6,7 @@ import WhySection from '../components/WhySection'
 import StepsSection from '../components/StepsSection'
 import PlansSection from '../components/PlansSection'
 import FAQSection from '../components/FAQSection'
+import InstagramFeed from '../components/InstagramFeed'
 import { HomePhaseContext } from '../layouts/MainLayout'
 import { useTextReveal } from '../lib/useTextReveal'
 import forWhoBg from '../assets/Imagenes/SECCION - 1.webp'
@@ -87,7 +88,23 @@ export default function Home() {
             'linear-gradient(135deg, #c8b8d4 0%, #9580A6 38%, #7A6A8F 68%, #4f445c 100%)',
         }}
       >
-        <div className="absolute inset-0 bg-[#1A1820]/28" aria-hidden="true" />
+        <video
+          className="absolute inset-0 w-full h-full object-cover brightness-75 contrast-110 saturate-50"
+          src="/videos/welcome-video.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          aria-hidden="true"
+        />
+        {/* Tinte púrpura del brand */}
+        <div className="absolute inset-0 bg-[#7A6A8F]/40 mix-blend-multiply" aria-hidden="true" />
+        {/* Oscurecer general + gradiente inferior */}
+        <div
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(to bottom, rgba(26,24,32,0.3) 0%, transparent 40%, rgba(26,24,32,0.8) 100%)' }}
+          aria-hidden="true"
+        />
         <div className="relative z-10 flex flex-col items-center text-center max-w-[600px] md:max-w-[760px] gap-5 sm:gap-6">
           <p className={`hero-reveal hero-reveal--1 text-[#d4c6e1] text-[11px] font-bold uppercase tracking-[0.22em] m-0 ${heroVisible ? 'is-visible' : ''}`}>
             DemicheriFitness
@@ -197,6 +214,7 @@ export default function Home() {
             <p data-reveal className="text-[#69686B] text-[15px] sm:text-[16px] md:text-[17px] leading-[1.5] m-0">
               No creo en las soluciones mágicas. Creo en el trabajo bien hecho, la constancia y en adaptar el método a cada persona. Eso es exactamente lo que hacemos acá.
             </p>
+            <InstagramFeed />
           </div>
         </section>
 

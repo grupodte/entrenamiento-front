@@ -29,7 +29,7 @@ export default function MainLayout() {
   const location = useRouterState({ select: (state) => state.location })
   const isHome = location.pathname === '/'
   const isPostulacion = location.pathname === '/postulacion' || location.pathname.startsWith('/postulacion/')
-  const isConversionFunnel = isPostulacion || location.pathname === '/landing-page' || location.pathname === '/pre-call'
+  const isConversionFunnel = isPostulacion || location.pathname === '/landing-page' || location.pathname === '/pre-call' || location.pathname === '/no-es-el-momento'
   const isSpa = useRef(isSpaNavigation()).current
   const [homePhase, setHomePhase] = useState(isHome && isSpa ? 'preload' : 'ready')
 
@@ -38,6 +38,17 @@ export default function MainLayout() {
     window.history.scrollRestoration = 'manual'
     window.scrollTo(0, 0)
   }, [location.pathname])
+
+  useEffect(() => {
+    if (!isConversionFunnel) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+      document.documentElement.style.overflow = ''
+    }
+  }, [isConversionFunnel])
 
   useEffect(() => {
     if (!isHome) {
