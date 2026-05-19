@@ -11,7 +11,6 @@ type BookingSummary = {
 }
 
 type BookingPhase = 'slots' | 'form' | 'success'
-type AgendaMode = 'precall' | 'alumno'
 const AVAILABILITY_LOOKAHEAD_DAYS = 30
 const MAX_VISIBLE_AVAILABLE_DAYS = 3
 const AVAILABILITY_CACHE_KEY = 'ddfit_agenda_availability_v1'
@@ -45,10 +44,6 @@ type PrecallData = {
 
 const PRECALL_STORAGE_KEY = 'dmf_precall_data'
 const PRECALL_LEAD_ID_STORAGE_KEY = 'dmf_precall_lead_id'
-
-type AgendaProps = {
-  mode?: AgendaMode
-}
 
 const formatSlotTime = (value: string) => {
   const date = new Date(value)
@@ -138,9 +133,8 @@ const saveAvailabilityCache = (payload: AvailabilityCachePayload) => {
   }
 }
 
-export default function Agenda({ mode = 'precall' }: AgendaProps) {
+export default function Agenda() {
   const navigate = useNavigate()
-  const isAlumnoAgenda = mode === 'alumno'
   const envEventTypeId = import.meta.env.VITE_CAL_EVENT_TYPE_ID as string | undefined
   const detectedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
   const [selectedEventTypeId, setSelectedEventTypeId] = useState<string>(
@@ -152,8 +146,6 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const [selectedSlot, setSelectedSlot] = useState<string>('')
   const [attendeeName, setAttendeeName] = useState('')
   const [attendeeEmail, setAttendeeEmail] = useState('')
-  const [attendeePhonePrefix, setAttendeePhonePrefix] = useState('+598')
-  const [attendeePhone, setAttendeePhone] = useState('')
   const [timeZone] = useState(detectedTimeZone)
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('slots')
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
@@ -360,26 +352,17 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
 
   // Load pre-call data on mount
   useEffect(() => {
-    if (isAlumnoAgenda) {
-      const params = new URLSearchParams(window.location.search)
-      setAttendeeName(params.get('nombre') ?? params.get('name') ?? '')
-      setAttendeeEmail(params.get('email') ?? '')
-      setAttendeePhone(params.get('whatsapp') ?? params.get('telefono') ?? params.get('phone') ?? '')
-      return
-    }
-
     try {
       const stored = localStorage.getItem(PRECALL_STORAGE_KEY)
       if (stored) {
         const precallData = JSON.parse(stored) as PrecallData
         if (precallData.nombre) setAttendeeName(precallData.nombre)
         if (precallData.email) setAttendeeEmail(precallData.email)
-        if (precallData.whatsapp) setAttendeePhone(precallData.whatsapp)
       }
     } catch {
       // Ignore errors
     }
-  }, [isAlumnoAgenda])
+  }, [])
 
   const handleSlotSelect = (slot: string) => {
     setSelectedSlot(slot)
@@ -399,47 +382,22 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       setError('Seleccioná un horario disponible.')
       return
     }
-    if (!attendeeName.trim() || !attendeeEmail.trim()) {
+    if (!attendeeName || !attendeeEmail) {
       setError('Completá tu nombre y email.')
-      return
-    }
-    if (!/\S+@\S+\.\S+/.test(attendeeEmail.trim())) {
-      setError('Ingresá un email válido.')
-      return
-    }
-    if (isAlumnoAgenda && !attendeePhone.trim()) {
-      setError('Completá tu WhatsApp.')
       return
     }
 
     // Read pre-call data from localStorage
     let precallData: PrecallData | null = null
     let precallLeadId: string | null = null
-    if (isAlumnoAgenda) {
-      precallData = {
-        entrenaDias: '',
-        compromiso: '',
-        tieneEquipo: '',
-        dispuestoInvertir: '',
-        dispone99Mensuales: '',
-        obstaculoPrincipal: '',
-        porQueAhora: '',
-        nombre: attendeeName.trim(),
-        email: attendeeEmail.trim(),
-        whatsapp: `${attendeePhonePrefix}${attendeePhone.trim()}`,
-        edad: '',
-        zonaHoraria: timeZone
+    try {
+      const stored = localStorage.getItem(PRECALL_STORAGE_KEY)
+      if (stored) {
+        precallData = JSON.parse(stored) as PrecallData
       }
-    } else {
-      try {
-        const stored = localStorage.getItem(PRECALL_STORAGE_KEY)
-        if (stored) {
-          precallData = JSON.parse(stored) as PrecallData
-        }
-        precallLeadId = localStorage.getItem(PRECALL_LEAD_ID_STORAGE_KEY)
-      } catch {
-        // Ignore parsing errors
-      }
+      precallLeadId = localStorage.getItem(PRECALL_LEAD_ID_STORAGE_KEY)
+    } catch {
+      // Ignore parsing errors
     }
 
     setIsBooking(true)
@@ -449,13 +407,12 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
         eventTypeId: Number(selectedEventTypeId),
         start: selectedSlot,
         attendee: {
-          name: attendeeName.trim(),
-          email: attendeeEmail.trim(),
+          name: attendeeName,
+          email: attendeeEmail,
           timeZone
         },
         leadId: precallLeadId,
-        precallData,
-        source: isAlumnoAgenda ? 'alumno-agenda' : 'precall'
+        precallData
       }
     })
 
@@ -494,14 +451,12 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
     setIsBooking(false)
     setBookingPhase('success')
     
-    if (!isAlumnoAgenda) {
-      // Clear pre-call data from localStorage after successful booking
-      try {
-        localStorage.removeItem(PRECALL_STORAGE_KEY)
-        localStorage.removeItem(PRECALL_LEAD_ID_STORAGE_KEY)
-      } catch {
-        // Ignore errors
-      }
+    // Clear pre-call data from localStorage after successful booking
+    try {
+      localStorage.removeItem(PRECALL_STORAGE_KEY)
+      localStorage.removeItem(PRECALL_LEAD_ID_STORAGE_KEY)
+    } catch {
+      // Ignore errors
     }
     
     navigate({ to: '/gracias-agenda' })
@@ -521,16 +476,12 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
         
             <div>
               <h1 className="text-[28px] md:text-[34px] font-bold text-[#1A1820]">
-                {bookingPhase === 'form' ? 'Confirmá tu llamada' : isAlumnoAgenda ? 'Agendá tu seguimiento' : 'Agendá tu llamada'}
+                {bookingPhase === 'form' ? 'Confirmá tu llamada' : 'Agendá tu llamada'}
               </h1>
               <p className="mt-3 text-[14px] text-[#69686B] max-w-[260px]">
                 {bookingPhase === 'form' 
-                  ? isAlumnoAgenda
-                    ? 'Dejanos tus datos de contacto para confirmar la sesión.'
-                    : 'Revisá los datos de tu sesión de evaluación gratuita.'
-                  : isAlumnoAgenda
-                    ? 'Elegí un horario disponible para tu llamada.'
-                    : 'Elegí un horario disponible para tu sesión de evaluación.'}
+                  ? 'Revisá los datos de tu sesión de evaluación gratuita.' 
+                  : 'Elegí un horario disponible para tu sesión de evaluación.'}
               </p>
             </div>
 
@@ -757,11 +708,6 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
                   <p className="m-0 text-[#69686B]">
                     {attendeeEmail || 'Sin email'}
                   </p>
-                  {isAlumnoAgenda && (
-                    <p className="m-0 text-[#69686B]">
-                      {attendeePhone ? `${attendeePhonePrefix}${attendeePhone}` : 'Sin WhatsApp'}
-                    </p>
-                  )}
                 </div>
               </div>
 
@@ -769,57 +715,6 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
                 {error && (
                   <div className="rounded-[12px] border border-red-500/40 bg-red-50 p-3 text-[13px] text-red-700">
                     {error}
-                  </div>
-                )}
-
-                {isAlumnoAgenda && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="flex flex-col gap-1 sm:col-span-2">
-                      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#69686B]">Nombre</span>
-                      <input
-                        className="rounded-[8px] border border-[#E8E4EE] bg-white px-3 py-3 text-[14px] text-[#1A1820] outline-none focus:border-[#9580A6]"
-                        value={attendeeName}
-                        onChange={(event) => setAttendeeName(event.target.value)}
-                        placeholder="Tu nombre"
-                        autoComplete="name"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 sm:col-span-2">
-                      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#69686B]">Email</span>
-                      <input
-                        className="rounded-[8px] border border-[#E8E4EE] bg-white px-3 py-3 text-[14px] text-[#1A1820] outline-none focus:border-[#9580A6]"
-                        type="email"
-                        value={attendeeEmail}
-                        onChange={(event) => setAttendeeEmail(event.target.value)}
-                        placeholder="tu@email.com"
-                        autoComplete="email"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1">
-                      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#69686B]">País</span>
-                      <select
-                        className="rounded-[8px] border border-[#E8E4EE] bg-white px-3 py-3 text-[14px] text-[#1A1820] outline-none focus:border-[#9580A6]"
-                        value={attendeePhonePrefix}
-                        onChange={(event) => setAttendeePhonePrefix(event.target.value)}
-                      >
-                        <option value="+598">UY +598</option>
-                        <option value="+54">AR +54</option>
-                        <option value="+56">CL +56</option>
-                        <option value="+34">ES +34</option>
-                        <option value="+1">US +1</option>
-                      </select>
-                    </label>
-                    <label className="flex flex-col gap-1">
-                      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#69686B]">WhatsApp</span>
-                      <input
-                        className="rounded-[8px] border border-[#E8E4EE] bg-white px-3 py-3 text-[14px] text-[#1A1820] outline-none focus:border-[#9580A6]"
-                        value={attendeePhone}
-                        onChange={(event) => setAttendeePhone(event.target.value)}
-                        placeholder="99123456"
-                        inputMode="tel"
-                        autoComplete="tel"
-                      />
-                    </label>
                   </div>
                 )}
 

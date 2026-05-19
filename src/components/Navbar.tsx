@@ -24,7 +24,7 @@ export default function Navbar({ isVisible = true }: { isVisible?: boolean }) {
           <img src={logoSvg} alt="DemicheriFitness" className="h-[22px] w-auto" />
         </Link>
 
-        {pathname !== '/agenda' && pathname !== '/alumno-agenda' && (
+        {pathname !== '/agenda' && (
           <Link
             to="/pre-call"
             className={`text-[13px] uppercase tracking-[0.12em] transition-colors duration-200 ${
