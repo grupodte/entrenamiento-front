@@ -639,13 +639,8 @@ async function listFutureActiveAppointments(
 }
 
 function stripBookingLocalFields(input: Record<string, unknown>) {
-  const payload = { ...input };
-  delete payload.precallData;
-  delete payload.leadId;
-  delete payload.source;
-  delete payload.action;
-  delete payload.payload;
-  return payload;
+  const { precallData, leadId, source, action, payload, ...rest } = input;
+  return rest;
 }
 
 function extractBookings(raw: unknown): Array<Record<string, unknown>> {
