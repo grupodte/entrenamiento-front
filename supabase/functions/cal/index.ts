@@ -642,6 +642,7 @@ function stripBookingLocalFields(input: Record<string, unknown>) {
   const payload = { ...input };
   delete payload.precallData;
   delete payload.leadId;
+  delete payload.source;
   delete payload.action;
   delete payload.payload;
   return payload;
@@ -851,6 +852,7 @@ serve(async (req) => {
         const requestedStart = (input?.start as string | undefined) ?? null;
         const leadId = stringField(input?.leadId);
         const precallData = asRecord(input?.precallData);
+        const bookingSource = stringField(input?.source) ?? "precall";
         const guestPhone = precallPhone(precallData);
         const normalizedRequestedEmail = normalizeEmail(requestedEmail);
         const normalizedGuestPhone = normalizePhone(guestPhone);
@@ -989,7 +991,7 @@ serve(async (req) => {
           email: requestedEmail,
           phone: guestPhone,
           stage: "precall_booked",
-          source: "precall",
+          source: bookingSource,
           precallData,
           agendaData: {
             attendee: {
