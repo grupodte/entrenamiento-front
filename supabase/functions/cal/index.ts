@@ -1026,11 +1026,18 @@ serve(async (req) => {
           cancelPayload.cancelSubsequentBookings = cancelSubsequent;
         }
 
-        const data = await calFetch(`/v2/bookings/${bookingUid}/cancel`, {
-          method: "POST",
-          version: CAL_API_VERSION_BOOKINGS,
-          body: Object.keys(cancelPayload).length > 0 ? cancelPayload : undefined,
-        });
+        let data: unknown;
+        try {
+          data = await calFetch(`/v2/bookings/${bookingUid}/cancel`, {
+            method: "POST",
+            version: CAL_API_VERSION_BOOKINGS,
+            body: Object.keys(cancelPayload).length > 0 ? cancelPayload : undefined,
+          });
+        } catch (cancelError) {
+          const err = cancelError as { status?: number; payload?: unknown; message?: string };
+          console.error("Cal.com cancel booking failed", err);
+          return errorResponse("CAL_CANCEL_BOOKING_FAILED", err.status ?? 502, err.payload ?? err.message);
+        }
 
         await updateAppointment([bookingUid], { status: "cancelled", payload: data });
 
