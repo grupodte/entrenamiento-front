@@ -862,14 +862,12 @@ serve(async (req) => {
           return errorResponse("Server not configured", 500);
         }
 
-        const lead = await findLeadByContact(adminClient, {
-          leadId,
-          normalizedEmail: normalizedRequestedEmail,
-          normalizedPhone: normalizedGuestPhone,
-        });
-
-        if (leadId && !lead) {
-          return errorResponse("LEAD_NOT_FOUND", 409, { leadId });
+        let lead: LeadRow | null = null;
+        if (leadId) {
+          lead = await findLeadByContact(adminClient, { leadId });
+          if (!lead) {
+            return errorResponse("LEAD_NOT_FOUND", 409, { leadId });
+          }
         }
 
         const normalizedPrecallEmail = normalizeEmail(stringField(precallData?.email));
@@ -880,34 +878,6 @@ serve(async (req) => {
           });
         }
 
-        if (lead?.normalized_email && normalizedRequestedEmail && lead.normalized_email !== normalizedRequestedEmail) {
-          return errorResponse("LEAD_EMAIL_MISMATCH", 409, {
-            leadId: lead.id,
-            requestedEmail,
-          });
-        }
-
-        if (lead?.normalized_phone && normalizedGuestPhone && lead.normalized_phone !== normalizedGuestPhone) {
-          return errorResponse("LEAD_PHONE_MISMATCH", 409, {
-            leadId: lead.id,
-          });
-        }
-
-        const conflictingAppointments = await listFutureActiveAppointments(adminClient, {
-          leadId: lead?.id ?? leadId ?? null,
-          email: lead?.id || leadId ? null : normalizedRequestedEmail,
-          normalizedPhone: lead?.id || leadId || normalizedRequestedEmail ? null : normalizedGuestPhone,
-        });
-        const activeConflict = conflictingAppointments[0] ?? null;
-
-        if (activeConflict) {
-          return errorResponse("ACTIVE_BOOKING_EXISTS", 409, {
-            appointmentId: activeConflict.id,
-            bookingUid: activeConflict.cal_booking_id,
-            startAt: activeConflict.start_at,
-            status: activeConflict.status,
-          });
-        }
 
         // If precall data has a phone, include it in the Cal.com attendee object.
         // Cal.com event types configured to require phone will reject bookings without it.
