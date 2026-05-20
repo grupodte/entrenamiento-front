@@ -4,6 +4,7 @@ import MuxPlayer from '@mux/mux-player-react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
+import { useSEO } from '../lib/useSEO'
 import logoSvg from '../assets/DD FIT - LOGO PRINCIPAL.svg'
 import CasesSection from '../components/CasesSection.jsx'
 
@@ -329,6 +330,15 @@ function GatedContent() {
 
 // ── Main page ─────────────────────────────────────────────
 export default function LandingPage() {
+  // SEO Configuration
+  useSEO({
+    title: 'DemicheriFitness - Programa de Transformación Fitness Online',
+    description: 'Conoce el método comprobado de transformación física. Resultados reales en 8 semanas con entrenamiento y nutrición personalizada.',
+    canonical: 'https://demicherifitness.com/landing-page',
+    ogTitle: 'Método Demicheri - Transformación Garantizada',
+    ogDescription: 'Descubre cómo hemos ayudado a cientos a lograr sus objetivos fitness con seguimiento real.',
+  })
+
   const [videoProgress, setVideoProgress] = useState(0)
   const [unlocked, setUnlocked] = useState(() => {
     try { return localStorage.getItem(LOCK_KEY) === '1' } catch { return false }

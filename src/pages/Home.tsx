@@ -9,6 +9,7 @@ import FAQSection from '../components/FAQSection'
 import InstagramFeed from '../components/InstagramFeed'
 import { HomePhaseContext } from '../layouts/MainLayout'
 import { useTextReveal } from '../lib/useTextReveal'
+import { useSEO } from '../lib/useSEO'
 import forWhoBg from '../assets/Imagenes/SECCION - 1.webp'
 
 const forWhoItems = [
@@ -21,6 +22,15 @@ const forWhoItems = [
 ]
 
 export default function Home() {
+  // SEO Configuration
+  useSEO({
+    title: 'DemicheriFitness - Coaching Online de Fitness y Nutrición',
+    description: 'Asesoramiento personalizado de entrenamiento y nutrición con seguimiento real. Baja grasa, gana músculo y alcanza tus objetivos en 2 meses.',
+    canonical: 'https://demicherifitness.com/',
+    ogTitle: 'DemicheriFitness - Coaching Online',
+    ogDescription: 'Asesoramiento personalizado de entrenamiento y nutrición con resultados concretos.',
+  })
+
   const { homePhase } = useContext(HomePhaseContext)
   const forWhoRef = useTextReveal()
   const forWhoSectionRef = useRef(null)

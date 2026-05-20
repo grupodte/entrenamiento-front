@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useSEO } from '../lib/useSEO'
 import { supabase } from '../lib/supabaseClient'
 
 type BookingSummary = {
@@ -139,6 +140,22 @@ const saveAvailabilityCache = (payload: AvailabilityCachePayload) => {
 }
 
 export default function Agenda({ mode = 'precall' }: AgendaProps) {
+  // SEO Configuration
+  const pageTitle = mode === 'alumno'
+    ? 'Mi Agenda - DemicheriFitness'
+    : 'Agendar Consulta - DemicheriFitness'
+  const pageDescription = mode === 'alumno'
+    ? 'Gestiona tu agenda y reserva tus sesiones de entrenamiento personalizado.'
+    : 'Agenda tu consulta inicial gratuita con nuestro equipo de coaching fitness.'
+
+  useSEO({
+    title: pageTitle,
+    description: pageDescription,
+    canonical: mode === 'alumno' ? 'https://demicherifitness.com/alumno-agenda' : 'https://demicherifitness.com/agenda',
+    ogTitle: pageTitle,
+    ogDescription: pageDescription,
+  })
+
   const navigate = useNavigate()
   const isAlumnoAgenda = mode === 'alumno'
   const envEventTypeId = import.meta.env.VITE_CAL_EVENT_TYPE_ID as string | undefined
