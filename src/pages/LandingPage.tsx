@@ -427,10 +427,12 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Pre-video curiosity gap */}
-          <p className="text-center text-[#69686B] text-[14px] sm:text-[15px] leading-relaxed max-w-[480px] mx-auto m-0">
-            En los próximos minutos, Dani te explica por qué el 90% de las personas fallan — y qué cambia cuando hay alguien mirándote a vos.
-          </p>
+          {/* Pre-video curiosity gap — se oculta al desbloquear */}
+          {!unlocked && (
+            <p className="text-center text-[#69686B] text-[14px] sm:text-[15px] leading-relaxed max-w-[480px] mx-auto m-0">
+              En los próximos minutos, Dani te explica por qué el 90% de las personas fallan — y qué cambia cuando hay alguien mirándote a vos.
+            </p>
+          )}
 
           <div className="w-full mx-auto">
             {/* Video */}
