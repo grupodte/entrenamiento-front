@@ -49,7 +49,7 @@ function VideoProgressBar({ progress, unlocked }: { progress: number; unlocked: 
           {unlocked ? (
             <span className="text-green-600 font-medium">✓ Contenido desbloqueado</span>
           ) : (
-            <>Mirá el video para desbloquear el contenido</>
+            <>Mirá hasta el 75% para desbloquear el método completo</>
           )}
         </span>
       </div>
@@ -202,15 +202,20 @@ function GatedContent() {
         <h2 className="text-[#1A1820] text-[22px] sm:text-[28px] md:text-[34px] font-bold leading-tight mb-6 m-0">
           La historia detrás del método
         </h2>
-        <div className="max-w-[600px]">
+        <div className="max-w-[600px] flex flex-col gap-6">
           <p className="text-[#1A1820] text-[15px] sm:text-[16px] leading-relaxed m-0 border-l-[3px] border-[#9580A6] pl-5 italic">
-            "Pasé años viendo la misma historia repetirse. Personas motivadas, con ganas reales de cambiar, que arrancaban con un plan y a las tres semanas lo dejaban. No porque fueran débiles. Sino porque cuando la vida se complicó, no había nadie del otro lado.
-            <br /><br />
-            Yo mismo lo viví — empecé siguiendo planes de internet y me perdí cien veces antes de entender que el conocimiento solo no alcanza. Necesitás a alguien que te acompañe en tiempo real.
-            <br /><br />
-            Eso me llevó a diseñar algo diferente: un programa donde yo estoy presente los 60 días completos. No te mando un PDF y desaparezco. Estoy ahí. Desde que empecé a trabajar así, los resultados de mis clientes dejaron de ser la excepción. Empezaron a ser la norma."
+            "Hubo un momento que no me olvido. Un cliente mío — alguien con toda la motivación del mundo — me escribió después de tres semanas para decirme que lo dejaba. No porque el plan estuviera mal. Sino porque había tenido una semana complicada en el trabajo y no había nadie que lo ayudara a ajustar. Se cayó. Y no pudo levantarse solo.
           </p>
-          <p className="text-[#9580A6] font-bold text-[13px] mt-4 m-0">— Dani Demicheri, coach personal</p>
+          <p className="text-[#1A1820] text-[15px] sm:text-[16px] leading-relaxed m-0 border-l-[3px] border-[#9580A6] pl-5 italic">
+            Ese día me di cuenta de algo que había estado ignorando: el conocimiento no es el problema. La gente sabe que tiene que moverse y comer mejor. Lo que les falta es alguien presente cuando las cosas se complican. Y las cosas siempre se complican.
+          </p>
+          <p className="text-[#1A1820] text-[15px] sm:text-[16px] leading-relaxed m-0 border-l-[3px] border-[#9580A6] pl-5 italic">
+            Yo mismo lo viví así durante años. Seguía planes de internet, arrancaba bien, y en cuanto algo se desalineaba no tenía a nadie que me dijera qué hacer. Me perdía. Volvía a empezar. Me perdía de nuevo. Eso no es debilidad — eso es lo que pasa cuando entrenás solo.
+          </p>
+          <p className="text-[#1A1820] text-[15px] sm:text-[16px] leading-relaxed m-0 border-l-[3px] border-[#9580A6] pl-5 italic">
+            Ahí entendí lo que tenía que cambiar. Dejé de mandar PDFs y desaparecer. Empecé a estar presente los 60 días completos — ajustando, respondiendo, acompañando en tiempo real. Desde que trabajo así, los resultados de mis clientes dejaron de ser la excepción. Empezaron a ser la norma."
+          </p>
+          <p className="text-[#9580A6] font-bold text-[13px] m-0">— Dani Demicheri, coach personal</p>
         </div>
       </section>
 
@@ -408,6 +413,9 @@ export default function LandingPage() {
             <h1 className="text-[#1A1820] text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-none mb-3 m-0">
               No sos el problema. Es que nadie te estaba mirando a vos.
             </h1>
+            <p className="text-[#9580A6] text-[12px] sm:text-[13px] font-semibold uppercase tracking-[0.15em] mb-3 m-0">
+              Coach personal · +200 clientes transformados en 60 días
+            </p>
             <div className={`grid transition-[grid-template-rows,opacity] duration-500 ease-out ${
               unlocked ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
             }`}>
@@ -418,6 +426,11 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+
+          {/* Pre-video curiosity gap */}
+          <p className="text-center text-[#69686B] text-[14px] sm:text-[15px] leading-relaxed max-w-[480px] mx-auto m-0">
+            En los próximos minutos, Dani te explica por qué el 90% de las personas fallan — y qué cambia cuando hay alguien mirándote a vos.
+          </p>
 
           <div className="w-full mx-auto">
             {/* Video */}
@@ -430,6 +443,7 @@ export default function LandingPage() {
                   <MuxPlayer
                     ref={muxRef}
                     playbackId={MUX_PLAYBACK_ID}
+                    poster={`https://image.mux.com/${MUX_PLAYBACK_ID}/thumbnail.jpg?time=0`}
                     defaultPlaybackRate={1.2}
                     nohotkeys
                     style={{
@@ -496,11 +510,9 @@ export default function LandingPage() {
             </div>
 
             {/* Progress bar */}
-            {!unlocked && (
-              <div className="mt-2">
-                <VideoProgressBar progress={videoProgress} unlocked={unlocked} />
-              </div>
-            )}
+            <div className="mt-2">
+              <VideoProgressBar progress={videoProgress} unlocked={unlocked} />
+            </div>
 
           </div>
 
