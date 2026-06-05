@@ -35,8 +35,7 @@ const FUNCTION_VERSION = "2026-04-04.1";
 // On UPDATE we intentionally skip estado_lead to preserve any changes the admin made.
 const STAGE_TO_ESTADO_LEAD: Record<string, string> = {
   precall_pending: "pre_call",
-  precall_follow_up: "seguimiento",
-  precall_abandoned: "abandonado",
+  precall_completed: "precall_completo",
   precall_booked: "agendado",
 };
 
@@ -44,6 +43,16 @@ function stageToEstadoLead(stage: string | null | undefined): string {
   if (!stage) return "pre_call";
   return STAGE_TO_ESTADO_LEAD[stage] ?? "pre_call";
 }
+
+// estado_lead values that are safe to auto-advance from the landing. Once the admin
+// moves a lead past the booking step (seguimiento, plan_activo, etc.) the landing must
+// not pull it back, so we only advance from these pre-booking states.
+const ADVANCEABLE_ESTADO_LEAD = new Set<string | null>([
+  null,
+  "pre_call",
+  "precall_completo",
+  "precall_completed",
+]);
 const ACTIVE_APPOINTMENT_STATUSES = ["scheduled", "confirmed", "accepted", "pending"] as const;
 let cachedLeadTableName: (typeof LEAD_TABLE_CANDIDATES)[number] | null = null;
 
@@ -252,6 +261,7 @@ type LeadRow = {
   scheduled_start_at: string | null;
   scheduled_end_at: string | null;
   meet_url: string | null;
+  estado_lead: string | null;
 };
 
 type AppointmentRow = {
@@ -282,8 +292,7 @@ type LeadUpsertInput = {
   scheduledStartAt?: string | null;
   scheduledEndAt?: string | null;
   meetUrl?: string | null;
-  completedAt?: string | null;
-  abandonedAt?: string | null;
+  estadoLead?: string | null;
 };
 
 function mergeObjects(...values: Array<Record<string, unknown> | null | undefined>) {
@@ -389,21 +398,27 @@ async function upsertLead(input: LeadUpsertInput) {
     scheduled_start_at: input.scheduledStartAt ?? lead?.scheduled_start_at ?? null,
     scheduled_end_at: input.scheduledEndAt ?? lead?.scheduled_end_at ?? null,
     meet_url: input.meetUrl ?? lead?.meet_url ?? null,
-    completed_at: input.completedAt ?? lead?.completed_at ?? null,
-    abandoned_at: input.abandonedAt ?? lead?.abandoned_at ?? null,
     last_contact_at: now,
     updated_at: now,
   };
 
   if (lead?.id) {
+    // By default UPDATE skips estado_lead to preserve admin edits. But when the landing
+    // explicitly advances the pipeline (e.g. a booking -> 'agendado'), we apply it only
+    // if the lead is still in a pre-booking state, so we never pull back a lead the admin
+    // already moved forward (seguimiento, plan_activo, etc.).
+    const updatePayload: Record<string, unknown> = { ...payload };
+    if (input.estadoLead && ADVANCEABLE_ESTADO_LEAD.has(lead.estado_lead ?? null)) {
+      updatePayload.estado_lead = input.estadoLead;
+    }
     const { data, error } = await adminClient
       .from(leadTable)
-      .update(payload)
+      .update(updatePayload)
       .eq("id", lead.id)
       .select("*")
       .maybeSingle();
     if (error) {
-      console.error("Failed to update lead", { leadTable, payload, error });
+      console.error("Failed to update lead", { leadTable, payload: updatePayload, error });
       throw Object.assign(new Error("Failed to update lead"), {
         status: 500,
         payload: error,
@@ -418,7 +433,7 @@ async function upsertLead(input: LeadUpsertInput) {
       ...payload,
       // estado_lead is the admin CRM pipeline column. We set it only on INSERT so the
       // admin can freely change it later without the landing overwriting their edits.
-      estado_lead: stageToEstadoLead(payload.stage),
+      estado_lead: input.estadoLead ?? stageToEstadoLead(payload.stage),
       created_at: now,
     })
     .select("*")
@@ -832,10 +847,9 @@ serve(async (req) => {
           fullName: stringField(precallData.nombre),
           email: stringField(precallData.email),
           phone: stringField(precallData.whatsapp) ?? stringField(precallData.phone),
-          stage: stringField(input?.stage) ?? "precall_follow_up",
+          stage: stringField(input?.stage) ?? "precall_completed",
           source: stringField(input?.source) ?? "precall",
           precallData,
-          completedAt: new Date().toISOString(),
         });
 
         return jsonResponse({
@@ -977,7 +991,7 @@ serve(async (req) => {
           scheduledStartAt: startAt,
           scheduledEndAt: endAt,
           meetUrl,
-          abandonedAt: null,
+          estadoLead: "agendado",
         });
 
         const appointmentPrecallData = asRecord(updatedLead?.precall_data) ?? precallData;
