@@ -35,7 +35,7 @@ const FUNCTION_VERSION = "2026-04-04.1";
 // On UPDATE we intentionally skip estado_lead to preserve any changes the admin made.
 const STAGE_TO_ESTADO_LEAD: Record<string, string> = {
   precall_pending: "pre_call",
-  precall_completed: "precall_completo",
+  precall_completed: "pre_call",
   precall_booked: "agendado",
 };
 
@@ -50,7 +50,6 @@ function stageToEstadoLead(stage: string | null | undefined): string {
 const ADVANCEABLE_ESTADO_LEAD = new Set<string | null>([
   null,
   "pre_call",
-  "precall_completo",
   "precall_completed",
 ]);
 const ACTIVE_APPOINTMENT_STATUSES = ["scheduled", "confirmed", "accepted", "pending"] as const;
