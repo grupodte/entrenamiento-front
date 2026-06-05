@@ -35,8 +35,9 @@ const FUNCTION_VERSION = "2026-04-04.1";
 // On UPDATE we intentionally skip estado_lead to preserve any changes the admin made.
 const STAGE_TO_ESTADO_LEAD: Record<string, string> = {
   precall_pending: "pre_call",
-  precall_completed: "pre_call",
-  precall_booked: "pre_call",
+  precall_follow_up: "seguimiento",
+  precall_abandoned: "abandonado",
+  precall_booked: "agendado",
 };
 
 function stageToEstadoLead(stage: string | null | undefined): string {
@@ -281,6 +282,8 @@ type LeadUpsertInput = {
   scheduledStartAt?: string | null;
   scheduledEndAt?: string | null;
   meetUrl?: string | null;
+  completedAt?: string | null;
+  abandonedAt?: string | null;
 };
 
 function mergeObjects(...values: Array<Record<string, unknown> | null | undefined>) {
@@ -386,6 +389,8 @@ async function upsertLead(input: LeadUpsertInput) {
     scheduled_start_at: input.scheduledStartAt ?? lead?.scheduled_start_at ?? null,
     scheduled_end_at: input.scheduledEndAt ?? lead?.scheduled_end_at ?? null,
     meet_url: input.meetUrl ?? lead?.meet_url ?? null,
+    completed_at: input.completedAt ?? lead?.completed_at ?? null,
+    abandoned_at: input.abandonedAt ?? lead?.abandoned_at ?? null,
     last_contact_at: now,
     updated_at: now,
   };
@@ -827,9 +832,10 @@ serve(async (req) => {
           fullName: stringField(precallData.nombre),
           email: stringField(precallData.email),
           phone: stringField(precallData.whatsapp) ?? stringField(precallData.phone),
-          stage: stringField(input?.stage) ?? "precall_completed",
+          stage: stringField(input?.stage) ?? "precall_follow_up",
           source: stringField(input?.source) ?? "precall",
           precallData,
+          completedAt: new Date().toISOString(),
         });
 
         return jsonResponse({
@@ -971,6 +977,7 @@ serve(async (req) => {
           scheduledStartAt: startAt,
           scheduledEndAt: endAt,
           meetUrl,
+          abandonedAt: null,
         });
 
         const appointmentPrecallData = asRecord(updatedLead?.precall_data) ?? precallData;
