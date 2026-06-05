@@ -858,6 +858,36 @@ serve(async (req) => {
         });
       }
 
+      case "get_lead_prefill": {
+        // Devuelve solo los datos de contacto para precargar /agenda cuando el lead
+        // llega desde el link de WhatsApp (sin localStorage). leadId es un UUID no
+        // adivinable, así que se expone únicamente lo mínimo para el formulario.
+        const leadId = stringField(input?.leadId);
+        if (!leadId) {
+          return errorResponse("Missing leadId", 400);
+        }
+
+        const adminClient = getAdminClient();
+        if (!adminClient) {
+          return errorResponse("Server not configured", 500);
+        }
+
+        const lead = await findLeadByContact(adminClient, { leadId });
+        if (!lead) {
+          return errorResponse("LEAD_NOT_FOUND", 404, { leadId });
+        }
+
+        return jsonResponse({
+          data: {
+            leadId: lead.id,
+            fullName: lead.full_name ?? null,
+            email: lead.email ?? null,
+            phone: lead.phone ?? null,
+            precallData: asRecord(lead.precall_data) ?? null,
+          },
+        });
+      }
+
       case "create_booking": {
         const attendee = (input?.attendee as Record<string, unknown> | undefined) ?? {};
         const requestedEmail = (attendee.email as string | undefined) ?? null;

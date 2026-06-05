@@ -179,6 +179,10 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const [isBooking, setIsBooking] = useState(false)
   const [booking, setBooking] = useState<BookingSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // leadId / precall data recuperados desde el link de WhatsApp (?lead=<id>), cuando el
+  // usuario llega sin localStorage (ej. abre el link en el teléfono).
+  const [urlLeadId, setUrlLeadId] = useState<string | null>(null)
+  const [urlPrecallData, setUrlPrecallData] = useState<PrecallData | null>(null)
 
   const selectedDateKey = useMemo(
     () => formatLocalDateKey(selectedDate),
@@ -385,6 +389,28 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       return
     }
 
+    // Si llega desde el link de WhatsApp (?lead=<id>), traemos los datos del pre-call
+    // desde el backend (no hay localStorage en ese dispositivo) y precargamos el form.
+    const params = new URLSearchParams(window.location.search)
+    const leadParam = params.get('lead') ?? params.get('leadId')
+    if (leadParam) {
+      setUrlLeadId(leadParam)
+      supabase.functions
+        .invoke('cal', { body: { action: 'get_lead_prefill', leadId: leadParam } })
+        .then(({ data }) => {
+          const lead = data?.data
+          if (!lead) return
+          if (lead.fullName) setAttendeeName(lead.fullName)
+          if (lead.email) setAttendeeEmail(lead.email)
+          if (lead.phone) setAttendeePhone(lead.phone)
+          if (lead.precallData) setUrlPrecallData(lead.precallData as PrecallData)
+        })
+        .catch((err) => {
+          console.error('[Agenda] get_lead_prefill error:', err)
+        })
+      return
+    }
+
     try {
       const stored = localStorage.getItem(PRECALL_STORAGE_KEY)
       if (stored) {
@@ -447,6 +473,11 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
         edad: '',
         zonaHoraria: timeZone
       }
+    } else if (urlLeadId) {
+      // Llegó desde el link de WhatsApp: usamos el leadId y los datos del pre-call
+      // recuperados del backend, así la reserva queda vinculada al lead existente.
+      precallLeadId = urlLeadId
+      precallData = urlPrecallData
     } else {
       try {
         const stored = localStorage.getItem(PRECALL_STORAGE_KEY)
@@ -531,7 +562,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   }
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center bg-[#FEFEFE]">
+    <div className="min-h-screen flex items-center justify-center bg-[#FEFEFE] py-8 md:py-12">
       <div className="w-full max-w-[1200px] min-h-[640px] md:min-h-[680px] overflow-hidden rounded-[30px] shadow-[0_30px_80px_rgba(149,128,166,0.15)] bg-[#FEFEFE] grid md:grid-cols-[0.85fr_1.15fr] border border-[#E8E4EE]">
         <div className="bg-[#F4F2F7] text-[#1A1820] p-7 md:p-10 flex flex-col justify-between border-r border-[#E8E4EE]">
           <div className="space-y-6">
