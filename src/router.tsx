@@ -11,10 +11,12 @@ import { postulacionRoute } from './routes/postulacion'
 import { postulacionIndexRoute } from './routes/postulacion/index'
 import { postulacionGraciasRoute } from './routes/postulacion/gracias'
 import { postulacionNoSeleccionadoRoute } from './routes/postulacion/no-seleccionado'
+import { privacyRoute } from './routes/privacy'
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
   landingRoute,
+  privacyRoute,
   preCallRoute,
   noEsElMomentoRoute,
   agendaRoute,

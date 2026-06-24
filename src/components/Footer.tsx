@@ -10,15 +10,30 @@ export default function Footer({ isVisible = true }: { isVisible?: boolean }) {
       }`}
     >
       <div className="w-full max-w-[1200px] mx-auto px-5 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex flex-col gap-2">
+        
+        <div className="order-1 flex flex-col gap-2">
           <Link to="/" aria-label="DemicheriFitness – Inicio">
             <img src={logoSvg} alt="DemicheriFitness" className="h-[20px] w-auto" />
           </Link>
-          <p className="m-0 text-[12px] text-[#69686B]">Entrenamiento, salud y bienestar.</p>
         </div>
-        <a href="https://www.grupodte.com" target="_blank" rel="noopener noreferrer">
+
+        <nav
+          aria-label="Enlaces legales"
+          className="order-2 md:order-3 flex items-center gap-4 text-[11px] text-[#69686B]"
+        >
+          <Link to="/privacy" className="hover:text-[#1A1820] transition-colors">
+            Política de privacidad
+          </Link>
+        </nav>
+
+        <a
+          href="https://www.grupodte.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="order-3 md:order-2 mt-1 md:mt-0"
+        >
           <ShinyText
-            text="Built by DTE"
+            text="web built by DTE"
             speed={2}
             delay={0}
             color="#b5b5b5"
@@ -31,7 +46,7 @@ export default function Footer({ isVisible = true }: { isVisible?: boolean }) {
             className="text-[11px]"
           />
         </a>
-        <p className="m-0 text-[11px] text-[#9D9B9F]">Todos los derechos reservados.</p>
+
       </div>
     </footer>
   )
