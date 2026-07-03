@@ -30,6 +30,7 @@ export default function MainLayout() {
   const isHome = location.pathname === '/'
   const isPostulacion = location.pathname === '/postulacion' || location.pathname.startsWith('/postulacion/')
   const isConversionFunnel = isPostulacion || location.pathname === '/landing-page' || location.pathname === '/pre-call' || location.pathname === '/no-es-el-momento'
+  const isPrivacy = location.pathname === '/privacy'
   const isScrollLocked = isPostulacion
   const isSpa = useRef(isSpaNavigation()).current
   const [homePhase, setHomePhase] = useState(isHome && isSpa ? 'preload' : 'ready')
@@ -88,7 +89,7 @@ export default function MainLayout() {
   const showPreloader = isHome && (homePhase === 'preload' || homePhase === 'preload-exit')
   const preloaderIsExiting = homePhase === 'preload-exit'
   const showNavbar = (!isHome || ['header', 'hero', 'content'].includes(homePhase)) && !isConversionFunnel
-  const showFooter = (!isHome || homePhase === 'content') && !isConversionFunnel
+  const showFooter = (!isHome || homePhase === 'content') && !isConversionFunnel && !isPrivacy
   const mainContainerClass = isConversionFunnel
     ? 'w-full max-w-none mx-auto p-0'
     : 'w-full max-w-none md:max-w-[1350px] mx-auto px-1 sm:px-5 md:px-5 pb-6 md:pb-8'

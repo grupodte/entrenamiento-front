@@ -33,7 +33,7 @@ export default function Footer({ isVisible = true }: { isVisible?: boolean }) {
           className="order-3 md:order-2 mt-1 md:mt-0"
         >
           <ShinyText
-            text="web built by DTE"
+            text="build by DTE"
             speed={2}
             delay={0}
             color="#b5b5b5"
