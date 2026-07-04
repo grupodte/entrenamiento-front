@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useGTM } from '../lib/useGTM'
 
 // Icons as SVG components
 const CheckIcon = ({ className }: { className?: string }) => (
@@ -40,7 +41,13 @@ const ArrowRightIcon = ({ className }: { className?: string }) => (
 
 export default function AgendaGracias() {
   const navigate = useNavigate()
+  const { trackPageView, trackEvent } = useGTM()
   const [countdown, setCountdown] = useState(15)
+
+  useEffect(() => {
+    trackPageView('agenda_confirmada', { page_title: 'Cita confirmada' })
+    trackEvent('booking_completed', { conversion_type: 'agenda_confirmada' })
+  }, [trackPageView, trackEvent])
 
   useEffect(() => {
     const timer = window.setInterval(() => {
