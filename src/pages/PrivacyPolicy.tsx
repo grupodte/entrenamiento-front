@@ -2,11 +2,11 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useSEO } from '../lib/useSEO'
 
-const lastUpdated = '[COMPLETAR]'
-const legalName = '[COMPLETAR nombre legal]'
-const country = '[COMPLETAR país]'
-const privacyEmail = '[COMPLETAR email de privacidad]'
-const minimumAge = '[COMPLETAR 13/16]'
+const lastUpdated = '8 de julio de 2026'
+const legalName = 'Daniel Demicheri'
+const country = 'Uruguay'
+const privacyEmail = 'contacto@demicherifitness.com'
+const minimumAge = '18'
 
 const toc = [
   ['responsable', 'Responsable y contacto'],
