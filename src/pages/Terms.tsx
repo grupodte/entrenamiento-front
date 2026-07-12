@@ -40,8 +40,8 @@ export default function Terms() {
           <Section title="2. Servicio y cuenta">
             <p>La app ofrece herramientas de entrenamiento, seguimiento, contenido y comunicación con fines de bienestar general. Debés proporcionar información verdadera, mantener la confidencialidad de tus credenciales y avisarnos si detectás un acceso no autorizado.</p>
           </Section>
-          <Section title="3. Autenticación">
-            <p>Podés registrarte con email o mediante Google o Apple. Estos proveedores pueden compartir información básica del perfil conforme a los permisos que autorices. Supabase gestiona la autenticación y la sesión de la cuenta.</p>
+          <Section title="3. Autenticación y datos personales">
+            <p>Podés registrarte con email o mediante Google o Apple. Estos proveedores pueden compartir información básica del perfil conforme a los permisos que autorices. Supabase gestiona la autenticación y la sesión de la cuenta. El uso de datos personales, datos de salud y fitness, fotos, audio, notificaciones, diagnósticos y datos de reproducción se describe en nuestra <Link to="/privacy">Política de Privacidad</Link>.</p>
           </Section>
           <Section title="4. Uso aceptable">
             <ul>

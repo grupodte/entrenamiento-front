@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import logoSvg from '../assets/DD FIT - LOGO PRINCIPAL.svg'
 import { supabase } from '../lib/supabaseClient'
-import { useGTM } from '../lib/useGTM'
 
 const PRECALL_STORAGE_KEY = 'dmf_precall_data'
 const PRECALL_LEAD_ID_STORAGE_KEY = 'dmf_precall_lead_id'
@@ -214,7 +213,6 @@ function StepText({
 // ── Main ───────────────────────────────────────────────────
 export default function PreCall() {
   const navigate = useNavigate()
-  const { trackPageView, trackEvent } = useGTM()
   const [step, setStep] = useState(0)
   const [visible, setVisible] = useState(true)
   const [data, setData] = useState<Data>(INITIAL)
@@ -238,9 +236,7 @@ export default function PreCall() {
   const choose = (field: keyof Data, value: string) => {
     const nextData = { ...data, [field]: value }
     setData(nextData)
-    trackEvent('precall_choice', { field, value, step })
     if (field === 'dispone99Mensuales' && value === 'no') {
-      trackEvent('budget_rejection', { reason: 'insufficient_budget', step })
       try {
         localStorage.setItem(PRECALL_STORAGE_KEY, JSON.stringify(nextData))
       } catch {
@@ -253,14 +249,9 @@ export default function PreCall() {
   }
 
   useEffect(() => {
-    trackPageView('pre_call', { initial_step: 0 })
-  }, [trackPageView])
-
-  useEffect(() => {
     if (step > 0) {
-      trackEvent('precall_step_reached', { step, total: TOTAL, progress_percent: Math.round((step / TOTAL) * 100) })
     }
-  }, [step, trackEvent])
+  }, [step])
 
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow
@@ -325,7 +316,6 @@ export default function PreCall() {
       setSubmitting(false)
       return
     }
-    trackEvent('precall_submitted', { dias_entrenamiento: data.entrenaDias, principal_need: data.dispuestoInvertir, lead_id: leadId })
     await new Promise(r => setTimeout(r, 400))
     navigate({ to: '/agenda' })
   }

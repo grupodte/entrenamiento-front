@@ -56,6 +56,11 @@ const purposes = [
     purpose:
       'Guardar, reproducir o procesar el audio creado voluntariamente por el usuario, según la función específica de la app.',
   },
+  {
+    category: 'Fotos de perfil',
+    purpose:
+      'Permitir que el usuario seleccione o tome una foto de perfil y mostrarla dentro de su cuenta.',
+  },
 ]
 
 const providers = [
@@ -78,6 +83,10 @@ const providers = [
   {
     name: 'Vercel (Speed Insights)',
     purpose: 'medición de rendimiento, tiempos de carga y estabilidad técnica de la experiencia web o componentes relacionados.',
+  },
+  {
+    name: 'Meta/WhatsApp',
+    purpose: 'envío y recepción de comunicaciones, incluidas notas de voz cuando esta función es utilizada por personal autorizado.',
   },
 ]
 
@@ -191,12 +200,15 @@ export default function PrivacyPolicy() {
               integrados.
             </p>
 
-            <h3>2.1 Identidad y cuenta</h3>
+            <h3>2.1 Identidad, cuenta y acceso</h3>
             <p>
-              Recopilamos email, nombre y contraseña. La contraseña se almacena
-              mediante mecanismos de hash; no almacenamos contraseñas en texto claro.
-              Estos datos se obtienen cuando el usuario registra una cuenta, inicia
-              sesión, actualiza su perfil o solicita soporte.
+              Recopilamos email, nombre, identificador de usuario, foto de perfil y
+              contraseña. El identificador de usuario se utiliza para asociar la
+              cuenta con rutinas, dietas, cursos, progreso, permisos y solicitudes de
+              soporte. La contraseña se almacena mediante mecanismos de hash; no
+              almacenamos contraseñas en texto claro. Estos datos se obtienen cuando
+              el usuario registra una cuenta, inicia sesión, actualiza su perfil o
+              solicita soporte.
             </p>
 
             <h3>2.2 Datos de salud y fitness</h3>
@@ -213,40 +225,55 @@ export default function PrivacyPolicy() {
               métricas derivadas del uso del servicio.
             </p>
 
-            <h3>2.3 Token de dispositivo para notificaciones push</h3>
+            <h3>2.3 Fotos, cámara y biblioteca</h3>
+            <p>
+              Si el usuario elige una foto de perfil, la app puede permitirle tomar
+              una fotografía con la cámara o seleccionar una imagen de su biblioteca.
+              La imagen elegida se almacena en el servicio de almacenamiento asociado
+              a su cuenta y se utiliza para mostrar su perfil. No accedemos a la
+              cámara ni a la biblioteca sin la acción del usuario y los permisos
+              correspondientes del sistema operativo.
+            </p>
+
+            <h3>2.4 Audio y notas de voz</h3>
+            <p>
+              En las funciones de comunicación habilitadas para el equipo autorizado,
+              podemos recopilar grabaciones de voz creadas voluntariamente con el
+              micrófono. El audio se procesa para enviarlo como nota de voz mediante
+              WhatsApp y puede conservarse temporalmente en servicios técnicos para
+              completar el envío y mostrar el historial de comunicación. No grabamos
+              audio en segundo plano.
+            </p>
+
+            <h3>2.5 Token de dispositivo para notificaciones push</h3>
             <p>
               Si el usuario permite las notificaciones, recopilamos un token de
-              dispositivo para enviar notificaciones push relacionadas con la app,
-              como recordatorios de entrenamiento, avisos operativos o novedades del
-              servicio. El usuario puede desactivar las notificaciones desde los
-              ajustes del sistema operativo.
+              dispositivo y la plataforma correspondiente para enviar notificaciones
+              push relacionadas con la app, como recordatorios de entrenamiento,
+              avisos operativos o novedades del servicio. El token se asocia a la
+              cuenta para dirigir el aviso al dispositivo correcto. El usuario puede
+              desactivar las notificaciones desde los ajustes del sistema operativo.
             </p>
 
-            <h3>2.4 Datos de uso y diagnóstico de rendimiento</h3>
+            <h3>2.6 Datos técnicos y diagnósticos</h3>
             <p>
-              Podemos recopilar datos técnicos y de uso, como eventos de navegación
-              dentro de la app, tiempos de carga, errores, información de
-              rendimiento, versión de la app, sistema operativo, tipo de dispositivo,
-              dirección IP aproximada o datos similares necesarios para diagnóstico,
-              seguridad y mejora del servicio.
+              Podemos recopilar datos de diagnóstico, como plataforma, versión de la
+              app, ruta, tipo de dispositivo, user agent, errores, stack técnico y
+              rendimiento. Cuando existe una sesión activa, un reporte de error puede
+              asociarse al identificador de usuario para resolver incidencias de su
+              cuenta. Estos datos se utilizan para seguridad, estabilidad y soporte,
+              no para publicidad ni para crear perfiles comerciales.
             </p>
 
-            <h3>2.5 Datos de reproducción de video</h3>
+            <h3>2.7 Datos de reproducción de video</h3>
             <p>
-              Cuando el usuario reproduce videos de entrenamiento, podemos recopilar
-              eventos de reproducción, calidad de streaming, duración de
-              visualización, errores de reproducción, identificadores técnicos del
-              reproductor y datos similares necesarios para entregar y mejorar el
-              contenido de video.
-            </p>
-
-            <h3>2.6 Grabaciones de audio, si el usuario las crea</h3>
-            <p>
-              La app puede permitir que el usuario cree o suba grabaciones de audio.
-              Solo recopilamos audio si el usuario lo genera explícitamente mediante
-              una función visible de la app. No grabamos audio en segundo plano ni
-              activamos el micrófono sin una acción del usuario y los permisos
-              correspondientes del sistema operativo.
+              Cuando el usuario reproduce videos de entrenamiento, Mux puede recibir
+              el título del video, el identificador de usuario que enviamos como
+              <em>viewer_user_id</em> y datos técnicos y de interacción de
+              reproducción, como carga, calidad, progreso, duración y errores. Esta
+              información se utiliza para entregar el video, proteger el contenido,
+              detectar fallos y asociar el progreso con la cuenta correcta; no se
+              utiliza para tracking publicitario.
             </p>
           </PolicySection>
 
@@ -270,8 +297,9 @@ export default function PrivacyPolicy() {
               </table>
             </div>
             <p>
-              No vendemos datos personales. Tampoco usamos datos de salud o fitness
-              para publicidad comportamental de terceros.
+              No vendemos datos personales, no realizamos publicidad comportamental y
+              no utilizamos datos personales para tracking entre aplicaciones o sitios
+              web de terceros, medición publicitaria ni perfiles comerciales.
             </p>
           </PolicySection>
 
@@ -291,9 +319,9 @@ export default function PrivacyPolicy() {
               <li>
                 <strong>Consentimiento:</strong> para tratar datos sensibles de salud
                 y fitness cuando la ley lo exija, enviar notificaciones push, acceder
-                al micrófono si el usuario crea grabaciones de audio, y realizar
-                otros tratamientos opcionales que dependan de permisos o aceptación
-                expresa.
+                al micrófono, cámara o biblioteca si el usuario crea grabaciones o
+                selecciona una foto, y realizar otros tratamientos opcionales que
+                dependan de permisos o aceptación expresa.
               </li>
               <li>
                 <strong>Interés legítimo, cuando sea permitido:</strong> para
@@ -358,6 +386,14 @@ export default function PrivacyPolicy() {
               cumplir las finalidades descritas en esta política, prestar el
               servicio, resolver disputas, mantener seguridad, cumplir obligaciones
               legales y atender solicitudes del usuario.
+            </p>
+            <p>
+              Las fotos de perfil, datos de salud y fitness y progreso se conservan
+              mientras sean necesarios para prestar el servicio o hasta que el usuario
+              solicite su eliminación. Los reportes de diagnóstico se conservan durante
+              el tiempo necesario para investigar y resolver incidencias. Las notas de
+              voz pueden conservarse temporalmente para completar el envío y administrar
+              el historial de comunicación.
             </p>
             <ul>
               {retentionItems.map((item) => (
