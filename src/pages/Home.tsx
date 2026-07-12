@@ -10,6 +10,7 @@ import InstagramFeed from '../components/InstagramFeed'
 import { HomePhaseContext } from '../layouts/MainLayout'
 import { useTextReveal } from '../lib/useTextReveal'
 import { useSEO } from '../lib/useSEO'
+import { useGTM } from '../lib/useGTM'
 import forWhoBg from '../assets/Imagenes/SECCION - 1.webp'
 
 const forWhoItems = [
@@ -31,6 +32,7 @@ export default function Home() {
     ogDescription: 'Asesoramiento personalizado de entrenamiento y nutrición con resultados concretos.',
   })
 
+  const { trackButtonClick, trackPageView } = useGTM()
   const { homePhase } = useContext(HomePhaseContext)
   const forWhoRef = useTextReveal()
   const forWhoSectionRef = useRef(null)
@@ -41,8 +43,13 @@ export default function Home() {
   const contentVisible = ['content', 'ready'].includes(resolvedPhase)
 
   const scrollToPlans = () => {
+    trackButtonClick('view_plans', 'hero_section')
     document.getElementById('planes')?.scrollIntoView({ behavior: 'smooth' })
   }
+
+  useEffect(() => {
+    trackPageView('home', { page_url: window.location.pathname })
+  }, [])
 
   useEffect(() => {
     const section = forWhoSectionRef.current
@@ -129,6 +136,7 @@ export default function Home() {
           <div className={`hero-reveal hero-reveal--4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto pt-1 ${heroVisible ? 'is-visible' : ''}`}>
             <a
               href="/pre-call"
+              onClick={() => trackButtonClick('start_pre_call', 'hero_cta')}
               className="liquid-btn liquid-btn--solid sm:w-auto px-8 py-3.5 text-center text-[13px] font-bold uppercase tracking-widest text-white transition-all duration-500 hover:-translate-y-0.5 rounded-[10px] sm:rounded-[12px]"
             >
               <span>Quiero empezar</span>
@@ -241,6 +249,7 @@ export default function Home() {
           </p>
           <a
             href="/pre-call"
+            onClick={() => trackButtonClick('start_pre_call', 'closing_cta')}
             data-closing-cta-item
             className="liquid-btn liquid-btn--solid text-white font-bold text-[13px] uppercase tracking-widest py-4 px-10 rounded-[10px] sm:rounded-[12px] transition-all duration-500 hover:-translate-y-0.5"
           >

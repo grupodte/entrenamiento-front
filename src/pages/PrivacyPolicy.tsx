@@ -88,6 +88,10 @@ const providers = [
     name: 'Meta/WhatsApp',
     purpose: 'envío y recepción de comunicaciones, incluidas notas de voz cuando esta función es utilizada por personal autorizado.',
   },
+  {
+    name: 'Google Tag Manager',
+    purpose: 'gestión de eventos técnicos y de interacción del funnel web; no recibe nombre, email, teléfono ni identificadores de cuenta desde estos eventos.',
+  },
 ]
 
 const retentionItems = [
