@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useSEO } from '../lib/useSEO'
 
-const lastUpdated = '8 de julio de 2026'
+const lastUpdated = '12 de julio de 2026'
 const legalName = 'Daniel Demicheri'
 const country = 'Uruguay'
 const privacyEmail = 'contacto@demicherifitness.com'
@@ -100,10 +100,6 @@ const userRights = [
   'Presentar una reclamación ante la autoridad de protección de datos competente.',
 ]
 
-function Placeholder({ children }: { children: ReactNode }) {
-  return <span className="privacy-placeholder">{children}</span>
-}
-
 function PolicySection({
   id,
   title,
@@ -155,9 +151,7 @@ export default function PrivacyPolicy() {
         <div className="privacy-note" role="note">
           <p>
             Esta política explica cómo Demicheri Fitness recopila, utiliza,
-            comparte y protege los datos personales de sus usuarios. Los campos
-            marcados como <strong>[COMPLETAR]</strong> deben completarse antes de
-            publicar la página o enviarla a revisión de Apple App Store o Google Play.
+            comparte y protege los datos personales de sus usuarios.
           </p>
         </div>
 
@@ -177,15 +171,12 @@ export default function PrivacyPolicy() {
             <p>
               El responsable del tratamiento de los datos personales recopilados a
               través de la aplicación móvil <strong>Demicheri Fitness</strong> es{' '}
-              <Placeholder>{legalName}</Placeholder>, con domicilio o país de
-              operación en <Placeholder>{country}</Placeholder>.
+              <strong>{legalName}</strong>, con operación en <strong>{country}</strong>.
             </p>
             <p>
               Para consultas sobre privacidad, protección de datos o ejercicio de
               derechos, puede escribir a:{' '}
-              <a href="mailto:[COMPLETAR]">
-                <Placeholder>{privacyEmail}</Placeholder>
-              </a>
+              <a href={`mailto:${privacyEmail}`}>{privacyEmail}</a>
               .
             </p>
           </PolicySection>
@@ -389,9 +380,7 @@ export default function PrivacyPolicy() {
             </ul>
             <p>
               Para ejercer estos derechos, escriba a{' '}
-              <a href="mailto:[COMPLETAR]">
-                <Placeholder>{privacyEmail}</Placeholder>
-              </a>
+              <a href={`mailto:${privacyEmail}`}>{privacyEmail}</a>
               . Podemos solicitar información adicional para verificar la identidad
               del solicitante antes de responder.
             </p>
@@ -411,8 +400,8 @@ export default function PrivacyPolicy() {
             <p>
               Como alternativa, el usuario puede solicitar la eliminación escribiendo
               a{' '}
-              <a href="mailto:[COMPLETAR]?subject=Solicitud%20de%20eliminaci%C3%B3n%20de%20cuenta%20Demicheri%20Fitness">
-                <Placeholder>{privacyEmail}</Placeholder>
+              <a href={`mailto:${privacyEmail}?subject=Solicitud%20de%20eliminaci%C3%B3n%20de%20cuenta%20Demicheri%20Fitness`}>
+                {privacyEmail}
               </a>{' '}
               con el asunto "Solicitud de eliminación de cuenta". Responderemos
               dentro de los plazos exigidos por la ley aplicable.
@@ -439,7 +428,7 @@ export default function PrivacyPolicy() {
           <PolicySection id="menores" title="11. Menores de edad">
             <p>
               Demicheri Fitness está dirigida a personas mayores de{' '}
-              <Placeholder>{minimumAge}</Placeholder> años. No recopilamos
+              <strong>{minimumAge}</strong> años. No recopilamos
               intencionalmente datos personales de menores de esa edad. Si un padre,
               madre, tutor o representante legal considera que un menor nos
               proporcionó datos personales sin autorización, puede contactarnos para
@@ -485,14 +474,12 @@ export default function PrivacyPolicy() {
               vinculados con privacidad y protección de datos, puede contactar a:
             </p>
             <p>
-              <strong>Responsable:</strong> <Placeholder>{legalName}</Placeholder>
+              <strong>Responsable:</strong> {legalName}
               <br />
-              <strong>País:</strong> <Placeholder>{country}</Placeholder>
+              <strong>País:</strong> {country}
               <br />
               <strong>Email de privacidad:</strong>{' '}
-              <a href="mailto:[COMPLETAR]">
-                <Placeholder>{privacyEmail}</Placeholder>
-              </a>
+              <a href={`mailto:${privacyEmail}`}>{privacyEmail}</a>
             </p>
           </PolicySection>
         </article>
@@ -503,13 +490,14 @@ export default function PrivacyPolicy() {
           </p>
           <p>
             Contacto de privacidad:{' '}
-            <a href="mailto:[COMPLETAR]">
-              <Placeholder>{privacyEmail}</Placeholder>
-            </a>
+            <a href={`mailto:${privacyEmail}`}>{privacyEmail}</a>
           </p>
           <p>
             Este documento es una plantilla informativa. Consulte con un abogado
             calificado para obtener asesoramiento legal específico para su situación.
+          </p>
+          <p>
+            <Link to="/terms">Términos y Condiciones</Link>
           </p>
         </footer>
       </div>

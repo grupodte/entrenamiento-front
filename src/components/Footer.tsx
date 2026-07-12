@@ -24,6 +24,9 @@ export default function Footer({ isVisible = true }: { isVisible?: boolean }) {
           <Link to="/privacy" className="hover:text-[#1A1820] transition-colors">
             Política de privacidad
           </Link>
+          <Link to="/terms" className="hover:text-[#1A1820] transition-colors">
+            Términos y condiciones
+          </Link>
         </nav>
 
         <a
