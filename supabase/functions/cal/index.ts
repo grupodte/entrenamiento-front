@@ -243,6 +243,119 @@ function normalizePhone(value: unknown) {
   return digitsOnly.length >= 7 ? digitsOnly : null;
 }
 
+// Mismo mapa que entrenamiento/api/_phone.js y entrenamiento/src/utils/phone.js
+// (mantener sincronizados). Se usa para armar el numero que se envia a la API
+// de Cal.com con el codigo de pais real, en vez de asumir Uruguay a ciegas.
+const COUNTRY_DIAL_CODES: Record<string, string> = {
+  UY: "598", AR: "54", CL: "56", CO: "57", MX: "52", BR: "55", PE: "51",
+  VE: "58", PY: "595", BO: "591", EC: "593", US: "1", ES: "34", CA: "1",
+  GT: "502", HN: "504", SV: "503", NI: "505", CR: "506", PA: "507", BZ: "501",
+  CU: "53", DO: "1", PR: "1", JM: "1", HT: "509", TT: "1", BS: "1", BB: "1",
+  GY: "592", SR: "597", GF: "594", GD: "1", LC: "1", VC: "1", AG: "1", DM: "1",
+  KN: "1", PT: "351", FR: "33", DE: "49", IT: "39", GB: "44", IE: "353",
+  NL: "31", BE: "32", CH: "41", AT: "43", SE: "46", NO: "47", DK: "45",
+  FI: "358", PL: "48", CZ: "420", SK: "421", HU: "36", RO: "40", BG: "359",
+  GR: "30", HR: "385", RS: "381", SI: "386", BA: "387", AL: "355", MK: "389",
+  ME: "382", XK: "383", UA: "380", BY: "375", LT: "370", LV: "371", EE: "372",
+  IS: "354", LU: "352", MT: "356", CY: "357", RU: "7", MD: "373", GE: "995",
+  AM: "374", AZ: "994", AD: "376", MC: "377", LI: "423", SM: "378", VA: "379",
+  CN: "86", JP: "81", KR: "82", KP: "850", IN: "91", ID: "62", PH: "63",
+  VN: "84", TH: "66", MY: "60", SG: "65", PK: "92", BD: "880", LK: "94",
+  NP: "977", MM: "95", KH: "855", LA: "856", MN: "976", KZ: "7", UZ: "998",
+  KG: "996", TJ: "992", TM: "993", AF: "93", IR: "98", IQ: "964", SA: "966",
+  AE: "971", IL: "972", TR: "90", JO: "962", LB: "961", QA: "974", KW: "965",
+  OM: "968", BH: "973", YE: "967", SY: "963", PS: "970", TW: "886", HK: "852",
+  MO: "853", BN: "673", TL: "670", BT: "975", MV: "960", AU: "61", NZ: "64",
+  FJ: "679", PG: "675", WS: "685", TO: "676", VU: "678", SB: "677", KI: "686",
+  NR: "674", PW: "680", MH: "692", FM: "691", TV: "688", ZA: "27", NG: "234",
+  EG: "20", KE: "254", GH: "233", MA: "212", DZ: "213", TN: "216", ET: "251",
+  CI: "225", SN: "221", CM: "237", CD: "243", CG: "242", AO: "244", MZ: "258",
+  ZM: "260", ZW: "263", TZ: "255", UG: "256", RW: "250", SO: "252", SD: "249",
+  SS: "211", LY: "218", ML: "223", NE: "227", TD: "235", CF: "236", GA: "241",
+  GQ: "240", NA: "264", BW: "267", LS: "266", SZ: "268", MW: "265", MG: "261",
+  MU: "230", SC: "248", BJ: "229", TG: "228", BF: "226", GN: "224", SL: "232",
+  LR: "231", GM: "220", GW: "245", CV: "238", DJ: "253", ER: "291", KM: "269",
+};
+
+const DIAL_CODES_BY_LENGTH = Array.from(new Set(Object.values(COUNTRY_DIAL_CODES))).sort(
+  (a, b) => b.length - a.length
+);
+
+// Subconjunto acotado para el chequeo de "este numero local parece de otro
+// pais" (looksInternational, mas abajo). A proposito NO usa el mapa completo
+// de paises: con la lista completa, codigos de area locales (ej. Ciudad de
+// Mexico "55") coinciden con el dial code de paises lejanos (Brasil "+55") y
+// bloquean anteponer el codigo correcto a un numero local legitimo. Mismo set
+// que entrenamiento/api/_phone.js (LatAm + España + EEUU, sin Brasil).
+const AMBIGUOUS_DIAL_CODES = ["598", "54", "56", "57", "52", "51", "595", "591", "593", "58", "34"];
+
+const isNANP = (digits: string) =>
+  digits.length === 11 && digits[0] === "1" && digits[1] >= "2" && digits[1] <= "9";
+
+const NANP_REPAIR_SKIP = new Set(["1", "52"]);
+function stripMisprefixedNANP(digits: string) {
+  for (const code of DIAL_CODES_BY_LENGTH) {
+    if (NANP_REPAIR_SKIP.has(code)) continue;
+    if (digits.startsWith(code) && isNANP(digits.slice(code.length))) {
+      return digits.slice(code.length);
+    }
+  }
+  return digits;
+}
+
+// Version sin pais: solo limpia el prefijo internacional "00" y repara NANP.
+// No pisa ceros de troncal a ciegas (eso solo tiene sentido sabiendo el pais).
+function normalizePhoneBare(raw: string): string {
+  let phone = raw.replace(/^00+/, "").replace(/^0+/, "");
+  if (!phone) return "";
+  for (const code of DIAL_CODES_BY_LENGTH) {
+    if (phone.startsWith(`${code}0`)) {
+      phone = code + phone.slice(code.length + 1);
+      break;
+    }
+  }
+  return stripMisprefixedNANP(phone);
+}
+
+// Normaliza un telefono a digitos con codigo de pais, dado el ISO2 del pais
+// seleccionado por el usuario (en vez de asumir un pais fijo por default).
+// Puerto 1:1 de normalizePhoneWithCountry en entrenamiento/api/_phone.js: NO
+// pisa ceros de troncal antes de tiempo (solo el "00" internacional), porque
+// hacerlo puede hacer que un numero local sin codigo de pais (ej. uruguayo
+// "091234567" sin el 0) empiece a coincidir por casualidad con el dial code
+// de otro pais (ej. India "91") y se lo confunda con un numero ya prefijado.
+function normalizePhoneWithCountry(value: unknown, country: unknown): string | null {
+  const dialCode = COUNTRY_DIAL_CODES[String(country ?? "").toUpperCase()];
+  const raw = typeof value === "string" ? value : "";
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+
+  if (!dialCode) {
+    const bare = normalizePhoneBare(digits);
+    return bare || null;
+  }
+
+  let phone = digits.replace(/^00+/, "");
+  if (!phone) return null;
+  phone = stripMisprefixedNANP(phone);
+
+  if (phone.startsWith(`${dialCode}0`)) {
+    return dialCode + phone.slice(dialCode.length + 1);
+  }
+  if (phone.startsWith(dialCode)) return phone;
+  if (dialCode !== "1" && isNANP(phone)) return phone;
+
+  const looksInternational = AMBIGUOUS_DIAL_CODES.some(
+    (code) => code !== dialCode && phone.startsWith(code)
+  );
+  if (looksInternational) {
+    const bare = normalizePhoneBare(phone);
+    return bare || null;
+  }
+
+  return dialCode + phone.replace(/^0+/, "");
+}
+
 type LeadRow = {
   id: string;
   user_id: string | null;
@@ -261,6 +374,10 @@ type LeadRow = {
   scheduled_end_at: string | null;
   meet_url: string | null;
   estado_lead: string | null;
+  nombre: string | null;
+  apellido: string | null;
+  telefono: string | null;
+  pais: string | null;
 };
 
 type AppointmentRow = {
@@ -282,6 +399,7 @@ type LeadUpsertInput = {
   fullName?: string | null;
   email?: string | null;
   phone?: string | null;
+  pais?: string | null;
   stage?: string | null;
   source?: string | null;
   precallData?: Record<string, unknown> | null;
@@ -293,6 +411,18 @@ type LeadUpsertInput = {
   meetUrl?: string | null;
   estadoLead?: string | null;
 };
+
+// nombre/apellido son las columnas canonicas que usa el resto del CRM
+// (entrenamiento); full_name queda como espejo que un trigger de DB mantiene
+// sincronizado automaticamente.
+function splitFullName(fullName: string | null | undefined): { nombre: string | null; apellido: string | null } {
+  const trimmed = (fullName ?? "").trim();
+  if (!trimmed) return { nombre: null, apellido: null };
+  const parts = trimmed.split(/\s+/);
+  const nombre = parts[0] ?? null;
+  const apellido = parts.length > 1 ? parts.slice(1).join(" ") : null;
+  return { nombre, apellido };
+}
 
 function mergeObjects(...values: Array<Record<string, unknown> | null | undefined>) {
   const merged: Record<string, unknown> = {};
@@ -365,7 +495,9 @@ async function upsertLead(input: LeadUpsertInput) {
   const leadTable = await resolveLeadTable(adminClient);
 
   const normalizedEmail = normalizeEmail(input.email);
-  const normalizedPhone = normalizePhone(input.phone);
+  // Con pais conocido, normalizePhoneWithCountry arma un digito consistente
+  // con lo que el trigger de DB va a recalcular al escribir telefono/pais.
+  const normalizedPhone = normalizePhoneWithCountry(input.phone, input.pais) ?? normalizePhone(input.phone);
   const lead = await findLeadByContact(adminClient, {
     leadId: input.leadId ?? null,
     userId: input.userId ?? null,
@@ -380,14 +512,24 @@ async function upsertLead(input: LeadUpsertInput) {
     throw Object.assign(new Error("Lead requires email, phone, or user"), { status: 400 });
   }
 
+  // nombre/apellido/telefono/pais son las columnas canonicas (las que usa el
+  // resto del CRM en entrenamiento). Se pasan "en crudo": un trigger de DB
+  // (normalize_crm_lead_contact) las renormaliza con normalize_phone_with_country
+  // y espeja el resultado en full_name/phone/normalized_phone para compatibilidad.
+  const { nombre: splitNombre, apellido: splitApellido } = splitFullName(input.fullName ?? lead?.full_name ?? null);
+
   const now = new Date().toISOString();
   const payload = {
     user_id: nextUserId,
     full_name: input.fullName ?? lead?.full_name ?? null,
+    nombre: splitNombre ?? lead?.nombre ?? null,
+    apellido: splitApellido ?? lead?.apellido ?? null,
     email: input.email ?? lead?.email ?? null,
     normalized_email: nextNormalizedEmail,
     phone: input.phone ?? lead?.phone ?? null,
     normalized_phone: nextNormalizedPhone,
+    telefono: input.phone ?? lead?.telefono ?? null,
+    pais: input.pais ?? lead?.pais ?? null,
     stage: input.stage ?? lead?.stage ?? "precall_pending",
     source: input.source ?? lead?.source ?? "precall",
     precall_data: mergeObjects(asRecord(lead?.precall_data), input.precallData),
@@ -605,6 +747,11 @@ function stringField(value: unknown) {
 function precallPhone(precallData: Record<string, unknown> | null) {
   if (!precallData) return null;
   return stringField(precallData.whatsapp) ?? stringField(precallData.phone);
+}
+
+function precallCountry(precallData: Record<string, unknown> | null) {
+  if (!precallData) return null;
+  return stringField(precallData.pais) ?? stringField(precallData.country);
 }
 
 async function listFutureActiveAppointments(
@@ -846,6 +993,7 @@ serve(async (req) => {
           fullName: stringField(precallData.nombre),
           email: stringField(precallData.email),
           phone: stringField(precallData.whatsapp) ?? stringField(precallData.phone),
+          pais: precallCountry(precallData),
           stage: stringField(input?.stage) ?? "precall_completed",
           source: stringField(input?.source) ?? "precall",
           precallData,
@@ -877,13 +1025,23 @@ serve(async (req) => {
           return errorResponse("LEAD_NOT_FOUND", 404, { leadId });
         }
 
+        // Si el precall_data guardado es de antes de capturar pais por
+        // separado, lo completamos con la columna canonica para que el
+        // formulario de /agenda arme bien el numero al confirmar la cita.
+        const storedPrecallData = asRecord(lead.precall_data);
+        const precallDataWithCountry = storedPrecallData
+          ? { ...storedPrecallData, pais: storedPrecallData.pais ?? lead.pais ?? undefined }
+          : lead.pais
+            ? { pais: lead.pais }
+            : null;
+
         return jsonResponse({
           data: {
             leadId: lead.id,
             fullName: lead.full_name ?? null,
             email: lead.email ?? null,
             phone: lead.phone ?? null,
-            precallData: asRecord(lead.precall_data) ?? null,
+            precallData: precallDataWithCountry,
           },
         });
       }
@@ -898,8 +1056,8 @@ serve(async (req) => {
         const precallData = asRecord(input?.precallData);
         const bookingSource = stringField(input?.source) ?? "precall";
         const guestPhone = precallPhone(precallData);
+        const guestCountry = precallCountry(precallData);
         const normalizedRequestedEmail = normalizeEmail(requestedEmail);
-        const normalizedGuestPhone = normalizePhone(guestPhone);
         const bookingPayload = stripBookingLocalFields(input as Record<string, unknown>);
 
         if (!requestedName || !requestedEmail || !requestedStart) {
@@ -930,11 +1088,13 @@ serve(async (req) => {
 
         // If precall data has a phone, include it in the Cal.com attendee object.
         // Cal.com event types configured to require phone will reject bookings without it.
+        // Usa el pais real seleccionado por el usuario (guestCountry) en vez de
+        // asumir Uruguay a ciegas para cualquier numero que empiece en "0".
         if (guestPhone && bookingPayload.attendee && typeof bookingPayload.attendee === "object") {
           const attendeeRecord = bookingPayload.attendee as Record<string, unknown>;
           if (!attendeeRecord.phoneNumber) {
-            const digits = guestPhone.replace(/\D/g, "");
-            attendeeRecord.phoneNumber = digits.startsWith("0") ? `+598${digits.slice(1)}` : `+${digits}`;
+            const normalized = normalizePhoneWithCountry(guestPhone, guestCountry);
+            if (normalized) attendeeRecord.phoneNumber = `+${normalized}`;
           }
         }
 
@@ -1004,6 +1164,7 @@ serve(async (req) => {
           fullName: requestedName,
           email: requestedEmail,
           phone: guestPhone,
+          pais: guestCountry,
           stage: "precall_booked",
           source: bookingSource,
           precallData,

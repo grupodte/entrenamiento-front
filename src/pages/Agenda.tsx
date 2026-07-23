@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useSEO } from '../lib/useSEO'
 import { supabase } from '../lib/supabaseClient'
+import { COUNTRY_PREFIXES } from '../lib/countries'
 
 type BookingSummary = {
   uid?: string
@@ -42,6 +43,7 @@ type PrecallData = {
   whatsapp: string
   edad: string
   zonaHoraria: string
+  pais?: string
 }
 
 const PRECALL_STORAGE_KEY = 'dmf_precall_data'
@@ -169,6 +171,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const [selectedSlot, setSelectedSlot] = useState<string>('')
   const [attendeeName, setAttendeeName] = useState('')
   const [attendeeEmail, setAttendeeEmail] = useState('')
+  const [attendeePhoneCountry, setAttendeePhoneCountry] = useState('UY')
   const [attendeePhonePrefix, setAttendeePhonePrefix] = useState('+598')
   const [attendeePhone, setAttendeePhone] = useState('')
   const [timeZone] = useState(detectedTimeZone)
@@ -471,7 +474,8 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
         email: attendeeEmail.trim(),
         whatsapp: `${attendeePhonePrefix}${attendeePhone.trim()}`,
         edad: '',
-        zonaHoraria: timeZone
+        zonaHoraria: timeZone,
+        pais: attendeePhoneCountry
       }
     } else if (urlLeadId) {
       // Llegó desde el link de WhatsApp: usamos el leadId y los datos del pre-call
@@ -847,14 +851,17 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
                       <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#69686B]">País</span>
                       <select
                         className="rounded-[8px] border border-[#E8E4EE] bg-white px-3 py-3 text-[14px] text-[#1A1820] outline-none focus:border-[#9580A6]"
-                        value={attendeePhonePrefix}
-                        onChange={(event) => setAttendeePhonePrefix(event.target.value)}
+                        value={attendeePhoneCountry}
+                        onChange={(event) => {
+                          const iso = event.target.value
+                          const country = COUNTRY_PREFIXES.find(p => p.iso === iso)
+                          setAttendeePhoneCountry(iso)
+                          if (country) setAttendeePhonePrefix(country.code)
+                        }}
                       >
-                        <option value="+598">UY +598</option>
-                        <option value="+54">AR +54</option>
-                        <option value="+56">CL +56</option>
-                        <option value="+34">ES +34</option>
-                        <option value="+1">US +1</option>
+                        {COUNTRY_PREFIXES.map(p => (
+                          <option key={p.iso} value={p.iso}>{p.flag} {p.name} {p.code}</option>
+                        ))}
                       </select>
                     </label>
                     <label className="flex flex-col gap-1">

@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import logoSvg from '../assets/DD FIT - LOGO PRINCIPAL.svg'
 import { supabase } from '../lib/supabaseClient'
 import { useGTM } from '../lib/useGTM'
+import { COUNTRY_PREFIXES } from '../lib/countries'
 
 const PRECALL_STORAGE_KEY = 'dmf_precall_data'
 const PRECALL_LEAD_ID_STORAGE_KEY = 'dmf_precall_lead_id'
@@ -18,32 +19,22 @@ type Data = {
   porQueAhora: string
   nombre: string
   email: string
+  pais: string // ISO2, fuente de verdad del pais/prefijo (varios paises comparten el mismo dial code, ej. +1)
   whatsappPrefix: string
   whatsapp: string
   edad: string
 }
 
-const COUNTRY_PREFIXES = [
-  { code: '+598', flag: '🇺🇾', name: 'Uruguay' },
-  { code: '+54',  flag: '🇦🇷', name: 'Argentina' },
-  { code: '+56',  flag: '🇨🇱', name: 'Chile' },
-  { code: '+57',  flag: '🇨🇴', name: 'Colombia' },
-  { code: '+52',  flag: '🇲🇽', name: 'México' },
-  { code: '+55',  flag: '🇧🇷', name: 'Brasil' },
-  { code: '+51',  flag: '🇵🇪', name: 'Perú' },
-  { code: '+58',  flag: '🇻🇪', name: 'Venezuela' },
-  { code: '+595', flag: '🇵🇾', name: 'Paraguay' },
-  { code: '+591', flag: '🇧🇴', name: 'Bolivia' },
-  { code: '+593', flag: '🇪🇨', name: 'Ecuador' },
-  { code: '+34',  flag: '🇪🇸', name: 'España' },
-  { code: '+1',   flag: '🇺🇸', name: 'EE.UU. / Canadá' },
-]
+// iso es unico (a diferencia del dial code, que varios paises comparten, ej. +1).
+const ISO_TO_COUNTRY: Record<string, (typeof COUNTRY_PREFIXES)[number]> = Object.fromEntries(
+  COUNTRY_PREFIXES.map(p => [p.iso, p])
+)
 
 const INITIAL: Data = {
   entrenaDias: '', compromiso: '', tieneEquipo: '', dispuestoInvertir: '',
   dispone99Mensuales: '',
   obstaculoPrincipal: '', porQueAhora: '',
-  nombre: '', email: '', whatsappPrefix: '+598', whatsapp: '', edad: '',
+  nombre: '', email: '', pais: 'UY', whatsappPrefix: '+598', whatsapp: '', edad: '',
 }
 
 const TOTAL = 8 // pasos con contenido (1-8), el 0 es welcome
@@ -547,12 +538,16 @@ export default function PreCall() {
                   </label>
                   <div className="flex gap-2">
                     <select
-                      value={data.whatsappPrefix}
-                      onChange={e => set('whatsappPrefix')(e.target.value)}
+                      value={data.pais}
+                      onChange={e => {
+                        const iso = e.target.value
+                        const country = ISO_TO_COUNTRY[iso]
+                        setData(prev => ({ ...prev, pais: iso, whatsappPrefix: country?.code ?? prev.whatsappPrefix }))
+                      }}
                       className="bg-[#F4F2F7] border border-[#E8E4EE] rounded-[8px] px-3 py-3 text-[#1A1820] text-[15px] focus:outline-none focus:border-[#9580A6] focus:ring-2 focus:ring-[#9580A6]/15 transition-colors w-[120px] flex-shrink-0 cursor-pointer"
                     >
                       {COUNTRY_PREFIXES.map(p => (
-                        <option key={p.code + p.name} value={p.code}>{p.flag} {p.code}</option>
+                        <option key={p.iso} value={p.iso}>{p.flag} {p.code}</option>
                       ))}
                     </select>
                     <input
