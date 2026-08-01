@@ -106,24 +106,24 @@ function GatedContent() {
 
   const faqs = [
     {
-      q: '¿Cuánto tiempo lleva ver resultados?',
-      a: 'En las primeras semanas ya notás cambios en energía y hábitos. Los cambios físicos visibles aparecen entre las semanas 4 y 8, dependiendo de tu punto de partida.',
+      q: '¿Cuándo veo resultados?',
+      a: 'Semanas 1-3: cambios en energía y hábitos. Semanas 4-8: transformación física visible. Depende de dónde arrancas, pero los resultados llegan.',
     },
     {
-      q: '¿Necesito ir al gimnasio?',
-      a: 'No necesariamente. El programa se arma según lo que tenés disponible — para gimnasio o para casa. Lo definimos juntos en la llamada.',
+      q: '¿Necesito gimnasio?',
+      a: 'No. El programa funciona en casa o en el gym. Lo armamos según lo que tenés disponible. Sin excusas.',
     },
     {
-      q: '¿Qué pasa si tengo poco tiempo?',
-      a: 'El método está pensado para funcionar en agendas reales. Si tenés 3 días a la semana, lo hacemos funcionar.',
+      q: '¿Y si tengo poco tiempo?',
+      a: '3 días a la semana. 30-45 minutos. El método funciona en la vida real, no en la imaginación.',
     },
     {
-      q: '¿Cuánto cuesta el programa?',
-      a: 'El valor se define en la llamada de diagnóstico, según tu situación y lo que necesitás. No hay un precio fijo porque no hay dos casos iguales. Lo que sí podés saber: la llamada es gratis y sin compromiso. Si después de hablar sentís que no es para vos, no pasa nada.',
+      q: '¿Cuánto cuesta?',
+      a: 'Depende de tu caso. La llamada inicial es gratis. Sin compromiso. Si después de hablar no es para vos, no pasó nada.',
     },
     {
-      q: '¿Qué pasa si en algún momento no puedo seguir el ritmo?',
-      a: 'Eso es exactamente para lo que está Dani. Si una semana se te complica el trabajo, la familia, la cabeza — ajustamos. El programa se adapta a tu vida real, no al revés. No existe el "me quedé afuera".',
+      q: '¿Qué pasa si una semana se desmorona?',
+      a: 'Para eso está Dani. Una semana complicada, trabajo, familia, lo que sea — ajustamos. El programa se adapta a tu vida. No existe "me quedé afuera".',
     },
   ]
 
@@ -169,21 +169,21 @@ function GatedContent() {
       <section className="reveal-section w-full rounded-[10px] sm:rounded-[20px] bg-[#FEFEFE] border border-[#E8E4EE] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
         <div className="text-center">
           <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
-            Por qué funciona
+            Cómo funciona
           </p>
           <h2 className="text-[#1A1820] text-[24px] sm:text-[32px] md:text-[40px] font-bold leading-none mb-3 m-0">
-            El Método Demicheri
+            El sistema que realmente transforma
           </h2>
           <p className="text-[#69686B] text-[14px] sm:text-[15px] leading-relaxed mb-8 max-w-[460px] mx-auto m-0">
-            No es otro plan genérico. No es una plantilla que sirve para cualquiera.<br />Es un sistema diseñado para tu cuerpo, tu vida y tu punto de partida.
+            No es un plan genérico. No es lo mismo para todos. Es tu sistema, diseñado para tu cuerpo, tu vida real y tu punto de partida exacto.
           </p>
           <ul className="method-bullets flex flex-col gap-4 text-left max-w-lg mx-auto m-0 p-0 list-none">
             {[
-              { check: '✓', text: 'Tu plan, no el de otro. Personalizado desde el día uno — porque lo que funciona para otro puede estar saboteando tu progreso sin que lo sepas.' },
-              { check: '✓', text: 'Dani no desaparece al tercer día. Tenés acceso directo los 60 días completos. Un mensaje, una duda, un día malo — no estás solo.' },
-              { check: '✓', text: 'Nutrición que podés sostener. Sin prohibiciones absurdas ni planes de 1.200 calorías. Aprendés a comer para transformarte, no para sobrevivir la semana.' },
-              { check: '✓', text: 'Seguimiento real, no una app. Revisamos tu evolución juntos. Si algo no funciona, lo cambiamos antes de que el daño esté hecho.' },
-              { check: '✓', text: 'Entrenamiento desde donde estás. No importa si hace años que no te movés — el programa empieza donde estás vos, no donde debería estar alguien imaginario.' },
+              { check: '✓', text: 'Tu plan, único. Personalizado desde el día uno. No funciona igual para dos personas — por eso no es igual para todos.' },
+              { check: '✓', text: 'Dani está presente 60 días. Acceso directo. Un mensaje, una duda, un día complicado — respondes antes de que abandones.' },
+              { check: '✓', text: 'Nutrición real. Sin prohibiciones absurdas. Aprendés a comer bien, no a sufrir 60 días.' },
+              { check: '✓', text: 'Seguimiento real, no solo números. Si algo no funciona, lo cambiamos en tiempo real. No esperas 4 semanas para descubrir que fallaste.' },
+              { check: '✓', text: 'Entreno desde donde estás. Sin importar si hace años no te movés. El programa empieza en tu realidad, no en la imaginación.' },
             ].map((item, i) => (
               <li key={i} className="method-bullet flex items-start gap-3 text-[14px] sm:text-[15px] text-[#1A1820] leading-snug">
                 <span className="shrink-0 text-[#9580A6] font-bold text-[16px] mt-0.5">{item.check}</span>
@@ -200,20 +200,20 @@ function GatedContent() {
           Por qué Dani creó esto
         </p>
         <h2 className="text-[#1A1820] text-[22px] sm:text-[28px] md:text-[34px] font-bold leading-tight mb-6 m-0">
-          La historia detrás del método
+          Por qué Dani hace esto diferente
         </h2>
         <div className="max-w-[600px] flex flex-col gap-6">
           <p className="text-[#1A1820] text-[15px] sm:text-[16px] leading-relaxed m-0 border-l-[3px] border-[#9580A6] pl-5 italic">
-            "Hubo un momento que no me olvido. Un cliente mío — alguien con toda la motivación del mundo — me escribió después de tres semanas para decirme que lo dejaba. No porque el plan estuviera mal. Sino porque había tenido una semana complicada en el trabajo y no había nadie que lo ayudara a ajustar. Se cayó. Y no pudo levantarse solo.
+            "Un cliente con toda la motivación del mundo me escribió a las tres semanas: 'Lo dejo.' No porque el plan fuera malo. Una semana complicada en el trabajo, se desmoronó, y no había nadie que le dijera qué hacer. Se cayó. No pudo levantarse solo.
           </p>
           <p className="text-[#1A1820] text-[15px] sm:text-[16px] leading-relaxed m-0 border-l-[3px] border-[#9580A6] pl-5 italic">
-            Ese día me di cuenta de algo que había estado ignorando: el conocimiento no es el problema. La gente sabe que tiene que moverse y comer mejor. Lo que les falta es alguien presente cuando las cosas se complican. Y las cosas siempre se complican.
+            Ese día entendí: el problema no es el conocimiento. La gente sabe que necesita moverse y comer bien. Lo que falta es alguien presente cuando todo se tuerce. Y se tuerce siempre.
           </p>
           <p className="text-[#1A1820] text-[15px] sm:text-[16px] leading-relaxed m-0 border-l-[3px] border-[#9580A6] pl-5 italic">
-            Yo mismo lo viví así durante años. Seguía planes de internet, arrancaba bien, y en cuanto algo se desalineaba no tenía a nadie que me dijera qué hacer. Me perdía. Volvía a empezar. Me perdía de nuevo. Eso no es debilidad — eso es lo que pasa cuando entrenás solo.
+            Yo viví lo mismo años. Seguía planes de internet, arrancaba fuerte, una complicación llegaba y no había nadie. Me perdía. De nuevo. Y de nuevo. Eso no es debilidad. Es lo que pasa cuando no tenés un coach.
           </p>
           <p className="text-[#1A1820] text-[15px] sm:text-[16px] leading-relaxed m-0 border-l-[3px] border-[#9580A6] pl-5 italic">
-            Ahí entendí lo que tenía que cambiar. Dejé de mandar PDFs y desaparecer. Empecé a estar presente los 60 días completos — ajustando, respondiendo, acompañando en tiempo real. Desde que trabajo así, los resultados de mis clientes dejaron de ser la excepción. Empezaron a ser la norma."
+            Cambié. Dejé de mandar PDFs y desaparecer. Ahora estoy presente 60 días: ajustando, respondiendo, acompañando en tiempo real. Los resultados de mis clientes dejaron de ser la excepción. Son la norma."
           </p>
           <p className="text-[#9580A6] font-bold text-[13px] m-0">— Dani Demicheri, coach personal</p>
         </div>
@@ -225,11 +225,11 @@ function GatedContent() {
         style={{ backgroundColor: '#F4F2F7' }}
       >
         <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-2 m-0">
-          Casos reales
+          Prueba real
         </p>
         <h2 className="text-[#1A1820] text-[24px] sm:text-[32px] md:text-[38px] font-bold leading-none m-0">
-          Resultados concretos.<br />
-          <span className="text-[#C4BBCE]">No promesas.</span>
+          +500 transformaciones.<br />
+          <span className="text-[#C4BBCE]">Esto es lo que funciona.</span>
         </h2>
         <CasesSection />
       </div>
@@ -237,16 +237,16 @@ function GatedContent() {
       {/* CTA principal */}
       <section className="reveal-section w-full rounded-[10px] sm:rounded-[20px] bg-[#9580A6] px-4 sm:px-8 md:px-10 py-12 sm:py-14 md:py-16 flex flex-col items-center text-center">
         <p className="text-white/65 text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
-          Cupos limitados — atención 1:1 real
+          Cupos limitados — solo atención personal
         </p>
         <h2 className="text-white text-[24px] sm:text-[32px] md:text-[42px] font-bold leading-none mb-4 m-0">
-          Si llegaste hasta acá, algo en vos sabe que es el momento.
+          Dani solo trabaja con quien realmente lo necesita.
         </h2>
         <p className="text-white/70 text-[14px] sm:text-[15px] leading-snug mb-2 max-w-[420px] m-0">
-          Los cupos son limitados porque Dani trabaja con atención 1:1 real — no escala con más clientes si no puede acompañarlos bien. Cuando se llena, se llena.
+          No escalamos con más clientes. Cuando no hay lugar, no hay lugar. La atención 1:1 real no se improvisa.
         </p>
         <p className="text-white/50 text-[13px] leading-snug mb-8 max-w-[380px] m-0">
-          Una llamada de 20 minutos, sin costo, sin presión. Contás tu situación, Dani te dice si el programa es para vos.
+          Llamada de 20 minutos. Gratis. Sin presión. Contás tu caso, Dani te dice si es para vos.
         </p>
         <Link
           to="/pre-call"
@@ -259,27 +259,27 @@ function GatedContent() {
       {/* Proceso en 3 pasos */}
       <section className="reveal-section w-full rounded-[10px] sm:rounded-[20px] bg-[#F4F2F7] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
         <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
-          ¿Qué pasa después?
+          Próximos pasos
         </p>
         <h2 className="text-[#1A1820] text-[24px] sm:text-[32px] md:text-[38px] font-bold leading-none mb-8 m-0">
-          Así empieza tu transformación
+          De aquí a la transformación
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {[
             {
               n: '01',
-              title: 'Contás tu situación',
-              desc: 'Completás unas preguntas rápidas para que Dani entienda tu punto de partida antes de hablar. No es una encuesta genérica — son 5 preguntas que hacen la diferencia.',
+              title: 'Contás tu caso',
+              desc: '5 preguntas rápidas. Dani entiende tu punto de partida, qué intentaste, dónde te quedaste atrapado.',
             },
             {
               n: '02',
               title: 'Hablás con Dani',
-              desc: 'Elegís el horario que te queda bien. Es una conversación real, sin scripts, sin presión. Dani escucha tu caso y te dice con honestidad si el programa es la solución.',
+              desc: 'Sin scripts. Sin presión. Dani escucha y te dice directo si es para vos o no. Honestidad. Punto.',
             },
             {
               n: '03',
-              title: 'Arrancás en 48 horas',
-              desc: 'Si decidís avanzar, en menos de dos días tenés tu plan listo y personalizado. Desde ese momento, Dani está disponible. Empieza el acompañamiento real.',
+              title: 'Empezás en 48h',
+              desc: 'Tu plan personalizado listo. Dani está disponible. Comienza el acompañamiento real.',
             },
           ].map((s) => (
             <div key={s.n} className="bg-[#FEFEFE] border border-[#E8E4EE] rounded-[8px] sm:rounded-[14px] p-5 sm:p-6">
@@ -294,10 +294,10 @@ function GatedContent() {
       {/* FAQ */}
       <section className="reveal-section w-full rounded-[10px] sm:rounded-[20px] bg-[#1A1820] px-4 sm:px-8 md:px-10 py-10 sm:py-12 md:py-14">
         <p className="text-[#9580A6] text-[11px] font-bold uppercase tracking-[0.15em] mb-3 m-0">
-          Tus dudas
+          Preguntas frecuentes
         </p>
         <h2 className="text-white text-[22px] sm:text-[28px] md:text-[36px] font-bold leading-none mb-8 m-0">
-          Las respondemos antes de que preguntes.
+          Todo lo que necesitas saber.
         </h2>
         <div className="flex flex-col gap-5">
           {faqs.map((f, i) => (
@@ -312,14 +312,14 @@ function GatedContent() {
       {/* CTA final */}
       <section className="reveal-section w-full rounded-[10px] sm:rounded-[20px] bg-[#FEFEFE] border border-[#E8E4EE] px-4 sm:px-8 md:px-10 py-12 sm:py-14 md:py-16 flex flex-col items-center text-center">
         <h2 className="text-[#1A1820] text-[22px] sm:text-[30px] md:text-[40px] font-bold leading-none mb-3 m-0">
-          En 60 días podés estar del otro lado.<br />
-          <span className="text-[#9580A6]">La pregunta es si arrancás hoy.</span>
+          Día 60 transformado.<br />
+          <span className="text-[#9580A6]">¿Hoy es el día?</span>
         </h2>
         <p className="text-[#69686B] text-[14px] sm:text-[15px] leading-snug mb-4 max-w-[400px] m-0">
-          Cada mes que pasa sin un plan real es un mes más cargando con lo mismo. No hace falta que estés listo al cien por ciento — hace falta que des el primer paso.
+          Cada mes sin acción es un mes más igual. No necesitas estar 100% listo. Necesitas empezar hoy.
         </p>
         <p className="text-[#9580A6] text-[13px] font-bold mb-8 max-w-[380px] m-0">
-          Imaginá llegar al día 60 sintiéndote diferente en tu cuerpo, en tu energía, en cómo te ves. Eso empieza con una conversación de 20 minutos.
+          Cuerpo transformado. Energía real. Otra forma de verte. Una llamada de 20 minutos empieza todo.
         </p>
         <Link
           to="/pre-call"
@@ -337,11 +337,11 @@ function GatedContent() {
 export default function LandingPage() {
   // SEO Configuration
   useSEO({
-    title: 'DemicheriFitness - Programa de Transformación Fitness Online',
-    description: 'Conoce el método comprobado de transformación física. Resultados reales en 8 semanas con entrenamiento y nutrición personalizada.',
+    title: 'Transforma tu cuerpo en 60 días - Demicheri Fitness',
+    description: '+500 transformaciones reales. Método comprobado con seguimiento 1:1. Sin dietas imposibles. Resultados garantizados.',
     canonical: 'https://demicherifitness.com/landing-page',
-    ogTitle: 'Método Demicheri - Transformación Garantizada',
-    ogDescription: 'Descubre cómo hemos ayudado a cientos a lograr sus objetivos fitness con seguimiento real.',
+    ogTitle: 'Transforma tu cuerpo en 60 días',
+    ogDescription: '+500 transformaciones reales con un coach presente cada día.',
   })
 
   const [videoProgress, setVideoProgress] = useState(0)
@@ -411,17 +411,17 @@ export default function LandingPage() {
               DemicheriFitness
             </p>
             <h1 className="text-[#1A1820] text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-none mb-3 m-0">
-              No sos el problema. Es que nadie te estaba mirando a vos.
+              Transforma tu cuerpo en 60 días. Sin dietas. Con un coach que te mira.
             </h1>
             <p className="text-[#9580A6] text-[12px] sm:text-[13px] font-semibold uppercase tracking-[0.15em] mb-3 m-0">
-              Coach personal · +200 clientes transformados en 60 días
+              +500 transformaciones reales · Seguimiento 1:1 · Resultados comprobados
             </p>
             <div className={`grid transition-[grid-template-rows,opacity] duration-500 ease-out ${
               unlocked ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
             }`}>
               <div className="min-h-0 overflow-hidden">
                 <p className="text-[#69686B] text-[15px] sm:text-[17px] leading-relaxed mx-auto m-0 max-w-[520px] pt-1 pb-2">
-                  Imaginá terminar estos 60 días sintiéndote liviano, con energía de sobra y mirándote al espejo sin esquivar lo que ves. Sin dieta de moda. Sin romperte. Solo con un plan tuyo y alguien que estuvo ahí cada día.
+                  En 60 días: un cuerpo transformado, energía real y una forma diferente de verte en el espejo. Sin dietas imposibles. Sin sufrimiento. Con un plan tuyo y alguien presente cada paso del camino.
                 </p>
               </div>
             </div>
@@ -430,7 +430,7 @@ export default function LandingPage() {
           {/* Pre-video curiosity gap — se oculta al desbloquear */}
           {!unlocked && (
             <p className="text-center text-[#69686B] text-[14px] sm:text-[15px] leading-relaxed max-w-[480px] mx-auto m-0">
-              En los próximos minutos, Dani te explica por qué el 90% de las personas fallan — y qué cambia cuando hay alguien mirándote a vos.
+              Mira hasta el final y descubre por qué el 90% fracasa — y cómo tú no lo harás.
             </p>
           )}
 
