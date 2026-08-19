@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useSEO } from '../lib/useSEO'
 import { supabase } from '../lib/supabaseClient'
+import { useGTM } from '../lib/useGTM'
+import { getMetaCookies } from '../lib/metaCookies'
 import { COUNTRY_PREFIXES } from '../lib/countries'
 
 type BookingSummary = {
@@ -159,6 +161,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   })
 
   const navigate = useNavigate()
+  const { trackConversion } = useGTM()
   const isAlumnoAgenda = mode === 'alumno'
   const envEventTypeId = import.meta.env.VITE_CAL_EVENT_TYPE_ID as string | undefined
   const detectedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -495,6 +498,8 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
     }
 
     setIsBooking(true)
+    const scheduleEventId = crypto.randomUUID()
+    const { fbp, fbc } = getMetaCookies()
     const { data, error: bookingError } = await supabase.functions.invoke('cal', {
       body: {
         action: 'create_booking',
@@ -507,7 +512,11 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
         },
         leadId: precallLeadId,
         precallData,
-        source: isAlumnoAgenda ? 'alumno-agenda' : 'precall'
+        source: isAlumnoAgenda ? 'alumno-agenda' : 'precall',
+        eventId: scheduleEventId,
+        fbp,
+        fbc,
+        eventSourceUrl: window.location.href
       }
     })
 
@@ -545,7 +554,8 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
     })
     setIsBooking(false)
     setBookingPhase('success')
-    
+    trackConversion('meta_schedule', scheduleEventId)
+
     if (!isAlumnoAgenda) {
       // Clear pre-call data from localStorage after successful booking
       try {

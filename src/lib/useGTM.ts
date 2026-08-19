@@ -13,7 +13,15 @@ export function useGTM() {
     trackEvent('button_click', { button_name: buttonName, button_location: location })
   }
 
-  return { trackEvent, trackPageView, trackButtonClick }
+  const trackConversion = (
+    eventName: 'meta_lead' | 'meta_schedule',
+    eventId: string,
+    data?: Record<string, any>
+  ) => {
+    trackEvent(eventName, { event_id: eventId, ...data })
+  }
+
+  return { trackEvent, trackPageView, trackButtonClick, trackConversion }
 }
 
 declare global {

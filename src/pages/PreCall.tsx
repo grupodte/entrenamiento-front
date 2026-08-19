@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import logoSvg from '../assets/DD FIT - LOGO PRINCIPAL.svg'
 import { supabase } from '../lib/supabaseClient'
 import { useGTM } from '../lib/useGTM'
+import { getMetaCookies } from '../lib/metaCookies'
 import { COUNTRY_PREFIXES } from '../lib/countries'
 
 const PRECALL_STORAGE_KEY = 'dmf_precall_data'
@@ -205,7 +206,7 @@ function StepText({
 // ── Main ───────────────────────────────────────────────────
 export default function PreCall() {
   const navigate = useNavigate()
-  const { trackPageView, trackEvent } = useGTM()
+  const { trackPageView, trackEvent, trackConversion } = useGTM()
   const [step, setStep] = useState(0)
   const [visible, setVisible] = useState(true)
   const [data, setData] = useState<Data>(INITIAL)
@@ -286,12 +287,18 @@ export default function PreCall() {
       whatsapp: `${data.whatsappPrefix}${data.whatsapp.trim()}`,
     }
     let leadId: string | null = null
+    const leadEventId = crypto.randomUUID()
     try {
+      const { fbp, fbc } = getMetaCookies()
       const { data: leadResponse, error } = await supabase.functions.invoke('cal', {
         body: {
           action: 'upsert_lead',
           source: 'precall',
-          precallData: submitData
+          precallData: submitData,
+          eventId: leadEventId,
+          fbp,
+          fbc,
+          eventSourceUrl: window.location.href
         }
       })
 
@@ -300,6 +307,7 @@ export default function PreCall() {
       }
 
       leadId = typeof leadResponse?.data?.leadId === 'string' ? leadResponse.data.leadId : null
+      trackConversion('meta_lead', leadEventId)
     } catch (error) {
       // Keep the original booking flow working even if the new lead intake endpoint
       // is not deployed yet or returns a validation error.

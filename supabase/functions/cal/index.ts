@@ -22,6 +22,9 @@ const CAL_API_VERSION_BOOKINGS = Deno.env.get("CAL_API_VERSION_BOOKINGS") ?? "20
 const CAL_API_VERSION_SLOTS = Deno.env.get("CAL_API_VERSION_SLOTS") ?? "2024-09-04";
 const CAL_API_VERSION_EVENT_TYPES = Deno.env.get("CAL_API_VERSION_EVENT_TYPES") ?? "2024-06-14";
 const CAL_WEBHOOK_SECRET = Deno.env.get("CAL_WEBHOOK_SECRET") ?? "";
+const META_PIXEL_ID = Deno.env.get("META_PIXEL_ID") ?? "";
+const META_CAPI_ACCESS_TOKEN = Deno.env.get("META_CAPI_ACCESS_TOKEN") ?? "";
+const META_GRAPH_API_VERSION = "v19.0";
 const CAL_ENFORCED_EVENT_TYPE_ID_RAW = Deno.env.get("CAL_ENFORCED_EVENT_TYPE_ID") ?? "";
 const CAL_ENFORCED_EVENT_TYPE_ID = parseEventTypeId(CAL_ENFORCED_EVENT_TYPE_ID_RAW);
 const CAL_ENFORCED_EVENT_TYPE_ID_INVALID =
@@ -805,7 +808,7 @@ async function listFutureActiveAppointments(
 }
 
 function stripBookingLocalFields(input: Record<string, unknown>) {
-  const { precallData, leadId, source, action, payload, ...rest } = input;
+  const { precallData, leadId, source, action, payload, eventId, fbp, fbc, eventSourceUrl, ...rest } = input;
   return rest;
 }
 
@@ -907,6 +910,69 @@ async function verifyWebhookSignature(rawBody: string, signature: string | null)
   return expected.toLowerCase() === signature.toLowerCase();
 }
 
+async function sha256Hex(value: string): Promise<string> {
+  const data = new TextEncoder().encode(value);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+// Envio best-effort a la Conversions API de Meta. Nunca debe romper el flujo de
+// negocio (guardar lead / confirmar reserva): cualquier error se loguea y se ignora.
+// El event_id viaja tambien al Pixel del browser (via GTM) para que Meta deduplique
+// el mismo evento recibido por los dos canales.
+async function sendMetaCapiEvent(
+  eventName: "Lead" | "Schedule",
+  input: {
+    eventId?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    eventSourceUrl?: string | null;
+    fbp?: string | null;
+    fbc?: string | null;
+    clientIp?: string | null;
+    clientUserAgent?: string | null;
+  },
+) {
+  if (!META_PIXEL_ID || !META_CAPI_ACCESS_TOKEN) return;
+
+  try {
+    const userData: Record<string, unknown> = {};
+    const normalizedEmail = normalizeEmail(input.email);
+    if (normalizedEmail) userData.em = [await sha256Hex(normalizedEmail)];
+    const digitsPhone = typeof input.phone === "string" ? input.phone.replace(/\D/g, "") : "";
+    if (digitsPhone) userData.ph = [await sha256Hex(digitsPhone)];
+    if (input.fbp) userData.fbp = input.fbp;
+    if (input.fbc) userData.fbc = input.fbc;
+    if (input.clientIp) userData.client_ip_address = input.clientIp;
+    if (input.clientUserAgent) userData.client_user_agent = input.clientUserAgent;
+
+    const eventPayload: Record<string, unknown> = {
+      event_name: eventName,
+      event_time: Math.floor(Date.now() / 1000),
+      action_source: "website",
+      user_data: userData,
+    };
+    if (input.eventId) eventPayload.event_id = input.eventId;
+    if (input.eventSourceUrl) eventPayload.event_source_url = input.eventSourceUrl;
+
+    const url = `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${META_PIXEL_ID}/events?access_token=${META_CAPI_ACCESS_TOKEN}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: [eventPayload] }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Meta CAPI event failed", { eventName, status: res.status, body: text });
+    }
+  } catch (error) {
+    console.error("Meta CAPI event error", { eventName, error });
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -915,6 +981,9 @@ serve(async (req) => {
   if (req.method !== "POST") {
     return errorResponse("Method not allowed", 405);
   }
+
+  const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+  const clientUserAgent = req.headers.get("user-agent");
 
   const { raw, json } = await readBody(req);
   const body = json as Record<string, unknown> | null;
@@ -997,6 +1066,17 @@ serve(async (req) => {
           stage: stringField(input?.stage) ?? "precall_completed",
           source: stringField(input?.source) ?? "precall",
           precallData,
+        });
+
+        await sendMetaCapiEvent("Lead", {
+          eventId: stringField(input?.eventId),
+          email: stringField(precallData.email),
+          phone: stringField(precallData.whatsapp) ?? stringField(precallData.phone),
+          eventSourceUrl: stringField(input?.eventSourceUrl),
+          fbp: stringField(input?.fbp),
+          fbc: stringField(input?.fbc),
+          clientIp,
+          clientUserAgent,
         });
 
         return jsonResponse({
@@ -1199,6 +1279,17 @@ serve(async (req) => {
           guest_phone_normalized: normalizePhone(appointmentGuestPhone),
           meet_url: meetUrl,
           precall_data: appointmentPrecallData,
+        });
+
+        await sendMetaCapiEvent("Schedule", {
+          eventId: stringField(input?.eventId),
+          email: requestedEmail,
+          phone: appointmentGuestPhone,
+          eventSourceUrl: stringField(input?.eventSourceUrl),
+          fbp: stringField(input?.fbp),
+          fbc: stringField(input?.fbc),
+          clientIp,
+          clientUserAgent,
         });
 
         return jsonResponse({ data: booking, warnings: warnings.length > 0 ? warnings : null });
