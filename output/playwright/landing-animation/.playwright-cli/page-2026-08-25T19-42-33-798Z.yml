@@ -1,0 +1,195 @@
+- generic [ref=e3]:
+  - banner:
+    - generic:
+      - link "DemicheriFitness - Inicio":
+        - /url: /
+        - img "DemicheriFitness"
+      - link "Empeza hoy!":
+        - /url: /pre-call
+  - main [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - img "DemicheriFitness"
+          - link "Hablar con Dani" [ref=e9] [cursor=pointer]:
+            - /url: /pre-call
+            - text: Hablar con Dani
+            - generic [ref=e10]: →
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: DemicheriFitness
+          - heading "Transformá tu cuerpo en 60 días." [level=1] [ref=e13]:
+            - generic [ref=e14]: Transformá
+            - generic [ref=e16]: tu cuerpo
+            - generic [ref=e18]: en 60 días.
+          - paragraph [ref=e20]: Sin dietas imposibles. Con un coach que te mira, te ajusta el plan y no te deja solo la semana que se complica.
+          - paragraph [ref=e21]: Mirá el video hasta el final y descubrí por qué el 90% fracasa, y cómo vos no lo vas a hacer.
+          - generic [ref=e22]:
+            - generic [ref=e23]:
+              - region "video player" [ref=e26]
+              - button "Reproducir / Pausar" [ref=e30] [cursor=pointer]
+              - button "Pantalla completa" [ref=e35]
+            - generic [ref=e42]:
+              - generic [ref=e43]: 0% visto
+              - generic [ref=e44]: Mirá hasta el 45% para desbloquear el método
+      - generic: Seguí bajando
+      - generic:
+        - generic:
+          - generic:
+            - paragraph: Prueba real
+            - generic:
+              - generic:
+                - generic: "+0"
+                - paragraph: transformaciones reales. Ninguna con el mismo plan.
+              - generic:
+                - generic: "60"
+                - paragraph: días de acompañamiento directo, no un PDF y silencio.
+              - generic:
+                - generic: 1:1
+                - paragraph: seguimiento con Dani, no con un bot ni una plantilla.
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - paragraph: Cómo funciona
+                - heading [level=2]:
+                  - generic: El sistema que
+                  - generic: realmente transforma
+              - paragraph: No es un plan genérico. No es lo mismo para todos. Es tu sistema, diseñado para tu cuerpo, tu vida real y tu punto de partida exacto.
+            - generic:
+              - generic:
+                - generic: "01"
+                - generic:
+                  - heading [level=3]: Tu plan, único
+                  - paragraph: Personalizado desde el día uno. No funciona igual para dos personas, por eso no es igual para todos.
+              - generic:
+                - generic: "02"
+                - generic:
+                  - heading [level=3]: Dani está presente 60 días
+                  - paragraph: "Acceso directo. Un mensaje, una duda, un día complicado: respondés antes de que abandones."
+              - generic:
+                - generic: "03"
+                - generic:
+                  - heading [level=3]: Nutrición real
+                  - paragraph: Sin prohibiciones absurdas. Aprendés a comer bien, no a sufrir 60 días.
+              - generic:
+                - generic: "04"
+                - generic:
+                  - heading [level=3]: Seguimiento real, no solo números
+                  - paragraph: Si algo no funciona, lo cambiamos en tiempo real. No esperás 4 semanas para descubrir que fallaste.
+              - generic:
+                - generic: "05"
+                - generic:
+                  - heading [level=3]: Entrenás desde donde estás
+                  - paragraph: Sin importar si hace años no te movés. El programa empieza en tu realidad, no en la imaginación.
+        - generic:
+          - generic:
+            - paragraph: Por qué Dani hace esto diferente
+            - blockquote: El problema no es el conocimiento. Es no tener a nadie cuando todo se tuerce.
+            - generic:
+              - paragraph: "\"Un cliente con toda la motivación del mundo me escribió a las tres semanas: 'Lo dejo.' No porque el plan fuera malo. Una semana complicada en el trabajo, se desmoronó, y no había nadie que le dijera qué hacer. Se cayó. No pudo levantarse solo."
+              - paragraph: "Ese día entendí: el problema no es el conocimiento. La gente sabe que necesita moverse y comer bien. Lo que falta es alguien presente cuando todo se tuerce. Y se tuerce siempre."
+              - paragraph: Yo viví lo mismo años. Seguía planes de internet, arrancaba fuerte, una complicación llegaba y no había nadie. Me perdía. De nuevo. Y de nuevo. Eso no es debilidad. Es lo que pasa cuando no tenés un coach.
+              - paragraph: "Cambié. Dejé de mandar PDFs y desaparecer. Ahora estoy presente 60 días: ajustando, respondiendo, acompañando en tiempo real. Los resultados de mis clientes dejaron de ser la excepción. Son la norma.\""
+            - paragraph: — Dani Demicheri, coach personal
+        - generic:
+          - generic:
+            - paragraph: Resultados
+            - heading [level=2]:
+              - generic: +500 transformaciones.
+              - generic: Esto es lo que funciona.
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic: Bajó 35 kg
+                    - generic:
+                      - paragraph: "\"Antes evitaba espejos, evitaba fotos, evitaba salidas. Había probado de todo y siempre terminaba igual: solo con la culpa. Con Dani fue distinto desde la primera semana — no me dejó caer cuando más quería soltar. Hoy bajé 35 kilos, pero lo que más me cambió fue cómo me siento conmigo mismo.\""
+                      - paragraph: — Quique, 41 años
+                  - generic:
+                    - generic: Bajó 11 kg
+                    - generic:
+                      - paragraph: "\"No era la primera vez que intentaba bajar de peso. Pero sí la primera vez que alguien me preguntaba cómo me sentía, no solo cuánto pesaba. Eso hizo toda la diferencia. En 60 días bajé 11 kilos y aprendí a comer sin miedo.\""
+                      - paragraph: — María, 29 años
+        - generic:
+          - generic:
+            - paragraph: Cupos limitados — solo atención personal
+            - heading [level=2]:
+              - generic: Dani solo trabaja
+              - generic: con quien realmente
+              - generic: lo necesita.
+            - generic:
+              - generic:
+                - paragraph: No escalamos con más clientes. Cuando no hay lugar, no hay lugar. La atención 1:1 real no se improvisa.
+                - paragraph: Llamada de 20 minutos. Gratis. Sin presión. Contás tu caso, Dani te dice si es para vos.
+              - link:
+                - /url: /pre-call
+                - text: Reservar mi llamada
+                - generic: →
+        - generic:
+          - generic:
+            - paragraph: Próximos pasos
+            - heading [level=2]:
+              - generic: De aquí a la
+              - generic: transformación
+            - generic:
+              - generic:
+                - generic: "01"
+                - heading [level=3]: Contás tu caso
+                - paragraph: 5 preguntas rápidas. Dani entiende tu punto de partida, qué intentaste, dónde te quedaste atrapado.
+              - generic:
+                - generic: "02"
+                - heading [level=3]: Hablás con Dani
+                - paragraph: Sin scripts. Sin presión. Dani escucha y te dice directo si es para vos o no. Honestidad. Punto.
+              - generic:
+                - generic: "03"
+                - heading [level=3]: Empezás en 48h
+                - paragraph: Tu plan personalizado listo. Dani está disponible. Comienza el acompañamiento real.
+        - generic:
+          - generic:
+            - paragraph: Preguntas frecuentes
+            - heading [level=2]:
+              - generic: Todo lo que
+              - generic: necesitás saber.
+            - generic:
+              - generic:
+                - paragraph: ¿Cuándo veo resultados?
+                - paragraph: "Semanas 1-3: cambios en energía y hábitos. Semanas 4-8: transformación física visible. Depende de dónde arrancás, pero los resultados llegan."
+              - generic:
+                - paragraph: ¿Necesito gimnasio?
+                - paragraph: No. El programa funciona en casa o en el gym. Lo armamos según lo que tenés disponible. Sin excusas.
+              - generic:
+                - paragraph: ¿Y si tengo poco tiempo?
+                - paragraph: 3 días a la semana. 30-45 minutos. El método funciona en la vida real, no en la imaginación.
+              - generic:
+                - paragraph: ¿Cuánto cuesta?
+                - paragraph: Depende de tu caso. La llamada inicial es gratis. Sin compromiso. Si después de hablar no es para vos, no pasó nada.
+              - generic:
+                - paragraph: ¿Qué pasa si una semana se desmorona?
+                - paragraph: "Para eso está Dani. Una semana complicada, trabajo, familia, lo que sea: ajustamos. El programa se adapta a tu vida. No existe \"me quedé afuera\"."
+        - generic:
+          - generic:
+            - heading [level=2]:
+              - generic: Día 60 transformado.
+            - heading [level=2]:
+              - generic: ¿Hoy es el día?
+            - generic:
+              - generic:
+                - paragraph: Cada mes sin acción es un mes más igual. No necesitás estar 100% listo. Necesitás empezar hoy.
+                - paragraph: Cuerpo transformado. Energía real. Otra forma de verte. Una llamada de 20 minutos empieza todo.
+              - link:
+                - /url: /pre-call
+                - text: Quiero hablar con Dani
+                - generic: →
+  - contentinfo:
+    - generic:
+      - generic:
+        - link "DemicheriFitness – Inicio":
+          - /url: /
+          - img "DemicheriFitness"
+      - navigation "Enlaces legales":
+        - link "Política de privacidad":
+          - /url: /privacy
+        - link "Términos y condiciones":
+          - /url: /terms
+      - link "build by DTE":
+        - /url: https://www.grupodte.com

@@ -118,7 +118,7 @@ export default function MainLayout() {
           </HomePhaseContext.Provider>
         </div>
       </main>
-      <Footer isVisible={showFooter} />
+      {showFooter && <Footer />}
     </div>
   )
 }

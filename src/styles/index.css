@@ -684,3 +684,298 @@ body.content-protection-enabled .privacy-page * {
     font-size: 16px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   LANDING VSL — sistema de diseño editorial-atlético
+   Híbrido: hero carbón cinematográfico → cuerpo claro editorial.
+   Todo el theming vive en este bloque de tokens: no dispersar
+   colores hardcodeados debajo.
+   ═══════════════════════════════════════════════════════════════ */
+.ln {
+  /* Superficies */
+  --ln-carbon: #0E0D12;
+  --ln-carbon-soft: #17151E;
+  --ln-ink: #1A1820;
+  --ln-canvas: #F7F5FA;
+  --ln-paper: #FEFEFE;
+  --ln-panel: #9580A6;
+
+  /* Acento */
+  --ln-lila: #9580A6;
+  --ln-lila-bright: #B8A3C9;
+  --ln-lila-deep: #7A6A8F;
+  --ln-go: #2FA36B;
+
+  /* Texto sobre carbón */
+  --ln-on-dark: #FFFFFF;
+  --ln-on-dark-2: rgba(255, 255, 255, 0.62);
+  --ln-on-dark-3: rgba(255, 255, 255, 0.34);
+  --ln-hair-dark: rgba(255, 255, 255, 0.10);
+
+  /* Texto sobre claro */
+  --ln-on-light: #1A1820;
+  --ln-on-light-2: #5C5A61;
+  --ln-on-light-3: #93919A;
+  --ln-hair-light: #E4DFEC;
+
+  /* Forma */
+  --ln-r-plate: 20px;
+  --ln-r-card: 16px;
+
+  font-family: "DM Sans", system-ui, sans-serif;
+
+  /* El fondo base de la landing es carbón, nunca blanco: con el contenido
+     todavía bloqueado la página es corta, y lo que quede por debajo del
+     hero tiene que seguir siendo el mundo oscuro, no un vacío blanco. */
+  background: var(--ln-carbon);
+}
+
+/* El rebote de scroll en iOS pinta el fondo del body, no el del contenedor. */
+body:has(.ln) {
+  background: #0E0D12;
+}
+
+/* Con el contenido bloqueado, el hero ocupa la pantalla completa. */
+.ln-hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 100dvh;
+}
+
+/* ── Voz display: DM Sans al máximo peso, tracking muy cerrado ──
+   La escala y el apretado hacen el trabajo que en otro sitio haría
+   una tipografía display aparte. Una sola familia en toda la página. */
+.ln-display {
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.86;
+  font-feature-settings: "ss01";
+}
+
+/* Etiqueta de sección: hairline + versalitas espaciadas */
+.ln-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.ln-eyebrow::before {
+  content: "";
+  width: 28px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+/* ── Revelado por línea desde máscara (el movimiento clave) ──── */
+.ln-mask {
+  display: block;
+  overflow: hidden;
+  /* Aire dentro de la máscara para que los acentos y las descendentes (días,
+     hoy, ¿, g) no se corten con line-height .98. El margen negativo devuelve
+     el espacio para que el ritmo entre líneas no cambie.
+     La animación entra desde yPercent 130, más que este colchón: la línea
+     sigue completamente oculta antes de revelarse. */
+  padding: 0.08em 0.06em 0.1em;
+  margin: -0.08em -0.06em -0.1em;
+}
+.ln-mask > span {
+  display: block;
+  will-change: transform;
+}
+
+/* ── Placas de media ──────────────────────────────────────────── */
+.ln-plate {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--ln-r-plate);
+  background: var(--ln-carbon);
+}
+.ln-plate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--ln-hair-dark);
+  pointer-events: none;
+}
+
+/* Halo lila detrás de la placa de video: foco cinematográfico */
+.ln-plate-glow::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: -14% -6% -22%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(149, 128, 166, 0.38), transparent 68%);
+  filter: blur(48px);
+  pointer-events: none;
+}
+
+/* ── Grano de película: solo sobre el hero carbón ─────────────── */
+.ln-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  opacity: 0.055;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Botón píldora ────────────────────────────────────────────── */
+.ln-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 999px;
+  padding: 17px 30px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 0.3s ease, color 0.3s ease, box-shadow 0.35s ease;
+}
+.ln-pill:hover {
+  transform: translateY(-2px);
+}
+.ln-pill__arrow {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  font-size: 11px;
+  line-height: 1;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ln-pill:hover .ln-pill__arrow {
+  transform: translateX(3px);
+}
+
+.ln-pill--light {
+  background: var(--ln-on-dark);
+  color: var(--ln-ink);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+}
+.ln-pill--light:hover {
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.34);
+}
+.ln-pill--lila {
+  background: var(--ln-lila);
+  color: #fff;
+  box-shadow: 0 14px 34px rgba(149, 128, 166, 0.34);
+}
+.ln-pill--lila:hover {
+  background: var(--ln-lila-deep);
+  box-shadow: 0 20px 44px rgba(149, 128, 166, 0.42);
+}
+.ln-pill--ghost {
+  border: 1px solid var(--ln-hair-dark);
+  color: var(--ln-on-dark);
+  padding: 8px 14px;
+  font-size: 10px;
+}
+.ln-pill--ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ln-pill--ghost .ln-pill__arrow {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+}
+
+/* ── Hairline de progreso de scroll ───────────────────────────── */
+.ln-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 60;
+  background: var(--ln-lila);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+/* ── Filas de método: placa numeral + texto, alternadas ───────── */
+.ln-row {
+  display: grid;
+  gap: 20px;
+  align-items: center;
+  grid-template-columns: 1fr;
+}
+.ln-numplate {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 132px;
+  border-radius: var(--ln-r-card);
+  background: linear-gradient(150deg, #F0EBF6 0%, #E3DAEE 100%);
+  overflow: hidden;
+}
+.ln-numplate span {
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  font-size: clamp(52px, 11vw, 84px);
+  line-height: 1;
+  color: #fff;
+  -webkit-text-stroke: 1.5px var(--ln-lila);
+  paint-order: stroke fill;
+}
+@media (min-width: 768px) {
+  .ln-row {
+    grid-template-columns: 220px 1fr;
+    gap: 34px;
+  }
+  .ln-row--flip {
+    grid-template-columns: 1fr 220px;
+  }
+  .ln-row--flip .ln-numplate {
+    order: 2;
+  }
+}
+
+/* ── Tira de datos con separadores hairline ───────────────────── */
+.ln-stats {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+.ln-stats > div {
+  padding: 22px 0;
+  border-top: 1px solid var(--ln-hair-light);
+}
+@media (min-width: 640px) {
+  .ln-stats {
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--ln-hair-light);
+  }
+  .ln-stats > div {
+    padding: 26px 26px 26px 0;
+    border-top: 0;
+    border-right: 1px solid var(--ln-hair-light);
+  }
+  .ln-stats > div:last-child {
+    border-right: 0;
+  }
+}
+
+/* ── Sin movimiento: todo llega ya asentado ───────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .ln-mask > span {
+    transform: none !important;
+  }
+  .ln-progress {
+    display: none;
+  }
+}
