@@ -795,7 +795,7 @@ body:has(.ln) {
   position: relative;
   overflow: hidden;
   border-radius: var(--ln-r-plate);
-  background: var(--ln-carbon);
+  background: transparent;
 }
 .ln-plate::after {
   content: "";
@@ -813,8 +813,8 @@ body:has(.ln) {
   z-index: 0;
   inset: -14% -6% -22%;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(149, 128, 166, 0.38), transparent 68%);
-  filter: blur(48px);
+  background: radial-gradient(ellipse at center, rgba(184, 163, 201, 0.55), transparent 70%);
+  filter: blur(42px);
   pointer-events: none;
 }
 

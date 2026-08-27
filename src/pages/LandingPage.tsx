@@ -4,6 +4,7 @@ import MuxPlayer from '@mux/mux-player-react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
+import Lenis from 'lenis'
 import { useSEO } from '../lib/useSEO'
 import logoSvg from '../assets/DD FIT - LOGO PRINCIPAL.svg'
 import CasesSection from '../components/CasesSection.jsx'
@@ -252,6 +253,40 @@ function GatedContent() {
         onUpdate: () => { el.textContent = `+${Math.round(obj.v)}` },
       })
     })
+
+    if (!reduced) {
+      // Revelado por línea de cada titular del cuerpo, misma gramática que el hero:
+      // fundido + leve desenfoque + lift chico, sin slide grande.
+      root.querySelectorAll<HTMLElement>('.ln-mask > span').forEach((span) => {
+        gsap.fromTo(
+          span,
+          { opacity: 0, y: 18, filter: 'blur(10px)' },
+          {
+            opacity: 1,
+            y: 0,
+            filter: 'blur(0px)',
+            duration: 1.2,
+            ease: 'power2.out',
+            scrollTrigger: { trigger: span, start: 'top 92%' },
+          },
+        )
+      })
+
+      // [data-rise]: bloques marcados para entrar al cruzar el viewport,
+      // agrupados por lotes para que hermanos cercanos suban juntos.
+      const riseEls = root.querySelectorAll<HTMLElement>('[data-rise]')
+      gsap.set(riseEls, { opacity: 0, y: 22 })
+      ScrollTrigger.batch(riseEls, {
+        start: 'top 88%',
+        once: true,
+        onEnter: (batch) =>
+          gsap.to(batch, { opacity: 1, y: 0, duration: 1, ease: 'power2.out', stagger: 0.12 }),
+      })
+    }
+
+    // El contenido se monta después del desbloqueo: hay que recalcular
+    // posiciones una vez que el layout se asienta.
+    requestAnimationFrame(() => ScrollTrigger.refresh())
   }, { scope: containerRef })
 
   return (
@@ -532,24 +567,49 @@ export default function LandingPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const muxRef = useRef<any>(null)
 
+  // Scroll con inercia: reemplaza el scroll nativo por uno con física de
+  // resorte, sincronizado al ticker de GSAP para que ScrollTrigger lea la
+  // misma posición suavizada en vez de saltos de a un frame nativo.
+  useEffect(() => {
+    if (prefersReducedMotion()) return
+
+    const lenis = new Lenis({
+      duration: 1.1,
+      easing: (t: number) => 1 - Math.pow(1 - t, 3),
+    })
+    lenis.on('scroll', ScrollTrigger.update)
+
+    const raf = (time: number) => lenis.raf(time * 1000)
+    gsap.ticker.add(raf)
+    gsap.ticker.lagSmoothing(0)
+
+    return () => {
+      gsap.ticker.remove(raf)
+      lenis.destroy()
+    }
+  }, [])
+
   // Entrada del hero: titular por línea + apertura de la placa de video.
   useGSAP(() => {
     const root = heroRef.current
     if (!root) return
     const reduced = prefersReducedMotion()
 
-    const tl = gsap.timeline({ defaults: { ease: 'power4.out' } })
+    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } })
 
+    // Revelado sutil: fundido + leve desenfoque + un lift chico. Nada de
+    // slide grande ni mask-clip (eso fue lo que cortaba los acentos):
+    // el desplazamiento es tan chico que nunca toca el borde de la máscara.
     tl.fromTo(
       root.querySelectorAll('.ln-mask > span'),
-      { opacity: reduced ? 1 : 0 },
-      { opacity: 1, duration: reduced ? 0.2 : 0.62, stagger: 0.06 },
+      { opacity: reduced ? 1 : 0, y: reduced ? 0 : 18, filter: reduced ? 'blur(0px)' : 'blur(10px)' },
+      { opacity: 1, y: 0, filter: 'blur(0px)', duration: reduced ? 0.2 : 1.2, stagger: 0.12 },
     )
       .fromTo(
         root.querySelectorAll('[data-hero-fade]'),
-        { opacity: reduced ? 1 : 0 },
-        { opacity: 1, duration: reduced ? 0.2 : 0.55, stagger: 0.07 },
-        '-=0.35',
+        { opacity: reduced ? 1 : 0, y: reduced ? 0 : 12 },
+        { opacity: 1, y: 0, duration: reduced ? 0.2 : 0.8, stagger: 0.09 },
+        '-=0.75',
       )
 
     if (!reduced && videoWrapperRef.current) {
@@ -578,9 +638,6 @@ export default function LandingPage() {
   useEffect(() => {
     if (unlocked) {
       try { localStorage.setItem(LOCK_KEY, '1') } catch { /* almacenamiento no disponible */ }
-      // Esperar a que termine la transición de grid antes de recalcular posiciones.
-      const t = setTimeout(() => ScrollTrigger.refresh(), 750)
-      return () => clearTimeout(t)
     }
   }, [unlocked])
 
@@ -722,20 +779,15 @@ export default function LandingPage() {
 
       <ScrollHint active={unlocked} />
 
-      {/* ══ Corte a claro: el método se revela al desbloquear ══════ */}
-      <div
-        className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-700 ease-out ${
-          unlocked
-            ? 'grid-rows-[1fr] opacity-100 pointer-events-auto'
-            : 'grid-rows-[0fr] opacity-0 pointer-events-none select-none'
-        }`}
-        aria-hidden={!unlocked}
-        style={{ background: 'var(--ln-canvas)' }}
-      >
-        <div className="min-h-0 overflow-hidden">
-          {unlocked && <GatedContent />}
+      {/* ══ Corte a claro: el método se revela al desbloquear ══════
+          Sin animación de layout (grid-template-rows es costoso y competía
+          con el fromTo de GatedContent). El propio fromTo de opacity/y
+          hace toda la entrada, sobre transform/opacity, no sobre layout. */}
+      {unlocked && (
+        <div style={{ background: 'var(--ln-canvas)' }}>
+          <GatedContent />
         </div>
-      </div>
+      )}
 
       {/* ══ Cierre de página: banda carbón, mismo mundo que el hero ══
           Además de firmar la página, evita que el final quede en blanco. */}
