@@ -4,8 +4,10 @@ import { useNavigate } from '@tanstack/react-router'
 import { useSEO } from '../lib/useSEO'
 import { supabase } from '../lib/supabaseClient'
 import { useGTM } from '../lib/useGTM'
+import { useSessionTracking } from '../lib/useSessionTracking'
 import { getMetaCookies } from '../lib/metaCookies'
 import { COUNTRY_PREFIXES } from '../lib/countries'
+import { META_CURRENCY, META_SCHEDULE_VALUE } from '../lib/metaConversionValues'
 
 type BookingSummary = {
   uid?: string
@@ -161,7 +163,8 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   })
 
   const navigate = useNavigate()
-  const { trackConversion } = useGTM()
+  const { trackConversion, trackPageView, trackEvent } = useGTM()
+  const { sessionId, trackNavigation } = useSessionTracking()
   const isAlumnoAgenda = mode === 'alumno'
   const envEventTypeId = import.meta.env.VITE_CAL_EVENT_TYPE_ID as string | undefined
   const detectedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -206,6 +209,15 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
     [availableDates]
   )
   const showInitialLoading = !hasLoadedSlots && (!hasFetchedSlots || isLoadingSlots)
+
+  useEffect(() => {
+    trackPageView('agenda', {
+      session_id: sessionId,
+      mode: mode,
+      page_type: 'booking',
+    })
+    trackNavigation('pre_call', 'agenda', { session_id: sessionId })
+  }, [sessionId, mode, trackPageView, trackNavigation])
 
   useEffect(() => {
     let isMounted = true
@@ -554,7 +566,12 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
     })
     setIsBooking(false)
     setBookingPhase('success')
-    trackConversion('meta_schedule', scheduleEventId)
+    trackEvent('agenda_booking_success', {
+      session_id: sessionId,
+      event_id: scheduleEventId,
+      slot: selectedSlot,
+    })
+    trackConversion('meta_schedule', scheduleEventId, { value: META_SCHEDULE_VALUE, currency: META_CURRENCY })
 
     if (!isAlumnoAgenda) {
       // Clear pre-call data from localStorage after successful booking

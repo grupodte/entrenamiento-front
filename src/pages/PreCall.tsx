@@ -3,8 +3,10 @@ import { useNavigate } from '@tanstack/react-router'
 import logoSvg from '../assets/DD FIT - LOGO PRINCIPAL.svg'
 import { supabase } from '../lib/supabaseClient'
 import { useGTM } from '../lib/useGTM'
+import { useSessionTracking, getSessionId } from '../lib/useSessionTracking'
 import { getMetaCookies } from '../lib/metaCookies'
 import { COUNTRY_PREFIXES } from '../lib/countries'
+import { META_CURRENCY, META_LEAD_VALUE } from '../lib/metaConversionValues'
 
 const PRECALL_STORAGE_KEY = 'dmf_precall_data'
 const PRECALL_LEAD_ID_STORAGE_KEY = 'dmf_precall_lead_id'
@@ -207,6 +209,7 @@ function StepText({
 export default function PreCall() {
   const navigate = useNavigate()
   const { trackPageView, trackEvent, trackConversion } = useGTM()
+  const { sessionId, trackNavigation } = useSessionTracking()
   const [step, setStep] = useState(0)
   const [visible, setVisible] = useState(true)
   const [data, setData] = useState<Data>(INITIAL)
@@ -230,9 +233,9 @@ export default function PreCall() {
   const choose = (field: keyof Data, value: string) => {
     const nextData = { ...data, [field]: value }
     setData(nextData)
-    trackEvent('precall_choice', { field, value, step })
+    trackEvent('precall_choice', { field, value, step, session_id: sessionId })
     if (field === 'dispone99Mensuales' && value === 'no') {
-      trackEvent('budget_rejection', { reason: 'insufficient_budget', step })
+      trackEvent('budget_rejection', { reason: 'insufficient_budget', step, session_id: sessionId })
       try {
         localStorage.setItem(PRECALL_STORAGE_KEY, JSON.stringify(nextData))
       } catch {
@@ -245,14 +248,23 @@ export default function PreCall() {
   }
 
   useEffect(() => {
-    trackPageView('pre_call', { initial_step: 0 })
-  }, [trackPageView])
+    trackPageView('pre_call', {
+      initial_step: 0,
+      session_id: sessionId,
+    })
+    trackNavigation('landing_page', 'pre_call', { session_id: sessionId })
+  }, [trackPageView, sessionId, trackNavigation])
 
   useEffect(() => {
     if (step > 0) {
-      trackEvent('precall_step_reached', { step, total: TOTAL, progress_percent: Math.round((step / TOTAL) * 100) })
+      trackEvent('precall_step_reached', {
+        step,
+        total: TOTAL,
+        progress_percent: Math.round((step / TOTAL) * 100),
+        session_id: sessionId,
+      })
     }
-  }, [step, trackEvent])
+  }, [step, trackEvent, sessionId])
 
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow
@@ -307,7 +319,7 @@ export default function PreCall() {
       }
 
       leadId = typeof leadResponse?.data?.leadId === 'string' ? leadResponse.data.leadId : null
-      trackConversion('meta_lead', leadEventId)
+      trackConversion('meta_lead', leadEventId, { value: META_LEAD_VALUE, currency: META_CURRENCY })
     } catch (error) {
       // Keep the original booking flow working even if the new lead intake endpoint
       // is not deployed yet or returns a validation error.
@@ -325,7 +337,12 @@ export default function PreCall() {
       return
     }
     await new Promise(r => setTimeout(r, 400))
-    trackEvent('precall_submitted', { dias_entrenamiento: data.entrenaDias, principal_need: data.dispuestoInvertir })
+    trackEvent('precall_submitted', {
+      dias_entrenamiento: data.entrenaDias,
+      principal_need: data.dispuestoInvertir,
+      session_id: sessionId,
+    })
+    trackNavigation('pre_call', 'agenda', { session_id: sessionId })
     navigate({ to: '/agenda' })
   }
 

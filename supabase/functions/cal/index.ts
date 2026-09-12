@@ -25,6 +25,16 @@ const CAL_WEBHOOK_SECRET = Deno.env.get("CAL_WEBHOOK_SECRET") ?? "";
 const META_PIXEL_ID = Deno.env.get("META_PIXEL_ID") ?? "";
 const META_CAPI_ACCESS_TOKEN = Deno.env.get("META_CAPI_ACCESS_TOKEN") ?? "";
 const META_GRAPH_API_VERSION = "v19.0";
+// ROAS accuracy requires a valid currency + value on every Lead/Schedule event (Meta
+// Events Manager flags this as a high-priority data-quality action). We don't have
+// Lead->Schedule or Schedule->Sale close rates yet (funnel still in testing), so these
+// are conservative placeholders rather than a real expected value (closed sale is
+// USD 200-300). Must match src/lib/metaConversionValues.ts on the frontend so CAPI and
+// the browser Pixel report the same value for deduplicated events. Override via env once
+// real close-rate data is available.
+const META_CURRENCY = Deno.env.get("META_CURRENCY") ?? "USD";
+const META_LEAD_VALUE = Number(Deno.env.get("META_LEAD_VALUE_USD") ?? "1");
+const META_SCHEDULE_VALUE = Number(Deno.env.get("META_SCHEDULE_VALUE_USD") ?? "5");
 const CAL_ENFORCED_EVENT_TYPE_ID_RAW = Deno.env.get("CAL_ENFORCED_EVENT_TYPE_ID") ?? "";
 const CAL_ENFORCED_EVENT_TYPE_ID = parseEventTypeId(CAL_ENFORCED_EVENT_TYPE_ID_RAW);
 const CAL_ENFORCED_EVENT_TYPE_ID_INVALID =
@@ -933,6 +943,8 @@ async function sendMetaCapiEvent(
     fbc?: string | null;
     clientIp?: string | null;
     clientUserAgent?: string | null;
+    value?: number | null;
+    currency?: string | null;
   },
 ) {
   if (!META_PIXEL_ID || !META_CAPI_ACCESS_TOKEN) return;
@@ -956,6 +968,9 @@ async function sendMetaCapiEvent(
     };
     if (input.eventId) eventPayload.event_id = input.eventId;
     if (input.eventSourceUrl) eventPayload.event_source_url = input.eventSourceUrl;
+    if (typeof input.value === "number" && Number.isFinite(input.value) && input.currency) {
+      eventPayload.custom_data = { value: input.value, currency: input.currency };
+    }
 
     const url = `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${META_PIXEL_ID}/events?access_token=${META_CAPI_ACCESS_TOKEN}`;
     const res = await fetch(url, {
@@ -1077,6 +1092,8 @@ serve(async (req) => {
           fbc: stringField(input?.fbc),
           clientIp,
           clientUserAgent,
+          value: META_LEAD_VALUE,
+          currency: META_CURRENCY,
         });
 
         return jsonResponse({
@@ -1290,6 +1307,8 @@ serve(async (req) => {
           fbc: stringField(input?.fbc),
           clientIp,
           clientUserAgent,
+          value: META_SCHEDULE_VALUE,
+          currency: META_CURRENCY,
         });
 
         return jsonResponse({ data: booking, warnings: warnings.length > 0 ? warnings : null });

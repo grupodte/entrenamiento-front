@@ -6,6 +6,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
 import Lenis from 'lenis'
 import { useSEO } from '../lib/useSEO'
+import { useGTM } from '../lib/useGTM'
+import { useSessionTracking } from '../lib/useSessionTracking'
 import logoSvg from '../assets/DD FIT - LOGO PRINCIPAL.svg'
 import CasesSection from '../components/CasesSection.jsx'
 
@@ -60,11 +62,11 @@ function ScrollProgress() {
 }
 
 // ── Navegación mínima sobre el hero carbón ────────────────
-function FunnelHeader() {
+function FunnelHeader({ onStartClick }: { onStartClick: () => void }) {
   return (
     <header className="absolute top-0 left-0 right-0 z-30 px-4 sm:px-8 py-3.5 sm:py-5 flex items-center justify-between">
       <img src={logoSvg} alt="DemicheriFitness" className="h-[18px] sm:h-[22px] w-auto brightness-0 invert" />
-      <Link to="/pre-call" className="ln-pill ln-pill--ghost hidden sm:inline-flex">
+      <Link to="/pre-call" onClick={onStartClick} className="ln-pill ln-pill--ghost hidden sm:inline-flex">
         Hablar con Dani
         <span className="ln-pill__arrow" aria-hidden="true">→</span>
       </Link>
@@ -223,7 +225,7 @@ const STEPS = [
   },
 ]
 
-function GatedContent() {
+function GatedContent({ onCalloutClick }: { onCalloutClick: () => void }) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
@@ -443,7 +445,7 @@ function GatedContent() {
                 Llamada de 20 minutos. Gratis. Sin presión. Contás tu caso, Dani te dice si es para vos.
               </p>
             </div>
-            <Link to="/pre-call" className="ln-pill ln-pill--light mt-8 md:mt-0">
+            <Link to="/pre-call" onClick={onCalloutClick} className="ln-pill ln-pill--light mt-8 md:mt-0">
               Reservar mi llamada
               <span className="ln-pill__arrow" aria-hidden="true">→</span>
             </Link>
@@ -534,7 +536,7 @@ function GatedContent() {
                 Cuerpo transformado. Energía real. Otra forma de verte. Una llamada de 20 minutos empieza todo.
               </p>
             </div>
-            <Link to="/pre-call" className="ln-pill ln-pill--lila mt-8 md:mt-0">
+            <Link to="/pre-call" onClick={onCalloutClick} className="ln-pill ln-pill--lila mt-8 md:mt-0">
               Quiero hablar con Dani
               <span className="ln-pill__arrow" aria-hidden="true">→</span>
             </Link>
@@ -556,6 +558,9 @@ export default function LandingPage() {
     ogDescription: '+500 transformaciones reales con un coach presente cada día.',
   })
 
+  const { trackPageView, trackEvent } = useGTM()
+  const { sessionId, trackMilestone } = useSessionTracking()
+
   const [videoProgress, setVideoProgress] = useState(0)
   const [unlocked, setUnlocked] = useState(() => {
     try { return localStorage.getItem(LOCK_KEY) === '1' } catch { return false }
@@ -566,6 +571,14 @@ export default function LandingPage() {
   const videoWrapperRef = useRef<HTMLDivElement>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const muxRef = useRef<any>(null)
+
+  // Page view tracking on mount
+  useEffect(() => {
+    trackPageView('landing_page', {
+      session_id: sessionId,
+      page_type: 'gated_content',
+    })
+  }, [sessionId, trackPageView])
 
   // Scroll con inercia: reemplaza el scroll nativo por uno con física de
   // resorte, sincronizado al ticker de GSAP para que ScrollTrigger lea la
@@ -638,8 +651,12 @@ export default function LandingPage() {
   useEffect(() => {
     if (unlocked) {
       try { localStorage.setItem(LOCK_KEY, '1') } catch { /* almacenamiento no disponible */ }
+      trackMilestone('video_unlocked', {
+        video_progress_pct: videoProgress,
+        unlock_method: 'watch_45_percent',
+      })
     }
-  }, [unlocked])
+  }, [unlocked, videoProgress, trackMilestone])
 
   const handleTimeUpdate = (evt: React.SyntheticEvent<HTMLVideoElement>) => {
     const el = evt.currentTarget as HTMLVideoElement
@@ -657,6 +674,22 @@ export default function LandingPage() {
     if (pct >= 45 && !unlocked) setUnlocked(true)
   }
 
+  const handleStartCallClick = () => {
+    trackEvent('cta_click', {
+      cta_location: 'landing_page_header',
+      cta_text: 'Hablar con Dani',
+      session_id: sessionId,
+    })
+  }
+
+  const handleCallout = () => {
+    trackEvent('cta_click', {
+      cta_location: 'landing_page_callout',
+      cta_text: 'Reservar mi llamada',
+      session_id: sessionId,
+    })
+  }
+
   return (
     <div className="ln min-h-[100dvh]">
       <ScrollProgress />
@@ -668,7 +701,7 @@ export default function LandingPage() {
         style={{ background: 'var(--ln-carbon)' }}
       >
         <div className="ln-grain" aria-hidden="true" />
-        <FunnelHeader />
+        <FunnelHeader onStartClick={handleStartCallClick} />
 
         <div className="relative z-10 max-w-[1080px] mx-auto px-5 sm:px-8 pt-28 sm:pt-32 pb-14 sm:pb-20">
 
@@ -785,7 +818,7 @@ export default function LandingPage() {
           hace toda la entrada, sobre transform/opacity, no sobre layout. */}
       {unlocked && (
         <div style={{ background: 'var(--ln-canvas)' }}>
-          <GatedContent />
+          <GatedContent onCalloutClick={handleCallout} />
         </div>
       )}
 
