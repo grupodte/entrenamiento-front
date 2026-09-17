@@ -8,6 +8,7 @@ import { useSessionTracking } from '../lib/useSessionTracking'
 import { getMetaCookies } from '../lib/metaCookies'
 import { COUNTRY_PREFIXES } from '../lib/countries'
 import { META_CURRENCY, META_SCHEDULE_VALUE } from '../lib/metaConversionValues'
+import brandIcon from '../assets/SVG - FAV ICON.svg'
 
 type BookingSummary = {
   uid?: string
@@ -18,19 +19,22 @@ type BookingSummary = {
 
 type BookingPhase = 'slots' | 'form' | 'success'
 type AgendaMode = 'precall' | 'alumno'
-const AVAILABILITY_LOOKAHEAD_DAYS = 30
-const MAX_VISIBLE_AVAILABLE_DAYS = 3
-const AVAILABILITY_CACHE_KEY = 'ddfit_agenda_availability_v1'
+type TimeFormat = '24h' | '12h'
+
+const BUSINESS_DAYS_VISIBLE = 5
+// Pedimos un día hábil extra: si hoy ya no tiene horarios lo ocultamos y
+// seguimos mostrando 5 días hábiles hacia adelante.
+const BUSINESS_DAYS_FETCHED = BUSINESS_DAYS_VISIBLE + 1
+const AVAILABILITY_CACHE_KEY = 'ddfit_agenda_availability_v2'
 const AVAILABILITY_CACHE_TTL_MS = 1000 * 60 * 10
-const DATE_SKELETON_ITEMS = 6
 const SLOT_SKELETON_ITEMS = 8
+const DATE_LOCALE = 'es'
 
 type AvailabilityCachePayload = {
   createdAt: number
   eventTypeId: string
   timeZone: string
   slotsByDate: Record<string, string[]>
-  availableDates: string[]
 }
 
 // Pre-call data from localStorage
@@ -57,16 +61,86 @@ type AgendaProps = {
   mode?: AgendaMode
 }
 
-const formatSlotTime = (value: string) => {
+type IconProps = { className?: string }
+
+const ClockIcon = ({ className }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9" />
+    <polyline points="12 7 12 12 15 14" />
+  </svg>
+)
+
+const VideoIcon = ({ className }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11" />
+    <rect x="2" y="6" width="14" height="12" rx="2" />
+  </svg>
+)
+
+const GlobeIcon = ({ className }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18" />
+    <path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18" />
+  </svg>
+)
+
+const CalendarIcon = ({ className }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+)
+
+const ArrowLeftIcon = ({ className }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12" />
+    <polyline points="12 19 5 12 12 5" />
+  </svg>
+)
+
+const CheckIcon = ({ className }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+)
+
+const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
+
+const formatSlotTime = (value: string, timeFormat: TimeFormat = '24h') => {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return date.toLocaleTimeString(DATE_LOCALE, {
+    hour: timeFormat === '12h' ? 'numeric' : '2-digit',
+    minute: '2-digit',
+    hour12: timeFormat === '12h'
+  })
 }
+
+const formatLongDate = (date: Date) =>
+  capitalize(date.toLocaleDateString(DATE_LOCALE, { weekday: 'long', month: 'long', day: 'numeric' }))
 
 const formatSlotDate = (value: string) => {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+  return formatLongDate(date)
+}
+
+const formatWeekdayShort = (date: Date) =>
+  date.toLocaleDateString(DATE_LOCALE, { weekday: 'short' }).replace('.', '')
+
+const formatMonthRange = (dates: Date[]) => {
+  if (dates.length === 0) return ''
+  const first = dates[0]
+  const last = dates[dates.length - 1]
+  if (first.getMonth() === last.getMonth()) {
+    return capitalize(first.toLocaleDateString(DATE_LOCALE, { month: 'long', year: 'numeric' }))
+  }
+  const firstMonth = first.toLocaleDateString(DATE_LOCALE, { month: 'long' })
+  const lastMonth = last.toLocaleDateString(DATE_LOCALE, { month: 'long', year: 'numeric' })
+  return capitalize(`${firstMonth} – ${lastMonth}`)
 }
 
 const extractSlots = (raw: unknown): string[] => {
@@ -86,17 +160,6 @@ const extractSlots = (raw: unknown): string[] => {
   return []
 }
 
-const buildNextDaysRange = (days: number) => {
-  const now = new Date()
-  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  end.setDate(end.getDate() + Math.max(days - 1, 0))
-  end.setHours(23, 59, 59, 999)
-  return {
-    start: now.toISOString(),
-    end: end.toISOString()
-  }
-}
-
 const formatLocalDateKey = (date: Date) => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -104,14 +167,42 @@ const formatLocalDateKey = (date: Date) => {
   return `${year}-${month}-${day}`
 }
 
-const parseLocalDateKey = (key: string) => {
-  const [year, month, day] = key.split('-').map(Number)
-  if (!year || !month || !day) return null
-  return new Date(year, month - 1, day, 12, 0, 0, 0)
-}
-
 const toLocalNoon = (date: Date) =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0)
+
+const isWeekend = (date: Date) => date.getDay() === 0 || date.getDay() === 6
+
+const buildBusinessDays = (count: number) => {
+  const days: Date[] = []
+  const cursor = toLocalNoon(new Date())
+  while (days.length < count) {
+    if (!isWeekend(cursor)) days.push(new Date(cursor))
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  return days
+}
+
+const buildAvailabilityRange = (days: Date[]) => {
+  const end = new Date(days[days.length - 1])
+  end.setHours(23, 59, 59, 999)
+  return {
+    start: new Date().toISOString(),
+    end: end.toISOString()
+  }
+}
+
+// Mantiene el día elegido si sigue teniendo horarios; si no, salta al primer
+// día hábil con disponibilidad.
+const pickSelectedDate = (
+  currentDate: Date,
+  slotsByDate: Record<string, string[]>,
+  candidates: Date[]
+) => {
+  const selectable = candidates.filter((date) => Boolean(slotsByDate[formatLocalDateKey(date)]))
+  const currentKey = formatLocalDateKey(currentDate)
+  if (selectable.some((date) => formatLocalDateKey(date) === currentKey)) return currentDate
+  return selectable[0] ?? currentDate
+}
 
 const readAvailabilityCache = (
   eventTypeId: string,
@@ -127,7 +218,7 @@ const readAvailabilityCache = (
     if (parsed.eventTypeId !== eventTypeId || parsed.timeZone !== timeZone) return null
     if (typeof parsed.createdAt !== 'number') return null
     if (Date.now() - parsed.createdAt > AVAILABILITY_CACHE_TTL_MS) return null
-    if (!parsed.slotsByDate || !Array.isArray(parsed.availableDates)) return null
+    if (!parsed.slotsByDate) return null
 
     return parsed as AvailabilityCachePayload
   } catch {
@@ -173,8 +264,8 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   )
   const [selectedDate, setSelectedDate] = useState<Date>(toLocalNoon(new Date()))
   const [slotsByDate, setSlotsByDate] = useState<Record<string, string[]>>({})
-  const [availableDates, setAvailableDates] = useState<string[]>([])
   const [selectedSlot, setSelectedSlot] = useState<string>('')
+  const [timeFormat, setTimeFormat] = useState<TimeFormat>('24h')
   const [attendeeName, setAttendeeName] = useState('')
   const [attendeeEmail, setAttendeeEmail] = useState('')
   const [attendeePhoneCountry, setAttendeePhoneCountry] = useState('UY')
@@ -193,21 +284,22 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const [urlLeadId, setUrlLeadId] = useState<string | null>(null)
   const [urlPrecallData, setUrlPrecallData] = useState<PrecallData | null>(null)
 
+  const businessDays = useMemo(() => buildBusinessDays(BUSINESS_DAYS_FETCHED), [])
   const selectedDateKey = useMemo(
     () => formatLocalDateKey(selectedDate),
     [selectedDate]
   )
   const slotsForSelectedDate = slotsByDate[selectedDateKey] ?? []
-  const displayDates = useMemo(
-    () =>
-      availableDates
-        .slice()
-        .sort((a, b) => a.localeCompare(b))
-        .slice(0, MAX_VISIBLE_AVAILABLE_DAYS)
-        .map((key) => parseLocalDateKey(key))
-        .filter((date): date is Date => Boolean(date)),
-    [availableDates]
-  )
+  const displayDates = useMemo(() => {
+    const todayKey = formatLocalDateKey(new Date())
+    return businessDays
+      .filter((date) => {
+        const key = formatLocalDateKey(date)
+        return key !== todayKey || Boolean(slotsByDate[key])
+      })
+      .slice(0, BUSINESS_DAYS_VISIBLE)
+  }, [businessDays, slotsByDate])
+  const hasAnyAvailability = displayDates.some((date) => Boolean(slotsByDate[formatLocalDateKey(date)]))
   const showInitialLoading = !hasLoadedSlots && (!hasFetchedSlots || isLoadingSlots)
 
   useEffect(() => {
@@ -270,19 +362,11 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       const future = slots.filter((slot) => new Date(slot).getTime() > nowMs)
       if (future.length > 0) freshSlotsByDate[key] = future
     }
-    const freshDates = cache.availableDates.filter((d) => Boolean(freshSlotsByDate[d]))
 
     setSlotsByDate(freshSlotsByDate)
-    setAvailableDates(freshDates)
-    setSelectedDate((currentDate) => {
-      if (cache.availableDates.length === 0) return currentDate
-      const currentKey = formatLocalDateKey(currentDate)
-      if (cache.slotsByDate[currentKey]) return currentDate
-      const firstAvailable = parseLocalDateKey(cache.availableDates[0])
-      return firstAvailable ?? currentDate
-    })
+    setSelectedDate((currentDate) => pickSelectedDate(currentDate, freshSlotsByDate, businessDays))
     setHasLoadedSlots(true)
-  }, [selectedEventTypeId, timeZone])
+  }, [selectedEventTypeId, timeZone, businessDays])
 
   useEffect(() => {
     let isMounted = true
@@ -294,7 +378,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       setError(null)
       setSelectedSlot('')
 
-      const { start, end } = buildNextDaysRange(AVAILABILITY_LOOKAHEAD_DAYS)
+      const { start, end } = buildAvailabilityRange(businessDays)
 
       const { data, error: fetchError } = await supabase.functions.invoke('cal', {
         body: {
@@ -322,17 +406,11 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
         calResponse
 
       const normalized: Record<string, string[]> = {}
-      const dates: string[] = []
 
       if (rawSlots && typeof rawSlots === 'object' && !Array.isArray(rawSlots)) {
         Object.entries(rawSlots as Record<string, unknown>).forEach(([key, value]) => {
-          const times = Array.from(new Set(extractSlots(value)))
-          if (times.length > 0) {
-            normalized[key] = times.sort(
-              (a, b) => new Date(a).getTime() - new Date(b).getTime()
-            )
-            dates.push(key)
-          }
+          const times = extractSlots(value)
+          if (times.length > 0) normalized[key] = times
         })
       } else {
         extractSlots(rawSlots).forEach((slot) => {
@@ -342,43 +420,27 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
           if (!normalized[key]) normalized[key] = []
           normalized[key].push(slot)
         })
-
-        Object.entries(normalized).forEach(([key, value]) => {
-          const times = Array.from(new Set(value)).sort(
-            (a, b) => new Date(a).getTime() - new Date(b).getTime()
-          )
-          if (times.length > 0) {
-            normalized[key] = times
-            dates.push(key)
-          }
-        })
       }
 
       const nowMs = Date.now()
       for (const key of Object.keys(normalized)) {
-        normalized[key] = normalized[key].filter((slot) => new Date(slot).getTime() > nowMs)
-        if (normalized[key].length === 0) delete normalized[key]
+        const future = Array.from(new Set(normalized[key]))
+          .filter((slot) => new Date(slot).getTime() > nowMs)
+          .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+        if (future.length > 0) {
+          normalized[key] = future
+        } else {
+          delete normalized[key]
+        }
       }
 
-      const sortedDates = Array.from(new Set(dates))
-        .filter((d) => Boolean(normalized[d]))
-        .sort((a, b) => a.localeCompare(b))
-
       setSlotsByDate(normalized)
-      setAvailableDates(sortedDates)
-      setSelectedDate((currentDate) => {
-        if (sortedDates.length === 0) return currentDate
-        const currentKey = formatLocalDateKey(currentDate)
-        if (normalized[currentKey]) return currentDate
-        const firstAvailable = parseLocalDateKey(sortedDates[0])
-        return firstAvailable ?? currentDate
-      })
+      setSelectedDate((currentDate) => pickSelectedDate(currentDate, normalized, businessDays))
       saveAvailabilityCache({
         createdAt: Date.now(),
         eventTypeId: selectedEventTypeId,
         timeZone,
-        slotsByDate: normalized,
-        availableDates: sortedDates
+        slotsByDate: normalized
       })
       setHasLoadedSlots(true)
       setIsLoadingSlots(false)
@@ -389,7 +451,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
     return () => {
       isMounted = false
     }
-  }, [selectedEventTypeId, timeZone])
+  }, [selectedEventTypeId, timeZone, businessDays])
 
   useEffect(() => {
     if (!slotsForSelectedDate.includes(selectedSlot)) {
@@ -582,7 +644,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
         // Ignore errors
       }
     }
-    
+
     navigate({ to: '/gracias-agenda' })
   }
 
@@ -592,333 +654,329 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
     setBooking(null)
   }
 
+  const eventTitle = isAlumnoAgenda ? 'Llamada de seguimiento' : 'Llamada de evaluación'
+  const eventDescription = isAlumnoAgenda
+    ? 'Elegí un horario para revisar tu progreso y ajustar el plan.'
+    : 'Una llamada breve y gratuita para conocer tu objetivo y ver si el programa es para vos.'
+  const inputClass =
+    'h-11 w-full rounded-[10px] border border-[#E8E4EE] bg-white px-3 text-[14px] text-[#1A1820] outline-none transition-[border-color,box-shadow] placeholder:text-[#C8C6CA] focus:border-[#9580A6] focus:shadow-[0_0_0_3px_rgba(149,128,166,0.18)]'
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FEFEFE] py-8 md:py-12">
-      <div className="w-full max-w-[1200px] min-h-[640px] md:min-h-[680px] overflow-hidden rounded-[30px] shadow-[0_30px_80px_rgba(149,128,166,0.15)] bg-[#FEFEFE] grid md:grid-cols-[0.85fr_1.15fr] border border-[#E8E4EE]">
-        <div className="bg-[#F4F2F7] text-[#1A1820] p-7 md:p-10 flex flex-col justify-between border-r border-[#E8E4EE]">
-          <div className="space-y-6">
-        
-            <div>
-              <h1 className="text-[28px] md:text-[34px] font-bold text-[#1A1820]">
-                {bookingPhase === 'form' ? 'Confirmá tu llamada' : isAlumnoAgenda ? 'Agendá tu seguimiento' : 'Agendá tu llamada'}
-              </h1>
-              <p className="mt-3 text-[14px] text-[#69686B] max-w-[260px]">
-                {bookingPhase === 'form' 
-                  ? isAlumnoAgenda
-                    ? 'Dejanos tus datos de contacto para confirmar la sesión.'
-                    : 'Revisá los datos de tu sesión de evaluación gratuita.'
-                  : isAlumnoAgenda
-                    ? 'Elegí un horario disponible para tu llamada.'
-                    : 'Elegí un horario disponible para tu sesión de evaluación.'}
-              </p>
+    <div className="min-h-screen bg-[#FEFEFE] px-3 py-8 sm:px-5 md:py-14">
+      <div className="mx-auto w-full max-w-[1040px]">
+        <div className="overflow-hidden rounded-[18px] border border-[#E8E4EE] bg-white shadow-[0_1px_2px_rgba(26,24,32,0.04),0_16px_48px_rgba(149,128,166,0.12)] md:grid md:grid-cols-[300px_1fr]">
+          <aside className="border-b border-[#E8E4EE] p-5 sm:p-6 md:border-b-0 md:border-r md:p-7">
+            <div className="flex items-center gap-2.5">
+              <img src={brandIcon} alt="" className="h-9 w-9 rounded-[10px]" />
+              <span className="text-[13px] font-medium text-[#69686B]">Demicheri Fitness</span>
             </div>
 
-            <div className="space-y-3 text-[13px] text-[#69686B]">
-              <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-[#9580A6]/15 flex items-center justify-center text-[12px] text-[#9580A6]">
-                  ⏱
-                </span>
-                <span>15-20 minutos</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-[#9580A6]/15 flex items-center justify-center text-[10px] text-[#9580A6]">
-                  TZ
-                </span>
-                <span className="text-[12px]">{timeZone}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 rounded-[18px] border border-[#E8E4EE] bg-[#FEFEFE] p-4 text-[12px]">
-            {bookingPhase === 'form' && attendeeName ? (
-              <>
-                <p className="m-0 text-[#9580A6] font-bold uppercase text-[11px] tracking-[0.15em]">Sesión para</p>
-                <p className="m-0 mt-1 text-[14px] font-bold text-[#1A1820]">{attendeeName}</p>
-              </>
-            ) : null}
-            <p className={`m-0 text-[#9580A6] font-bold uppercase text-[11px] tracking-[0.15em] ${bookingPhase === 'form' && attendeeName ? 'mt-3' : ''}`}>
-              {selectedSlot ? 'Horario seleccionado' : 'Resumen'}
+            <h1 className="m-0 mt-4 text-[22px] font-semibold leading-tight tracking-[-0.02em] text-[#1A1820] md:text-[24px]">
+              {eventTitle}
+            </h1>
+            <p className="m-0 mt-1.5 text-[14px] leading-relaxed text-[#69686B] md:mt-2">
+              {eventDescription}
             </p>
-            <p className="m-0 mt-1 text-[14px] font-bold text-[#1A1820]">
-              {selectedSlot
-                ? `${formatSlotDate(selectedSlot)} · ${formatSlotTime(selectedSlot)}`
-                : 'Elegí un horario para continuar.'}
-            </p>
-          </div>
-        </div>
 
-        <div className="p-7 md:p-10 h-full flex flex-col justify-center bg-[#FEFEFE]">
-          {bookingPhase === 'success' ? (
-            <div className="flex flex-col items-center text-center gap-4 py-10">
-              <div className="w-16 h-16 rounded-full bg-[#9580A6]/15 flex items-center justify-center text-[#9580A6] text-[24px]">
-                ✓
-              </div>
-              <h2 className="text-[22px] font-bold text-[#1A1820]">Cita confirmada</h2>
-              <p className="text-[13px] text-[#69686B] max-w-[360px]">
-                Te enviamos un correo con los detalles. Si necesitás cambiarla, avisanos con tiempo.
-              </p>
-              {booking?.start && (
-                <p className="text-[14px] font-bold text-[#1A1820]">
-                  {formatSlotDate(booking.start)} · {formatSlotTime(booking.start)}
-                </p>
+            <ul className="m-0 mt-4 flex list-none flex-wrap gap-x-5 gap-y-2.5 p-0 text-[14px] font-medium text-[#1A1820] md:mt-6 md:flex-col md:gap-3">
+              {selectedSlot && bookingPhase !== 'slots' && (
+                <li className="flex basis-full items-start gap-2.5">
+                  <CalendarIcon className="mt-[1px] h-[18px] w-[18px] shrink-0 text-[#9580A6]" />
+                  <span>
+                    {formatSlotDate(selectedSlot)}
+                    <br />
+                    <span className="text-[#69686B]">{formatSlotTime(selectedSlot, timeFormat)}</span>
+                  </span>
+                </li>
               )}
-              <div className="flex flex-col sm:flex-row gap-3 w-full max-w-[320px]">
-                <button
-                  type="button"
-                  className="flex-1 rounded-[14px] border border-[#E8E4EE] px-4 py-3 text-[13px] uppercase tracking-[0.18em] text-[#69686B] hover:border-[#9580A6] hover:text-[#9580A6] transition-colors"
-                  onClick={resetFlow}
-                >
-                  Agendar otra
-                </button>
-                <button
-                  type="button"
-                  className="flex-1 rounded-[14px] bg-[#9580A6] text-white px-4 py-3 text-[13px] uppercase tracking-[0.18em] hover:bg-[#7A6A8F] transition-colors"
-                  onClick={() => (window.location.href = '/')}
-                >
-                  Ir al inicio
-                </button>
-              </div>
-            </div>
-          ) : bookingPhase === 'slots' ? (
-            <div className="flex flex-col gap-6">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#9580A6]">
-                  Seleccioná fecha y hora
-                </p>
-                <h2 className="mt-2 text-[22px] font-bold text-[#1A1820]">Elegí el horario disponible</h2>
-              </div>
+              <li className="flex items-center gap-2.5">
+                <ClockIcon className="h-[18px] w-[18px] shrink-0 text-[#9D9B9F]" />
+                <span>15-20 min</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <VideoIcon className="h-[18px] w-[18px] shrink-0 text-[#9D9B9F]" />
+                <span>Google Meet</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <GlobeIcon className="h-[18px] w-[18px] shrink-0 text-[#9D9B9F]" />
+                <span className="break-all">{timeZone.replace(/_/g, ' ')}</span>
+              </li>
+            </ul>
+          </aside>
 
-              <div className="grid gap-6 lg:grid-cols-[1.05fr_1fr]">
-                <div className="rounded-[20px] border border-[#E8E4EE] bg-[#FEFEFE] p-5 h-[400px] overflow-y-auto no-scrollbar">
-                  {showInitialLoading ? (
-                    <div className="flex flex-col gap-2">
-                      {Array.from({ length: DATE_SKELETON_ITEMS }).map((_, index) => (
+          <section className="flex flex-col p-5 sm:p-6 md:min-h-[500px] md:p-7">
+            {bookingPhase === 'success' ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 py-10 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EDE9F3] text-[#9580A6]">
+                  <CheckIcon className="h-6 w-6" />
+                </div>
+                <h2 className="m-0 text-[20px] font-semibold text-[#1A1820]">Cita confirmada</h2>
+                <p className="m-0 max-w-[360px] text-[14px] text-[#69686B]">
+                  Te enviamos un correo con los detalles. Si necesitás cambiarla, avisanos con tiempo.
+                </p>
+                {booking?.start && (
+                  <p className="m-0 text-[14px] font-semibold text-[#1A1820]">
+                    {formatSlotDate(booking.start)} · {formatSlotTime(booking.start, timeFormat)}
+                  </p>
+                )}
+                <div className="mt-2 flex w-full max-w-[320px] flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    className="h-11 flex-1 rounded-[10px] border border-[#E8E4EE] text-[14px] font-medium text-[#1A1820] transition-colors hover:border-[#9580A6]"
+                    onClick={resetFlow}
+                  >
+                    Agendar otra
+                  </button>
+                  <button
+                    type="button"
+                    className="h-11 flex-1 rounded-[10px] bg-[#9580A6] text-[14px] font-medium text-white transition-colors hover:bg-[#7A6A8F]"
+                    onClick={() => (window.location.href = '/')}
+                  >
+                    Ir al inicio
+                  </button>
+                </div>
+              </div>
+            ) : bookingPhase === 'slots' ? (
+              <div className="flex flex-1 flex-col">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="m-0 text-[16px] font-semibold text-[#1A1820]">Elegí día y horario</h2>
+                    <p className="m-0 mt-1 text-[13px] text-[#9D9B9F]">
+                      {showInitialLoading ? 'Próximos 5 días hábiles' : formatMonthRange(displayDates)}
+                    </p>
+                  </div>
+                  <div
+                    role="group"
+                    aria-label="Formato de hora"
+                    className="flex shrink-0 rounded-[9px] border border-[#E8E4EE] bg-[#F4F2F7] p-[3px]"
+                  >
+                    {(['12h', '24h'] as const).map((format) => (
+                      <button
+                        key={format}
+                        type="button"
+                        aria-pressed={timeFormat === format}
+                        className={`rounded-[7px] px-2.5 py-1 text-[12px] font-medium transition-colors ${
+                          timeFormat === format
+                            ? 'bg-white text-[#1A1820] shadow-[0_1px_2px_rgba(26,24,32,0.08)]'
+                            : 'text-[#9D9B9F] hover:text-[#69686B]'
+                        }`}
+                        onClick={() => setTimeFormat(format)}
+                      >
+                        {format}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-5 grid grid-cols-5 gap-1.5 sm:gap-2">
+                  {showInitialLoading
+                    ? Array.from({ length: BUSINESS_DAYS_VISIBLE }).map((_, index) => (
                         <div
-                          key={`date-skeleton-${index}`}
-                          className="h-[54px] w-full rounded-[14px] border border-[#E8E4EE] bg-gradient-to-r from-[#9580A6]/[0.05] via-[#9580A6]/[0.08] to-[#9580A6]/[0.05] animate-pulse"
+                          key={`day-skeleton-${index}`}
+                          className="h-[76px] animate-pulse rounded-[12px] bg-[#F4F2F7]"
                         />
-                      ))}
-                    </div>
-                  ) : displayDates.length === 0 ? (
-                    <div className="h-full flex items-center justify-center">
-                      <div className="w-full rounded-[14px] border border-[#E8E4EE] bg-[#F4F2F7] px-4 py-5 text-center">
-                        <p className="m-0 text-[13px] font-medium text-[#1A1820]">
-                          No hay horarios disponibles por ahora.
-                        </p>
-                        <p className="m-0 mt-1 text-[12px] text-[#69686B]">
-                          Probá de nuevo en unos minutos.
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {displayDates.map((date) => {
+                      ))
+                    : displayDates.map((date) => {
                         const key = formatLocalDateKey(date)
-                        const isSelected = key === selectedDateKey
+                        const isAvailable = Boolean(slotsByDate[key])
+                        const isSelected = isAvailable && key === selectedDateKey
+                        const isToday = key === formatLocalDateKey(new Date())
                         return (
                           <button
                             key={key}
                             type="button"
-                            className={`w-full rounded-[14px] border px-4 py-3 text-left transition ${
+                            disabled={!isAvailable}
+                            aria-pressed={isSelected}
+                            aria-label={formatLongDate(date)}
+                            className={`flex h-[76px] flex-col items-center justify-center gap-1 rounded-[12px] border transition-colors ${
                               isSelected
                                 ? 'border-[#9580A6] bg-[#9580A6] text-white'
-                                : 'border-[#E8E4EE] bg-[#FEFEFE] text-[#1A1820] hover:border-[#9580A6]'
+                                : isAvailable
+                                  ? 'border-transparent bg-[#F4F2F7] text-[#1A1820] hover:border-[#9580A6]'
+                                  : 'cursor-not-allowed border-transparent bg-transparent text-[#C8C6CA]'
                             }`}
                             onClick={() => setSelectedDate(date)}
                           >
-                            <div className="flex items-center justify-between gap-4">
-                              <span className="text-[14px] font-bold">
-                                {date.toLocaleDateString([], {
-                                  weekday: 'short',
-                                  day: 'numeric',
-                                  month: 'short'
-                                })}
-                              </span>
-                              <span
-                                className={`text-[11px] font-bold uppercase tracking-[0.14em] ${isSelected ? 'text-white/70' : 'text-[#9D9B9F]'}`}
-                              >
-                                {slotsByDate[key]?.length ?? 0} horarios
-                              </span>
-                            </div>
+                            <span
+                              className={`text-[11px] font-medium uppercase tracking-[0.06em] ${
+                                isSelected ? 'text-white/75' : isAvailable ? 'text-[#69686B]' : ''
+                              }`}
+                            >
+                              {isToday ? 'Hoy' : formatWeekdayShort(date)}
+                            </span>
+                            <span className="text-[20px] font-semibold leading-none sm:text-[22px]">
+                              {date.getDate()}
+                            </span>
                           </button>
                         )
                       })}
-                    </div>
-                  )}
                 </div>
 
-                <div className="rounded-[20px] border border-[#E8E4EE] bg-[#FEFEFE] p-5 h-[400px] overflow-y-auto no-scrollbar">
+                <div className="mt-6 flex flex-1 flex-col border-t border-[#E8E4EE] pt-5">
                   {showInitialLoading ? (
-                    <div className="flex flex-col gap-2">
-                      {Array.from({ length: SLOT_SKELETON_ITEMS }).map((_, index) => (
-                        <div
-                          key={`slot-skeleton-${index}`}
-                          className="h-[54px] w-full rounded-[16px] border border-[#E8E4EE] bg-gradient-to-r from-[#9580A6]/[0.05] via-[#9580A6]/[0.08] to-[#9580A6]/[0.05] animate-pulse"
-                        />
-                      ))}
-                    </div>
-                  ) : displayDates.length === 0 ? (
-                    <div className="h-full flex items-center justify-center">
-                      <div className="w-full rounded-[14px] border border-[#E8E4EE] bg-[#F4F2F7] px-4 py-5 text-center">
-                        <p className="m-0 text-[13px] font-medium text-[#1A1820]">
-                          No hay horarios disponibles por ahora.
-                        </p>
+                    <>
+                      <div className="h-4 w-40 animate-pulse rounded bg-[#F4F2F7]" />
+                      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                        {Array.from({ length: SLOT_SKELETON_ITEMS }).map((_, index) => (
+                          <div
+                            key={`slot-skeleton-${index}`}
+                            className="h-11 animate-pulse rounded-[10px] bg-[#F4F2F7]"
+                          />
+                        ))}
                       </div>
-                    </div>
-                  ) : slotsForSelectedDate.length === 0 ? (
-                    <div className="h-full flex items-center justify-center">
-                      <div className="w-full rounded-[14px] border border-[#E8E4EE] bg-[#F4F2F7] px-4 py-5 text-center">
-                        <p className="m-0 text-[13px] font-medium text-[#1A1820]">
-                          No hay horarios para esta fecha.
-                        </p>
-                      </div>
+                    </>
+                  ) : !hasAnyAvailability || slotsForSelectedDate.length === 0 ? (
+                    <div className="flex flex-1 flex-col items-center justify-center px-4 py-10 text-center">
+                      <CalendarIcon className="h-6 w-6 text-[#C4BBCE]" />
+                      <p className="m-0 mt-3 text-[14px] font-medium text-[#1A1820]">
+                        {hasAnyAvailability
+                          ? 'No hay horarios para esta fecha.'
+                          : 'No hay horarios disponibles en los próximos 5 días hábiles.'}
+                      </p>
+                      <p className="m-0 mt-1 text-[13px] text-[#9D9B9F]">
+                        {hasAnyAvailability ? 'Elegí otro día.' : 'Probá de nuevo en unos minutos.'}
+                      </p>
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-2">
-                      {slotsForSelectedDate.map((slot) => (
-                        <button
-                          key={slot}
-                          type="button"
-                          className="w-full rounded-[16px] border border-[#E8E4EE] bg-[#F4F2F7] px-4 py-3 text-[14px] font-bold flex items-center justify-between hover:border-[#9580A6] hover:bg-[#EDE9F3] transition-colors text-[#1A1820]"
-                          onClick={() => handleSlotSelect(slot)}
-                        >
-                          <span>{formatSlotTime(slot)}</span>
-                          <span className="text-[11px] text-[#9580A6] font-bold uppercase tracking-[0.18em]">
-                            Reservar
-                          </span>
-                        </button>
-                      ))}
+                    <div key={selectedDateKey} className="agenda-fade-up">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <h3 className="m-0 text-[15px] font-semibold text-[#1A1820]">
+                          {formatLongDate(selectedDate)}
+                        </h3>
+                        <span className="text-[12px] text-[#9D9B9F]">
+                          {slotsForSelectedDate.length} {slotsForSelectedDate.length === 1 ? 'horario' : 'horarios'}
+                        </span>
+                      </div>
+                      <div className="mt-4 grid max-h-[300px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4">
+                        {slotsForSelectedDate.map((slot) => (
+                          <button
+                            key={slot}
+                            type="button"
+                            className="h-11 rounded-[10px] border border-[#E8E4EE] bg-white text-[14px] font-medium text-[#1A1820] transition-colors hover:border-[#9580A6] hover:bg-[#EDE9F3] hover:text-[#7A6A8F]"
+                            onClick={() => handleSlotSelect(slot)}
+                          >
+                            {formatSlotTime(slot, timeFormat)}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
 
-              {error && (
-                <div className="rounded-[12px] border border-red-500/40 bg-red-50 p-3 text-[13px] text-red-700">
-                  {error}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#9580A6]">
-                    Paso final
-                  </p>
-                  <h2 className="mt-2 text-[22px] font-bold text-[#1A1820]">Confirmá tu llamada</h2>
-                </div>
-                <button
-                  type="button"
-                  className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#69686B] hover:text-[#9580A6] transition-colors"
-                  onClick={() => setBookingPhase('slots')}
-                >
-                  ← Volver
-                </button>
-              </div>
-
-              {/* Datos de confirmación */}
-              <div className="flex flex-col gap-3">
-                <div className="rounded-[14px] border border-[#E8E4EE] bg-[#F4F2F7] p-4 text-[13px]">
-                  <p className="m-0 font-bold text-[#9580A6] uppercase text-[11px] tracking-[0.15em]">Horario seleccionado</p>
-                  <p className="m-0 mt-2 text-[#1A1820] font-semibold">
-                    {selectedSlot
-                      ? `${formatSlotDate(selectedSlot)} · ${formatSlotTime(selectedSlot)}`
-                      : 'Elegí un horario para continuar.'}
-                  </p>
-                </div>
-
-                <div className="rounded-[14px] border border-[#E8E4EE] bg-[#F4F2F7] p-4 text-[13px]">
-                  <p className="m-0 font-bold text-[#9580A6] uppercase text-[11px] tracking-[0.15em]">Tus datos</p>
-                  <p className="m-0 mt-2 text-[#1A1820] font-semibold">
-                    {attendeeName || 'Sin nombre'}
-                  </p>
-                  <p className="m-0 text-[#69686B]">
-                    {attendeeEmail || 'Sin email'}
-                  </p>
-                  {isAlumnoAgenda && (
-                    <p className="m-0 text-[#69686B]">
-                      {attendeePhone ? `${attendeePhonePrefix}${attendeePhone}` : 'Sin WhatsApp'}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
                 {error && (
-                  <div className="rounded-[12px] border border-red-500/40 bg-red-50 p-3 text-[13px] text-red-700">
+                  <div className="mt-4 rounded-[10px] border border-red-500/30 bg-red-50 p-3 text-[13px] text-red-700">
                     {error}
                   </div>
                 )}
-
-                {isAlumnoAgenda && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="flex flex-col gap-1 sm:col-span-2">
-                      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#69686B]">Nombre</span>
-                      <input
-                        className="rounded-[8px] border border-[#E8E4EE] bg-white px-3 py-3 text-[14px] text-[#1A1820] outline-none focus:border-[#9580A6]"
-                        value={attendeeName}
-                        onChange={(event) => setAttendeeName(event.target.value)}
-                        placeholder="Tu nombre"
-                        autoComplete="name"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 sm:col-span-2">
-                      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#69686B]">Email</span>
-                      <input
-                        className="rounded-[8px] border border-[#E8E4EE] bg-white px-3 py-3 text-[14px] text-[#1A1820] outline-none focus:border-[#9580A6]"
-                        type="email"
-                        value={attendeeEmail}
-                        onChange={(event) => setAttendeeEmail(event.target.value)}
-                        placeholder="tu@email.com"
-                        autoComplete="email"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1">
-                      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#69686B]">País</span>
-                      <select
-                        className="rounded-[8px] border border-[#E8E4EE] bg-white px-3 py-3 text-[14px] text-[#1A1820] outline-none focus:border-[#9580A6]"
-                        value={attendeePhoneCountry}
-                        onChange={(event) => {
-                          const iso = event.target.value
-                          const country = COUNTRY_PREFIXES.find(p => p.iso === iso)
-                          setAttendeePhoneCountry(iso)
-                          if (country) setAttendeePhonePrefix(country.code)
-                        }}
-                      >
-                        {COUNTRY_PREFIXES.map(p => (
-                          <option key={p.iso} value={p.iso}>{p.flag} {p.name} {p.code}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="flex flex-col gap-1">
-                      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#69686B]">WhatsApp</span>
-                      <input
-                        className="rounded-[8px] border border-[#E8E4EE] bg-white px-3 py-3 text-[14px] text-[#1A1820] outline-none focus:border-[#9580A6]"
-                        value={attendeePhone}
-                        onChange={(event) => setAttendeePhone(event.target.value)}
-                        placeholder="99123456"
-                        inputMode="tel"
-                        autoComplete="tel"
-                      />
-                    </label>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  className="mt-2 rounded-[8px] bg-[#9580A6] text-white px-4 py-4 text-[13px] font-bold uppercase tracking-[0.2em] disabled:opacity-60 hover:bg-[#7A6A8F] transition-colors"
-                  disabled={isBooking}
-                >
-                  {isBooking ? 'Confirmando...' : 'Confirmar mi llamada →'}
-                </button>
-                
-                <p className="text-[11px] text-[#9D9B9F] text-center">
-                  Recibirás un email con el link de Google Meet para la videollamada
+              </div>
+            ) : (
+              <form className="agenda-fade-up flex flex-1 flex-col" onSubmit={handleSubmit}>
+                <h2 className="m-0 text-[16px] font-semibold text-[#1A1820]">Confirmá tu llamada</h2>
+                <p className="m-0 mt-1 text-[13px] text-[#9D9B9F]">
+                  {isAlumnoAgenda
+                    ? 'Dejanos tus datos de contacto para confirmar la sesión.'
+                    : 'Revisá tus datos antes de confirmar.'}
                 </p>
+
+                <div className="mt-5 flex flex-col gap-4">
+                  {isAlumnoAgenda ? (
+                    <>
+                      <label className="flex flex-col gap-1.5">
+                        <span className="text-[13px] font-medium text-[#1A1820]">Nombre</span>
+                        <input
+                          className={inputClass}
+                          value={attendeeName}
+                          onChange={(event) => setAttendeeName(event.target.value)}
+                          placeholder="Tu nombre"
+                          autoComplete="name"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1.5">
+                        <span className="text-[13px] font-medium text-[#1A1820]">Email</span>
+                        <input
+                          className={inputClass}
+                          type="email"
+                          value={attendeeEmail}
+                          onChange={(event) => setAttendeeEmail(event.target.value)}
+                          placeholder="tu@email.com"
+                          autoComplete="email"
+                        />
+                      </label>
+                      <div className="grid gap-4 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                        <label className="flex flex-col gap-1.5">
+                          <span className="text-[13px] font-medium text-[#1A1820]">País</span>
+                          <select
+                            className={inputClass}
+                            value={attendeePhoneCountry}
+                            onChange={(event) => {
+                              const iso = event.target.value
+                              const country = COUNTRY_PREFIXES.find(p => p.iso === iso)
+                              setAttendeePhoneCountry(iso)
+                              if (country) setAttendeePhonePrefix(country.code)
+                            }}
+                          >
+                            {COUNTRY_PREFIXES.map(p => (
+                              <option key={p.iso} value={p.iso}>{p.flag} {p.name} {p.code}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="flex flex-col gap-1.5">
+                          <span className="text-[13px] font-medium text-[#1A1820]">WhatsApp</span>
+                          <input
+                            className={inputClass}
+                            value={attendeePhone}
+                            onChange={(event) => setAttendeePhone(event.target.value)}
+                            placeholder="99123456"
+                            inputMode="tel"
+                            autoComplete="tel"
+                          />
+                        </label>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="rounded-[12px] border border-[#E8E4EE] bg-[#F4F2F7] p-4">
+                      <p className="m-0 text-[12px] font-medium text-[#9D9B9F]">Tus datos</p>
+                      <p className="m-0 mt-1.5 text-[14px] font-semibold text-[#1A1820]">
+                        {attendeeName || 'Sin nombre'}
+                      </p>
+                      <p className="m-0 mt-0.5 text-[14px] text-[#69686B]">
+                        {attendeeEmail || 'Sin email'}
+                      </p>
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="rounded-[10px] border border-red-500/30 bg-red-50 p-3 text-[13px] text-red-700">
+                      {error}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-auto pt-8">
+                  <p className="m-0 mb-4 text-[12px] text-[#9D9B9F]">
+                    Recibirás un email con el link de Google Meet para la videollamada.
+                  </p>
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      className="inline-flex h-11 items-center gap-1.5 rounded-[10px] px-4 text-[14px] font-medium text-[#69686B] transition-colors hover:bg-[#F4F2F7] hover:text-[#1A1820]"
+                      onClick={() => setBookingPhase('slots')}
+                    >
+                      <ArrowLeftIcon className="h-4 w-4" />
+                      Volver
+                    </button>
+                    <button
+                      type="submit"
+                      className="h-11 rounded-[10px] bg-[#9580A6] px-6 text-[14px] font-semibold text-white transition-colors hover:bg-[#7A6A8F] disabled:opacity-60"
+                      disabled={isBooking}
+                    >
+                      {isBooking ? 'Confirmando...' : 'Confirmar'}
+                    </button>
+                  </div>
+                </div>
               </form>
-            </div>
-          )}
+            )}
+          </section>
         </div>
       </div>
     </div>
