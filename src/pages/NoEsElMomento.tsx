@@ -55,12 +55,14 @@ export default function NoEsElMomento() {
               >
                 Volver al inicio
               </button>
-              <button
-                onClick={() => navigate({ to: '/pre-call' })}
-                className="w-full rounded-[8px] border border-[#E8E4EE] bg-[#F4F2F7] px-5 py-4 text-[#1A1820] text-[13px] font-bold uppercase tracking-widest hover:border-[#9580A6] transition-colors"
+              <a
+                href="https://www.instagram.com/demicherifitness/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full rounded-[8px] border border-[#E8E4EE] bg-[#F4F2F7] px-5 py-4 text-center text-[#1A1820] text-[13px] font-bold uppercase tracking-widest hover:border-[#9580A6] transition-colors"
               >
-                Revisar mi respuesta
-              </button>
+                Seguirme en Instagram
+              </a>
             </div>
           </section>
         </div>

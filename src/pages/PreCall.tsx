@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useGTM } from '../lib/useGTM'
 import { useSessionTracking, getSessionId } from '../lib/useSessionTracking'
 import { getMetaCookies } from '../lib/metaCookies'
+import { captureAttribution, getAttribution } from '../lib/attribution'
 import { COUNTRY_PREFIXES } from '../lib/countries'
 import { META_CURRENCY, META_LEAD_VALUE } from '../lib/metaConversionValues'
 
@@ -248,9 +249,11 @@ export default function PreCall() {
   }
 
   useEffect(() => {
+    const attribution = captureAttribution()
     trackPageView('pre_call', {
       initial_step: 0,
       session_id: sessionId,
+      ...attribution,
     })
     trackNavigation('landing_page', 'pre_call', { session_id: sessionId })
   }, [trackPageView, sessionId, trackNavigation])
@@ -297,6 +300,8 @@ export default function PreCall() {
     const submitData = {
       ...data,
       whatsapp: `${data.whatsappPrefix}${data.whatsapp.trim()}`,
+      // Queda dentro de precall_data (jsonb) para poder cruzar anuncio -> lead -> venta.
+      attribution: getAttribution(),
     }
     let leadId: string | null = null
     const leadEventId = crypto.randomUUID()
