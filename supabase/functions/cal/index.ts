@@ -1298,7 +1298,8 @@ serve(async (req) => {
           precall_data: appointmentPrecallData,
         });
 
-        await sendMetaCapiEvent("Schedule", {
+        // Las agendas de alumnos no son conversiones de ads: no se envian a Meta.
+        if (bookingSource !== "alumno-agenda") await sendMetaCapiEvent("Schedule", {
           eventId: stringField(input?.eventId),
           email: requestedEmail,
           phone: appointmentGuestPhone,

@@ -633,7 +633,11 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       event_id: scheduleEventId,
       slot: selectedSlot,
     })
-    trackConversion('meta_schedule', scheduleEventId, { value: META_SCHEDULE_VALUE, currency: META_CURRENCY })
+    // Solo las agendas que vienen del pre-call son conversiones de ads; las de alumnos
+    // (/alumno-agenda) no deben contar como Schedule en Meta.
+    if (!isAlumnoAgenda) {
+      trackConversion('meta_schedule', scheduleEventId, { value: META_SCHEDULE_VALUE, currency: META_CURRENCY })
+    }
 
     if (!isAlumnoAgenda) {
       // Clear pre-call data from localStorage after successful booking
