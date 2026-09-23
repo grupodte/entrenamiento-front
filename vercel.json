@@ -1,4 +1,9 @@
 {
+  "redirects": [
+    { "source": "/landing", "destination": "/landing-page", "permanent": true },
+    { "source": "/landing-pge", "destination": "/landing-page", "permanent": true },
+    { "source": "/landing0page", "destination": "/landing-page", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]

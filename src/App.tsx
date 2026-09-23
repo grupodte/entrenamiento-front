@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { RouterProvider } from '@tanstack/react-router'
 import { router } from './router'
+import { initPageViewTracking } from './lib/pageViewTracking'
 
 const EDITABLE_SELECTOR = 'input, textarea, [contenteditable="true"], [data-allow-copy="true"]'
 
@@ -9,6 +10,8 @@ function isEditableTarget(target: EventTarget | null) {
 }
 
 export default function App() {
+  useEffect(() => initPageViewTracking(router), [])
+
   useEffect(() => {
     const preventGestureZoom = (event: Event) => {
       event.preventDefault()

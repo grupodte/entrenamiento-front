@@ -254,7 +254,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   })
 
   const navigate = useNavigate()
-  const { trackConversion, trackPageView, trackEvent } = useGTM()
+  const { trackConversion, trackEvent } = useGTM()
   const { sessionId, trackNavigation } = useSessionTracking()
   const isAlumnoAgenda = mode === 'alumno'
   const envEventTypeId = import.meta.env.VITE_CAL_EVENT_TYPE_ID as string | undefined
@@ -303,13 +303,8 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const showInitialLoading = !hasLoadedSlots && (!hasFetchedSlots || isLoadingSlots)
 
   useEffect(() => {
-    trackPageView('agenda', {
-      session_id: sessionId,
-      mode: mode,
-      page_type: 'booking',
-    })
     trackNavigation('pre_call', 'agenda', { session_id: sessionId })
-  }, [sessionId, mode, trackPageView, trackNavigation])
+  }, [sessionId, trackNavigation])
 
   useEffect(() => {
     let isMounted = true

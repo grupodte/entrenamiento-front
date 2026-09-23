@@ -558,7 +558,7 @@ export default function LandingPage() {
     ogDescription: '+500 transformaciones reales con un coach presente cada día.',
   })
 
-  const { trackPageView, trackEvent } = useGTM()
+  const { trackEvent } = useGTM()
   const { sessionId, trackMilestone } = useSessionTracking()
 
   const [videoProgress, setVideoProgress] = useState(0)
@@ -571,14 +571,6 @@ export default function LandingPage() {
   const videoWrapperRef = useRef<HTMLDivElement>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const muxRef = useRef<any>(null)
-
-  // Page view tracking on mount
-  useEffect(() => {
-    trackPageView('landing_page', {
-      session_id: sessionId,
-      page_type: 'gated_content',
-    })
-  }, [sessionId, trackPageView])
 
   // Scroll con inercia: reemplaza el scroll nativo por uno con física de
   // resorte, sincronizado al ticker de GSAP para que ScrollTrigger lea la

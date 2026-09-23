@@ -32,7 +32,7 @@ export default function Home() {
     ogDescription: 'Asesoramiento personalizado de entrenamiento y nutrición con resultados concretos.',
   })
 
-  const { trackButtonClick, trackPageView } = useGTM()
+  const { trackButtonClick } = useGTM()
   const { homePhase } = useContext(HomePhaseContext)
   const forWhoRef = useTextReveal()
   const forWhoSectionRef = useRef(null)
@@ -46,10 +46,6 @@ export default function Home() {
     trackButtonClick('view_plans', 'hero_section')
     document.getElementById('planes')?.scrollIntoView({ behavior: 'smooth' })
   }
-
-  useEffect(() => {
-    trackPageView('home', { page_url: window.location.pathname })
-  }, [])
 
   useEffect(() => {
     const section = forWhoSectionRef.current

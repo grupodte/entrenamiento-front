@@ -41,13 +41,12 @@ const ArrowRightIcon = ({ className }: { className?: string }) => (
 
 export default function AgendaGracias() {
   const navigate = useNavigate()
-  const { trackPageView, trackEvent } = useGTM()
+  const { trackEvent } = useGTM()
   const [countdown, setCountdown] = useState(15)
 
   useEffect(() => {
-    trackPageView('agenda_confirmada', { page_title: 'Cita confirmada' })
     trackEvent('booking_completed', { conversion_type: 'agenda_confirmada' })
-  }, [trackPageView, trackEvent])
+  }, [trackEvent])
 
   useEffect(() => {
     const timer = window.setInterval(() => {

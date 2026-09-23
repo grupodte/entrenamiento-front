@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useGTM } from '../lib/useGTM'
 import { useSessionTracking, getSessionId } from '../lib/useSessionTracking'
 import { getMetaCookies } from '../lib/metaCookies'
-import { captureAttribution, getAttribution } from '../lib/attribution'
+import { getAttribution } from '../lib/attribution'
 import { COUNTRY_PREFIXES } from '../lib/countries'
 import { META_CURRENCY, META_LEAD_VALUE } from '../lib/metaConversionValues'
 
@@ -209,7 +209,7 @@ function StepText({
 // ── Main ───────────────────────────────────────────────────
 export default function PreCall() {
   const navigate = useNavigate()
-  const { trackPageView, trackEvent, trackConversion } = useGTM()
+  const { trackEvent, trackConversion } = useGTM()
   const { sessionId, trackNavigation } = useSessionTracking()
   const [step, setStep] = useState(0)
   const [visible, setVisible] = useState(true)
@@ -249,14 +249,8 @@ export default function PreCall() {
   }
 
   useEffect(() => {
-    const attribution = captureAttribution()
-    trackPageView('pre_call', {
-      initial_step: 0,
-      session_id: sessionId,
-      ...attribution,
-    })
     trackNavigation('landing_page', 'pre_call', { session_id: sessionId })
-  }, [trackPageView, sessionId, trackNavigation])
+  }, [sessionId, trackNavigation])
 
   useEffect(() => {
     if (step > 0) {

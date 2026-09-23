@@ -1,108 +1,94 @@
-# Configuración de GTM → GA4 para el funnel de conversión
+# Tracking: estado real y configuración pendiente
 
-## Problema actual
-Los eventos se envían a dataLayer pero GTM no está configurado para reenviarlo a GA4. Por eso Analytics muestra 0% en los pasos 2-5.
+Contenedor GTM: `GTM-N9HWTK83` · GA4: `G-8BJ5P49579` · Meta Pixel: `1137680301746095`
 
-## Solución: Configurar en Google Tag Manager
+## Estado del contenedor (verificado sobre el gtm.js publicado)
 
-### 1. Crear una etiqueta GA4 (si no existe)
-- Ve a **Tags** → **New**
-- Selecciona **Google Analytics: GA4 Configuration**
-- Measurement ID: (tu GA4 ID)
-- Enable automatic event tracking: ON
-- **Save**
+| Tag | Dispara con | Estado |
+|---|---|---|
+| GA4 Event (`{{Event}}` → G-8BJ5P49579) | Custom Event regex `.*` | ⚠️ sin parámetros mapeados |
+| Meta Pixel — PageView | `gtm.js` | ✅ |
+| Meta Pixel — Lead | `meta_lead` | ⚠️ sin `value`/`currency` |
+| Meta Pixel — Schedule | `meta_schedule` | ⚠️ sin `value`/`currency` |
 
-### 2. Crear disparadores para eventos personalizados
-Crea disparadores para cada evento en GTM:
+Los eventos **sí** llegan a GA4: el tag GA4 dispara con todos. Lo que no llega es
+ningún parámetro, porque el tag no tiene tabla de parámetros configurada.
 
-#### Disparador 1: Page View
-- **Triggers** → **New**
-- Nombre: `gtm.pageview`
-- Tipo: **Page View**
-- Todas las pages
-- **Save**
+## Lo que ya está resuelto en el código
 
-#### Disparador 2: Events personalizados
-- **Triggers** → **New**
-- Nombre: `Custom Event`
-- Tipo: **Custom Event**
-- Event name: `(.*)` (captura todos)
-- Regex: ✓ ON
-- **Save**
+- `page_view` se emite desde el router para **todas** las rutas
+  (`src/lib/pageViewTracking.ts`), con `page_path` y `page_location` explícitos.
+  Antes cada página lo hacía por su cuenta y varias rutas no reportaban nada.
+- Las rutas desconocidas también emiten `page_view` (`page_name: unknown`), para
+  que los links rotos de campañas aparezcan en GA4.
+- Los UTMs se capturan en la primera carga de cualquier ruta. Antes solo se
+  capturaban en `/pre-call`, así que una campaña apuntando a
+  `/landing-page?utm_source=...` perdía la atribución al navegar.
+- Las funciones de tracking tienen identidad estable, así que los `useEffect` que
+  dependen de ellas ya no se re-ejecutan en cada render duplicando eventos.
+- `/landing`, `/landing-pge` y `/landing0page` redirigen a `/landing-page`
+  (`vercel.json`).
 
-### 3. Configurar GA4 para recibir eventos
-- Ve a tu **GA4 Property**
-- **Admin** → **Data Streams** → **web**
-- Click en el Google Tag Manager ID
-- Asegúrate que está correctamente conectado
+## Pendiente en la UI de GTM
 
-### 4. Crear conversiones en GA4
-En GA4, define conversiones basadas en estos eventos:
+### 1. Excluir los eventos internos de GTM
+El trigger del tag GA4 usa regex `.*`, que también matchea `gtm.js`, `gtm.dom` y
+`gtm.load`. Cambiar el regex a:
 
-**Conversión 1: Video Unlocked**
-- Event name: `milestone`
-- Condición: `milestone_name` = `video_unlocked`
-
-**Conversión 2: Pre-call Lead**
-- Event name: `meta_lead`
-- (Este ya se trackea en PreCall.tsx)
-
-**Conversión 3: Schedule Booked**
-- Event name: `meta_schedule`
-- (Este ya se trackea en Agenda.tsx)
-
-### 5. Ver el funnel en Analytics
-Una vez configuradas las conversiones, verás el flujo en:
-**Reports** → **Engagement** → **Funnels**
-
----
-
-## Eventos que estamos enviando
-
-### Landing Page
 ```
-- page_view: landing_page, session_id
-- milestone: video_unlocked, video_progress_pct, unlock_method
-- cta_click: cta_location, cta_text (cuando hace click en CTA)
+^(?!gtm\.).*$
 ```
 
-### Pre-Call
-```
-- page_view: pre_call, session_id
-- page_navigation: from_page=landing_page, to_page=pre_call, session_id
-- precall_choice: field, value, step, session_id
-- precall_step_reached: step, total, progress_percent, session_id
-- meta_lead: event_id, value, currency, session_id (conversión)
-- precall_submitted: dias_entrenamiento, principal_need, session_id
-- page_navigation: from_page=pre_call, to_page=agenda, session_id
-```
+### 2. Mapear los parámetros en el tag GA4
+Crear variables de dataLayer y agregarlas en **Parámetros del evento** del tag GA4:
 
-### Agenda
-```
-- page_view: agenda, session_id, mode, page_type
-- page_navigation: from_page=pre_call, to_page=agenda, session_id
-- agenda_booking_success: session_id, event_id, slot
-- meta_schedule: event_id, value, currency (conversión)
-```
+`page_name`, `page_path`, `page_location`, `page_type`, `session_id`,
+`milestone_name`, `cta_location`, `cta_text`, `step`, `progress_percent`,
+`from_page`, `to_page`, `value`, `currency`, `event_id`
 
----
+Sin esto, GA4 sigue recibiendo solo nombres de evento y el embudo no se puede segmentar.
 
-## Pendiente manual en GTM: value/currency al Pixel de Meta
+### 3. `value` / `currency` al Pixel de Meta
+Mapear `DLV - value` y `DLV - currency` a los parámetros `value` y `currency` de
+los tags Lead y Schedule. Los valores ya viajan en el dataLayer
+(`src/lib/metaConversionValues.ts`).
 
-Los eventos `meta_lead` y `meta_schedule` ahora incluyen `value` y `currency` en el
-dataLayer (ver `src/lib/metaConversionValues.ts`). Si en GTM hay un tag de Meta Pixel
-(fbq) disparado por estos eventos, hay que:
-1. Crear/editar variables de dataLayer `DLV - value` y `DLV - currency`.
-2. En el tag de Meta Pixel, mapear esas variables a los parámetros `value` y `currency`
-   del evento (Lead / Schedule).
+## Pendiente en la UI de GA4
 
-Esto es configuración de la UI de GTM, no se puede desplegar desde el repo.
+### 1. Marcar eventos clave
+Admin → Eventos → marcar como clave: `meta_lead`, `meta_schedule`,
+`booking_completed`. Hoy la columna "Eventos clave" está en 0,00 porque no hay
+ninguno marcado.
 
-## Testing
+### 2. Revisar el flujo de datos
+En el informe aparecen `//checkout/` y `/contacto`, rutas que no existen en este
+repo. Verificar en Admin → Flujos de datos si `G-8BJ5P49579` está recibiendo
+tráfico de otro sitio.
 
-1. Abre tu página en modo privado
-2. Abre **DevTools** → **Console**
-3. Ejecuta: `window.dataLayer` 
-4. Verifica que los eventos aparezcan en la lista
-5. Ve a **Google Tag Manager Preview mode** para ver si GTM está capturando los eventos
-6. Dentro de 24h, verás los eventos en GA4 **Realtime** report
+## Inventario de eventos
+
+| Evento | Parámetros | Dónde |
+|---|---|---|
+| `page_view` | `page_name`, `page_title`, `page_path`, `page_location`, `page_referrer`, `session_id`, `page_type`, `mode`, utm_* | router (todas las rutas) |
+| `milestone` | `milestone_name`, `session_id`, `timestamp` | LandingPage (`video_unlocked`) |
+| `cta_click` | `cta_location`, `cta_text`, `session_id` | LandingPage |
+| `button_click` | `button_name`, `button_location` | Home |
+| `page_navigation` | `from_page`, `to_page`, `session_id`, `timestamp` | PreCall, Agenda |
+| `precall_choice` | `field`, `value`, `step`, `session_id` | PreCall |
+| `precall_step_reached` | `step`, `total`, `progress_percent`, `session_id` | PreCall |
+| `budget_rejection` | `reason`, `step`, `session_id` | PreCall |
+| `precall_submitted` | `dias_entrenamiento`, `principal_need`, `session_id` | PreCall |
+| `meta_lead` | `event_id`, `value`, `currency` | PreCall (conversión) |
+| `agenda_booking_success` | `session_id`, `event_id`, `slot` | Agenda |
+| `meta_schedule` | `event_id`, `value`, `currency` | Agenda (conversión, no en `/alumno-agenda`) |
+| `booking_completed` | `conversion_type` | AgendaGracias |
+
+## Verificación
+
+1. `npm run dev`, abrir DevTools → Console.
+2. `window.dataLayer.filter(e => e.event === 'page_view')` — debe haber uno por
+   ruta visitada, con `page_path` correcto.
+3. Navegar `/` → `/landing-page` → `/pre-call` → `/agenda` y confirmar que hay
+   exactamente 4 `page_view`, sin repetidos.
+4. GTM Preview mode para confirmar que el tag GA4 dispara y con qué parámetros.
+5. GA4 → Tiempo real para ver los eventos llegando.

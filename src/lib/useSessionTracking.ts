@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useCallback } from 'react'
 import { useGTM } from './useGTM'
 
 const SESSION_ID_KEY = 'dmf_session_id'
@@ -24,16 +24,19 @@ export function useSessionTracking() {
   const sessionId = getOrCreateSessionId()
   const { trackEvent } = useGTM()
 
-  const trackMilestone = (milestone: string, data?: Record<string, any>) => {
+  // useCallback es obligatorio, no una optimizacion: las paginas pasan estas
+  // funciones como dependencia de useEffect. Sin identidad estable, el efecto se
+  // vuelve a ejecutar en cada render y emite el mismo evento una y otra vez.
+  const trackMilestone = useCallback((milestone: string, data?: Record<string, any>) => {
     trackEvent('milestone', {
       milestone_name: milestone,
       session_id: sessionId,
       timestamp: new Date().toISOString(),
       ...data,
     })
-  }
+  }, [sessionId, trackEvent])
 
-  const trackNavigation = (fromPage: string, toPage: string, data?: Record<string, any>) => {
+  const trackNavigation = useCallback((fromPage: string, toPage: string, data?: Record<string, any>) => {
     trackEvent('page_navigation', {
       from_page: fromPage,
       to_page: toPage,
@@ -41,7 +44,7 @@ export function useSessionTracking() {
       timestamp: new Date().toISOString(),
       ...data,
     })
-  }
+  }, [sessionId, trackEvent])
 
   return { sessionId, trackMilestone, trackNavigation }
 }
