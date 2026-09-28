@@ -29,7 +29,7 @@ export default function MainLayout() {
   const location = useRouterState({ select: (state) => state.location })
   const isHome = location.pathname === '/'
   const isPostulacion = location.pathname === '/postulacion' || location.pathname.startsWith('/postulacion/')
-  const isConversionFunnel = isPostulacion || location.pathname === '/landing-page' || location.pathname === '/pre-call' || location.pathname === '/no-es-el-momento'
+  const isConversionFunnel = isPostulacion || location.pathname === '/landing-page' || location.pathname === '/pre-call' || location.pathname === '/no-es-el-momento' || location.pathname === '/gracias-agenda'
   const isPrivacy = location.pathname === '/privacy'
   const isScrollLocked = isPostulacion
   const isSpa = useRef(isSpaNavigation()).current
