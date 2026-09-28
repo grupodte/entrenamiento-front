@@ -22,9 +22,9 @@ type AgendaMode = 'precall' | 'alumno'
 type TimeFormat = '24h' | '12h'
 
 const BUSINESS_DAYS_VISIBLE = 5
-// Pedimos un día hábil extra: si hoy ya no tiene horarios lo ocultamos y
-// seguimos mostrando 5 días hábiles hacia adelante.
+// Cada fecha adicional se consulta solo cuando el rango actual no tiene cupos.
 const BUSINESS_DAYS_FETCHED = BUSINESS_DAYS_VISIBLE + 1
+const MAX_BUSINESS_DAYS_FETCHED = 30
 const AVAILABILITY_CACHE_KEY = 'ddfit_agenda_availability_v2'
 const AVAILABILITY_CACHE_TTL_MS = 1000 * 60 * 10
 const SLOT_SKELETON_ITEMS = 8
@@ -276,6 +276,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
   const [hasFetchedSlots, setHasFetchedSlots] = useState(false)
   const [hasLoadedSlots, setHasLoadedSlots] = useState(false)
+  const [businessDaysFetched, setBusinessDaysFetched] = useState(BUSINESS_DAYS_FETCHED)
   const [isBooking, setIsBooking] = useState(false)
   const [booking, setBooking] = useState<BookingSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -284,7 +285,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const [urlLeadId, setUrlLeadId] = useState<string | null>(null)
   const [urlPrecallData, setUrlPrecallData] = useState<PrecallData | null>(null)
 
-  const businessDays = useMemo(() => buildBusinessDays(BUSINESS_DAYS_FETCHED), [])
+  const businessDays = useMemo(() => buildBusinessDays(businessDaysFetched), [businessDaysFetched])
   const selectedDateKey = useMemo(
     () => formatLocalDateKey(selectedDate),
     [selectedDate]
@@ -439,6 +440,9 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       })
       setHasLoadedSlots(true)
       setIsLoadingSlots(false)
+      if (Object.keys(normalized).length === 0 && businessDaysFetched < MAX_BUSINESS_DAYS_FETCHED) {
+        setBusinessDaysFetched((current) => Math.min(current + 1, MAX_BUSINESS_DAYS_FETCHED))
+      }
     }
 
     fetchSlots()
@@ -446,7 +450,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
     return () => {
       isMounted = false
     }
-  }, [selectedEventTypeId, timeZone, businessDays])
+  }, [selectedEventTypeId, timeZone, businessDays, businessDaysFetched])
 
   useEffect(() => {
     if (!slotsForSelectedDate.includes(selectedSlot)) {

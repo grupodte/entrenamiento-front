@@ -6,13 +6,28 @@ Contenedor GTM: `GTM-N9HWTK83` · GA4: `G-8BJ5P49579` · Meta Pixel: `1137680301
 
 | Tag | Dispara con | Estado |
 |---|---|---|
-| GA4 Event (`{{Event}}` → G-8BJ5P49579) | Custom Event regex `.*` | ⚠️ sin parámetros mapeados |
+| GA4 Event (→ G-8BJ5P49579) | Custom Event regex `.*` | 🔴 nombre de evento roto |
 | Meta Pixel — PageView | `gtm.js` | ✅ |
 | Meta Pixel — Lead | `meta_lead` | ⚠️ sin `value`/`currency` |
 | Meta Pixel — Schedule | `meta_schedule` | ⚠️ sin `value`/`currency` |
 
-Los eventos **sí** llegan a GA4: el tag GA4 dispara con todos. Lo que no llega es
-ningún parámetro, porque el tag no tiene tabla de parámetros configurada.
+### 🔴 El nombre del evento GA4 está duplicado
+
+En el contenedor publicado, el campo "Nombre del evento" del tag GA4 compila como:
+
+```
+"vtp_eventName": ["template", ["macro",1], ["macro",1]]   // macro 1 = {{Event}}
+```
+
+Es decir `{{Event}}{{Event}}`. GA4 está recibiendo `page_viewpage_view`,
+`milestonemilestone`, `meta_leadmeta_lead`, `gtm.jsgtm.js`.
+
+Consecuencias medidas en GA4 (1 ago – 22 sep 2026): **3 vistas** contra 4.736
+usuarios activos, 66.826 eventos sin nombres utilizables, y 0 eventos clave
+(no se puede marcar `meta_lead` porque lo que entra se llama `meta_leadmeta_lead`).
+
+**Mientras esto no se corrija, nada de lo que emite el código llega a GA4 en
+forma usable.** Es el arreglo de mayor prioridad y el más barato.
 
 ## Lo que ya está resuelto en el código
 
@@ -31,7 +46,11 @@ ningún parámetro, porque el tag no tiene tabla de parámetros configurada.
 
 ## Pendiente en la UI de GTM
 
-### 1. Excluir los eventos internos de GTM
+### 1. Corregir el nombre del evento GA4 ← PRIMERO
+Tag GA4 → campo **Nombre del evento** → dejar `{{Event}}` una sola vez. Publicar.
+Verificar en la UI que no diga `{{Event}}{{Event}}`.
+
+### 2. Excluir los eventos internos de GTM
 El trigger del tag GA4 usa regex `.*`, que también matchea `gtm.js`, `gtm.dom` y
 `gtm.load`. Cambiar el regex a:
 
@@ -39,7 +58,7 @@ El trigger del tag GA4 usa regex `.*`, que también matchea `gtm.js`, `gtm.dom` 
 ^(?!gtm\.).*$
 ```
 
-### 2. Mapear los parámetros en el tag GA4
+### 3. Mapear los parámetros en el tag GA4
 Crear variables de dataLayer y agregarlas en **Parámetros del evento** del tag GA4:
 
 `page_name`, `page_path`, `page_location`, `page_type`, `session_id`,
@@ -48,7 +67,7 @@ Crear variables de dataLayer y agregarlas en **Parámetros del evento** del tag 
 
 Sin esto, GA4 sigue recibiendo solo nombres de evento y el embudo no se puede segmentar.
 
-### 3. `value` / `currency` al Pixel de Meta
+### 4. `value` / `currency` al Pixel de Meta
 Mapear `DLV - value` y `DLV - currency` a los parámetros `value` y `currency` de
 los tags Lead y Schedule. Los valores ya viajan en el dataLayer
 (`src/lib/metaConversionValues.ts`).
