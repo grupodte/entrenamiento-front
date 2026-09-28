@@ -167,6 +167,17 @@ const formatLocalDateKey = (date: Date) => {
   return `${year}-${month}-${day}`
 }
 
+const splitPhonePrefix = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed.startsWith('+')) return { prefix: '+598', number: trimmed }
+  const country = [...COUNTRY_PREFIXES]
+    .sort((a, b) => b.code.length - a.code.length)
+    .find((item) => trimmed.startsWith(item.code))
+  return country
+    ? { prefix: country.code, number: trimmed.slice(country.code.length).trim() }
+    : { prefix: '+598', number: trimmed.replace(/^\+/, '') }
+}
+
 const toLocalNoon = (date: Date) =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0)
 
@@ -271,6 +282,9 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const [attendeePhoneCountry, setAttendeePhoneCountry] = useState('UY')
   const [attendeePhonePrefix, setAttendeePhonePrefix] = useState('+598')
   const [attendeePhone, setAttendeePhone] = useState('')
+  const [askForName, setAskForName] = useState(false)
+  const [askForEmail, setAskForEmail] = useState(false)
+  const [askForPhone, setAskForPhone] = useState(false)
   const [timeZone] = useState(detectedTimeZone)
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('slots')
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
@@ -291,14 +305,25 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
     [selectedDate]
   )
   const slotsForSelectedDate = slotsByDate[selectedDateKey] ?? []
+  const missingName = !attendeeName.trim()
+  const missingEmail = !attendeeEmail.trim()
+  const missingPhone = !attendeePhone.trim()
   const displayDates = useMemo(() => {
     const todayKey = formatLocalDateKey(new Date())
-    return businessDays
+    const eligibleDates = businessDays
       .filter((date) => {
         const key = formatLocalDateKey(date)
         return key !== todayKey || Boolean(slotsByDate[key])
       })
-      .slice(0, BUSINESS_DAYS_VISIBLE)
+    const firstFiveDates = eligibleDates.slice(0, BUSINESS_DAYS_VISIBLE)
+    const sixthDate = eligibleDates[BUSINESS_DAYS_VISIBLE]
+    // Conserva cinco fechas como mínimo y suma la siguiente si también tiene
+    // horarios, de modo que la disponibilidad extendida quede a la vista.
+    if (sixthDate && slotsByDate[formatLocalDateKey(sixthDate)]) {
+      return eligibleDates.slice(0, BUSINESS_DAYS_VISIBLE + 1)
+    }
+
+    return firstFiveDates
   }, [businessDays, slotsByDate])
   const hasAnyAvailability = displayDates.some((date) => Boolean(slotsByDate[formatLocalDateKey(date)]))
   const showInitialLoading = !hasLoadedSlots && (!hasFetchedSlots || isLoadingSlots)
@@ -440,7 +465,10 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       })
       setHasLoadedSlots(true)
       setIsLoadingSlots(false)
-      if (Object.keys(normalized).length === 0 && businessDaysFetched < MAX_BUSINESS_DAYS_FETCHED) {
+      const visibleDaysHaveAvailability = businessDays
+        .slice(0, BUSINESS_DAYS_VISIBLE)
+        .some((date) => Boolean(normalized[formatLocalDateKey(date)]))
+      if (!visibleDaysHaveAvailability && businessDaysFetched < MAX_BUSINESS_DAYS_FETCHED) {
         setBusinessDaysFetched((current) => Math.min(current + 1, MAX_BUSINESS_DAYS_FETCHED))
       }
     }
@@ -481,7 +509,11 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
           if (!lead) return
           if (lead.fullName) setAttendeeName(lead.fullName)
           if (lead.email) setAttendeeEmail(lead.email)
-          if (lead.phone) setAttendeePhone(lead.phone)
+          if (lead.phone) {
+            const parsedPhone = splitPhonePrefix(lead.phone)
+            setAttendeePhonePrefix(parsedPhone.prefix)
+            setAttendeePhone(parsedPhone.number)
+          }
           if (lead.precallData) setUrlPrecallData(lead.precallData as PrecallData)
         })
         .catch((err) => {
@@ -496,7 +528,14 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
         const precallData = JSON.parse(stored) as PrecallData
         if (precallData.nombre) setAttendeeName(precallData.nombre)
         if (precallData.email) setAttendeeEmail(precallData.email)
-        if (precallData.whatsapp) setAttendeePhone(precallData.whatsapp)
+        if (precallData.whatsapp) {
+          const parsedPhone = splitPhonePrefix(precallData.whatsapp)
+          const phoneCountry = COUNTRY_PREFIXES.find((item) => item.iso === precallData.pais)
+          setAttendeePhoneCountry(precallData.pais ?? 'UY')
+          if (phoneCountry) setAttendeePhonePrefix(phoneCountry.code)
+          setAttendeePhonePrefix(parsedPhone.prefix)
+          setAttendeePhone(parsedPhone.number)
+        }
       }
     } catch {
       // Ignore errors
@@ -504,6 +543,9 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   }, [isAlumnoAgenda])
 
   const handleSlotSelect = (slot: string) => {
+    setAskForName(!attendeeName.trim())
+    setAskForEmail(!attendeeEmail.trim())
+    setAskForPhone(!attendeePhone.trim())
     setSelectedSlot(slot)
     setBookingPhase('form')
   }
@@ -521,16 +563,12 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       setError('Seleccioná un horario disponible.')
       return
     }
-    if (!attendeeName.trim() || !attendeeEmail.trim()) {
-      setError('Completá tu nombre y email.')
+    if (missingName || missingEmail || missingPhone) {
+      setError('Completá los datos de contacto que faltan.')
       return
     }
     if (!/\S+@\S+\.\S+/.test(attendeeEmail.trim())) {
       setError('Ingresá un email válido.')
-      return
-    }
-    if (isAlumnoAgenda && !attendeePhone.trim()) {
-      setError('Completá tu WhatsApp.')
       return
     }
 
@@ -568,6 +606,24 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       } catch {
         // Ignore parsing errors
       }
+    }
+
+    precallData = {
+      ...(precallData ?? {
+        entrenaDias: '',
+        compromiso: '',
+        tieneEquipo: '',
+        dispuestoInvertir: '',
+        dispone99Mensuales: '',
+        obstaculoPrincipal: '',
+        porQueAhora: '',
+        edad: '',
+        zonaHoraria: timeZone
+      }),
+      nombre: attendeeName.trim(),
+      email: attendeeEmail.trim(),
+      whatsapp: `${attendeePhonePrefix}${attendeePhone.trim()}`,
+      pais: attendeePhoneCountry
     }
 
     setIsBooking(true)
@@ -771,7 +827,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
                   </div>
                 </div>
 
-                <div className="mt-5 grid grid-cols-5 gap-1.5 sm:gap-2">
+                <div className="mt-5 grid grid-cols-5 gap-1.5 sm:grid-cols-6 sm:gap-2">
                   {showInitialLoading
                     ? Array.from({ length: BUSINESS_DAYS_VISIBLE }).map((_, index) => (
                         <div
@@ -935,6 +991,71 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
                           />
                         </label>
                       </div>
+                    </>
+                  ) : askForName || askForEmail || askForPhone ? (
+                    <>
+                      <p className="m-0 text-[13px] text-[#69686B]">
+                        Completá los datos que faltan para confirmar tu llamada.
+                      </p>
+                      {askForName && (
+                        <label className="flex flex-col gap-1.5">
+                          <span className="text-[13px] font-medium text-[#1A1820]">Nombre completo</span>
+                          <input
+                            className={inputClass}
+                            value={attendeeName}
+                            onChange={(event) => setAttendeeName(event.target.value)}
+                            placeholder="Tu nombre"
+                            autoComplete="name"
+                          />
+                        </label>
+                      )}
+                      {askForEmail && (
+                        <label className="flex flex-col gap-1.5">
+                          <span className="text-[13px] font-medium text-[#1A1820]">Email</span>
+                          <input
+                            className={inputClass}
+                            type="email"
+                            value={attendeeEmail}
+                            onChange={(event) => setAttendeeEmail(event.target.value)}
+                            placeholder="tu@email.com"
+                            autoComplete="email"
+                          />
+                        </label>
+                      )}
+                      {askForPhone && (
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[13px] font-medium text-[#1A1820]" htmlFor="agenda-phone">
+                            WhatsApp
+                          </label>
+                          <div className="grid min-w-0 grid-cols-[minmax(92px,0.42fr)_minmax(0,1fr)] gap-2">
+                            <select
+                              aria-label="País"
+                              className={`${inputClass} w-full min-w-0 px-2`}
+                              value={attendeePhoneCountry}
+                              onChange={(event) => {
+                                const iso = event.target.value
+                                const country = COUNTRY_PREFIXES.find((item) => item.iso === iso)
+                                setAttendeePhoneCountry(iso)
+                                if (country) setAttendeePhonePrefix(country.code)
+                              }}
+                            >
+                              {COUNTRY_PREFIXES.map((item) => (
+                                <option key={item.iso} value={item.iso}>{item.flag} {item.code}</option>
+                              ))}
+                            </select>
+                            <input
+                              id="agenda-phone"
+                              className={`${inputClass} w-full min-w-0`}
+                              type="tel"
+                              inputMode="tel"
+                              autoComplete="tel-national"
+                              value={attendeePhone}
+                              onChange={(event) => setAttendeePhone(event.target.value)}
+                              placeholder="99 000 000"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div className="rounded-[12px] border border-[#E8E4EE] bg-[#F4F2F7] p-4">
