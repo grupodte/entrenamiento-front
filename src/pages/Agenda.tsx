@@ -315,15 +315,16 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
         const key = formatLocalDateKey(date)
         return key !== todayKey || Boolean(slotsByDate[key])
       })
-    const firstFiveDates = eligibleDates.slice(0, BUSINESS_DAYS_VISIBLE)
-    const sixthDate = eligibleDates[BUSINESS_DAYS_VISIBLE]
-    // Conserva cinco fechas como mínimo y suma la siguiente si también tiene
-    // horarios, de modo que la disponibilidad extendida quede a la vista.
-    if (sixthDate && slotsByDate[formatLocalDateKey(sixthDate)]) {
-      return eligibleDates.slice(0, BUSINESS_DAYS_VISIBLE + 1)
-    }
+    const baseDates = eligibleDates.slice(0, BUSINESS_DAYS_VISIBLE)
+    const baseHasAvailability = baseDates.some((date) => Boolean(slotsByDate[formatLocalDateKey(date)]))
+    if (baseHasAvailability) return baseDates
 
-    return firstFiveDates
+    // Ninguno de los días visibles tiene cupos: extendemos hasta el primer día
+    // (ya cargado) que sí tenga horarios, sin importar cuántos días haya que saltar.
+    const firstAvailableIndex = eligibleDates.findIndex((date) => Boolean(slotsByDate[formatLocalDateKey(date)]))
+    if (firstAvailableIndex === -1) return baseDates
+
+    return eligibleDates.slice(0, firstAvailableIndex + 1)
   }, [businessDays, slotsByDate])
   const hasAnyAvailability = displayDates.some((date) => Boolean(slotsByDate[formatLocalDateKey(date)]))
   const showInitialLoading = !hasLoadedSlots && (!hasFetchedSlots || isLoadingSlots)
