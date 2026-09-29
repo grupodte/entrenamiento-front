@@ -466,10 +466,12 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       })
       setHasLoadedSlots(true)
       setIsLoadingSlots(false)
-      const visibleDaysHaveAvailability = businessDays
-        .slice(0, BUSINESS_DAYS_VISIBLE)
+      // Mientras ninguno de los días ya consultados tenga cupos, seguimos
+      // sumando un día hábil más (uno por vez) hasta encontrar el próximo
+      // disponible o llegar al máximo.
+      const fetchedDaysHaveAvailability = businessDays
         .some((date) => Boolean(normalized[formatLocalDateKey(date)]))
-      if (!visibleDaysHaveAvailability && businessDaysFetched < MAX_BUSINESS_DAYS_FETCHED) {
+      if (!fetchedDaysHaveAvailability && businessDaysFetched < MAX_BUSINESS_DAYS_FETCHED) {
         setBusinessDaysFetched((current) => Math.min(current + 1, MAX_BUSINESS_DAYS_FETCHED))
       }
     }
