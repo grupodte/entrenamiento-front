@@ -22,8 +22,14 @@ type AgendaMode = 'precall' | 'alumno'
 type TimeFormat = '24h' | '12h'
 
 const BUSINESS_DAYS_VISIBLE = 5
-// Cada fecha adicional se consulta solo cuando el rango actual no tiene cupos.
-const BUSINESS_DAYS_FETCHED = BUSINESS_DAYS_VISIBLE + 1
+// Ventana inicial un poco más amplia que los 5 días a mostrar, para no
+// depender de la extensión de a uno en el caso común (ej. algún día hábil
+// sin agenda, como los miércoles). Si igual no hay ningún cupo en esta
+// ventana, se suma un día hábil más por vez (ver fetchSlots).
+const BUSINESS_DAYS_FETCHED = BUSINESS_DAYS_VISIBLE + 3
+// Fallback mientras no se resolvió el horario real del event type (ver
+// fetch de "working_days"): asume de lunes a viernes.
+const DEFAULT_ACTIVE_WEEKDAYS = new Set([1, 2, 3, 4, 5])
 const MAX_BUSINESS_DAYS_FETCHED = 30
 const AVAILABILITY_CACHE_KEY = 'ddfit_agenda_availability_v2'
 const AVAILABILITY_CACHE_TTL_MS = 1000 * 60 * 10
@@ -275,6 +281,10 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   )
   const [selectedDate, setSelectedDate] = useState<Date>(toLocalNoon(new Date()))
   const [slotsByDate, setSlotsByDate] = useState<Record<string, string[]>>({})
+  // Días de la semana (0=domingo..6=sábado) que realmente tienen agenda
+  // configurada en Cal.com, según el horario (schedule) del event type. null
+  // mientras no se resolvió: se asume de lunes a viernes por defecto.
+  const [activeWeekdays, setActiveWeekdays] = useState<Set<number> | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<string>('')
   const [timeFormat, setTimeFormat] = useState<TimeFormat>('24h')
   const [attendeeName, setAttendeeName] = useState('')
@@ -308,24 +318,27 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const missingName = !attendeeName.trim()
   const missingEmail = !attendeeEmail.trim()
   const missingPhone = !attendeePhone.trim()
+  // Cal.com no informa en /v2/slots qué días de la semana no tienen agenda
+  // (los omite, igual que a los días que sí tienen agenda pero están
+  // completos). Por eso el día de la semana habilitado sale del horario
+  // real del event type (ver fetch de "working_days"); mientras no llega,
+  // asumimos de lunes a viernes para no ocultar todo de entrada.
+  const effectiveActiveWeekdays = activeWeekdays ?? DEFAULT_ACTIVE_WEEKDAYS
+
   const displayDates = useMemo(() => {
-    const todayKey = formatLocalDateKey(new Date())
-    const eligibleDates = businessDays
-      .filter((date) => {
-        const key = formatLocalDateKey(date)
-        return key !== todayKey || Boolean(slotsByDate[key])
-      })
-    const baseDates = eligibleDates.slice(0, BUSINESS_DAYS_VISIBLE)
-    const baseHasAvailability = baseDates.some((date) => Boolean(slotsByDate[formatLocalDateKey(date)]))
-    if (baseHasAvailability) return baseDates
-
-    // Ninguno de los días visibles tiene cupos: extendemos hasta el primer día
-    // (ya cargado) que sí tenga horarios, sin importar cuántos días haya que saltar.
-    const firstAvailableIndex = eligibleDates.findIndex((date) => Boolean(slotsByDate[formatLocalDateKey(date)]))
-    if (firstAvailableIndex === -1) return baseDates
-
-    return eligibleDates.slice(0, firstAvailableIndex + 1)
-  }, [businessDays, slotsByDate])
+    const result: Date[] = []
+    let availableCount = 0
+    for (const date of businessDays) {
+      if (!effectiveActiveWeekdays.has(date.getDay())) continue
+      const key = formatLocalDateKey(date)
+      result.push(date)
+      if (slotsByDate[key]) {
+        availableCount += 1
+        if (availableCount >= BUSINESS_DAYS_VISIBLE) break
+      }
+    }
+    return availableCount > 0 ? result : result.slice(0, BUSINESS_DAYS_VISIBLE)
+  }, [businessDays, slotsByDate, effectiveActiveWeekdays])
   const hasAnyAvailability = displayDates.some((date) => Boolean(slotsByDate[formatLocalDateKey(date)]))
   const showInitialLoading = !hasLoadedSlots && (!hasFetchedSlots || isLoadingSlots)
 
@@ -371,6 +384,32 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       isMounted = false
     }
   }, [envEventTypeId])
+
+  // Resuelve, una sola vez por event type, qué días de la semana tienen
+  // agenda configurada en Cal.com (independiente de si hay cupos libres o
+  // no ese día puntual). Si falla, se mantiene el fallback de lunes a
+  // viernes y el resto del flujo sigue funcionando igual.
+  useEffect(() => {
+    if (!selectedEventTypeId) return
+    let isMounted = true
+
+    supabase.functions
+      .invoke('cal', {
+        body: { action: 'working_days', eventTypeId: Number(selectedEventTypeId) }
+      })
+      .then(({ data, error: fetchError }) => {
+        if (!isMounted || fetchError) return
+        const weekdays = (data?.data?.activeWeekdays ?? []) as number[]
+        if (weekdays.length > 0) setActiveWeekdays(new Set(weekdays))
+      })
+      .catch((err) => {
+        console.error('[Agenda] working_days error:', err)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [selectedEventTypeId])
 
   useEffect(() => {
     if (!selectedEventTypeId) return
@@ -466,9 +505,9 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       })
       setHasLoadedSlots(true)
       setIsLoadingSlots(false)
-      // Mientras ninguno de los días ya consultados tenga cupos, seguimos
-      // sumando un día hábil más (uno por vez) hasta encontrar el próximo
-      // disponible o llegar al máximo.
+      // Mostramos hasta 5 días con turnos, pero no forzamos a encontrar 5:
+      // si el rango consultado no tiene NINGÚN día con cupos, recién ahí
+      // sumamos un día hábil más (de a uno) y volvemos a intentar.
       const fetchedDaysHaveAvailability = businessDays
         .some((date) => Boolean(normalized[formatLocalDateKey(date)]))
       if (!fetchedDaysHaveAvailability && businessDaysFetched < MAX_BUSINESS_DAYS_FETCHED) {

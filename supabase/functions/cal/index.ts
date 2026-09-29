@@ -21,6 +21,9 @@ const CAL_API_BASE_URL = Deno.env.get("CAL_API_BASE_URL") ?? "https://api.cal.co
 const CAL_API_VERSION_BOOKINGS = Deno.env.get("CAL_API_VERSION_BOOKINGS") ?? "2024-08-13";
 const CAL_API_VERSION_SLOTS = Deno.env.get("CAL_API_VERSION_SLOTS") ?? "2024-09-04";
 const CAL_API_VERSION_EVENT_TYPES = Deno.env.get("CAL_API_VERSION_EVENT_TYPES") ?? "2024-06-14";
+const CAL_API_VERSION_EVENT_TYPE_DETAIL =
+  Deno.env.get("CAL_API_VERSION_EVENT_TYPE_DETAIL") ?? "2026-06-12";
+const CAL_API_VERSION_SCHEDULES = Deno.env.get("CAL_API_VERSION_SCHEDULES") ?? "2024-06-11";
 const CAL_WEBHOOK_SECRET = Deno.env.get("CAL_WEBHOOK_SECRET") ?? "";
 const META_PIXEL_ID = Deno.env.get("META_PIXEL_ID") ?? "";
 const META_CAPI_ACCESS_TOKEN = Deno.env.get("META_CAPI_ACCESS_TOKEN") ?? "";
@@ -1064,6 +1067,68 @@ serve(async (req) => {
         });
 
         return jsonResponse({ data });
+      }
+
+      case "working_days": {
+        // Cal.com no informa en /v2/slots qué días de la semana no tienen
+        // agenda (simplemente los omite, igual que a los días que sí tienen
+        // agenda pero están completos). Para poder distinguirlos en el
+        // frontend, consultamos el horario (schedule) real del event type.
+        const query = {
+          ...(input as Record<string, string | number | boolean | undefined | null>),
+        } as Record<string, string | number | boolean | undefined | null>;
+        const requestedEventTypeId = parseEventTypeId(query.eventTypeId);
+        const effectiveEventTypeId = CAL_ENFORCED_EVENT_TYPE_ID ?? requestedEventTypeId;
+
+        let scheduleId: number | null = null;
+        if (effectiveEventTypeId) {
+          try {
+            const eventTypeData = await calFetch(`/v2/event-types/${effectiveEventTypeId}`, {
+              version: CAL_API_VERSION_EVENT_TYPE_DETAIL,
+            });
+            const eventType = (eventTypeData as { data?: { scheduleId?: number | null } })?.data;
+            scheduleId = eventType?.scheduleId ?? null;
+          } catch (err) {
+            console.error("[cal] working_days: failed to read event type schedule", err);
+          }
+        }
+
+        const schedulesData = await calFetch("/v2/schedules", {
+          version: CAL_API_VERSION_SCHEDULES,
+        });
+        const schedules = ((schedulesData as { data?: unknown })?.data ?? []) as Array<{
+          id?: number;
+          isDefault?: boolean;
+          availability?: Array<{ days?: string[] }>;
+        }>;
+
+        const schedule =
+          (scheduleId ? schedules.find((item) => item.id === scheduleId) : null) ??
+          schedules.find((item) => item.isDefault) ??
+          schedules[0] ??
+          null;
+
+        const dayNameToIndex: Record<string, number> = {
+          Sunday: 0,
+          Monday: 1,
+          Tuesday: 2,
+          Wednesday: 3,
+          Thursday: 4,
+          Friday: 5,
+          Saturday: 6,
+        };
+
+        const activeWeekdays = new Set<number>();
+        for (const block of schedule?.availability ?? []) {
+          for (const day of block.days ?? []) {
+            const index = dayNameToIndex[day];
+            if (index !== undefined) activeWeekdays.add(index);
+          }
+        }
+
+        return jsonResponse({
+          data: { activeWeekdays: Array.from(activeWeekdays).sort() },
+        });
       }
 
       case "upsert_lead": {
