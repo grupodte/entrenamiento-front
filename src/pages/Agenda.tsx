@@ -35,6 +35,11 @@ const AVAILABILITY_CACHE_KEY = 'ddfit_agenda_availability_v2'
 const AVAILABILITY_CACHE_TTL_MS = 1000 * 60 * 10
 const SLOT_SKELETON_ITEMS = 8
 const DATE_LOCALE = 'es'
+// La agenda del entrenador es en hora de Uruguay y así se muestra a todos,
+// estén donde estén: es la misma hora que ven el admin y los mensajes de
+// WhatsApp. La zona del invitado se guarda aparte (solo para no escribirle de
+// madrugada).
+const AGENDA_TIME_ZONE = 'America/Montevideo'
 
 type AvailabilityCachePayload = {
   createdAt: number
@@ -121,7 +126,8 @@ const formatSlotTime = (value: string, timeFormat: TimeFormat = '24h') => {
   return date.toLocaleTimeString(DATE_LOCALE, {
     hour: timeFormat === '12h' ? 'numeric' : '2-digit',
     minute: '2-digit',
-    hour12: timeFormat === '12h'
+    hour12: timeFormat === '12h',
+    timeZone: AGENDA_TIME_ZONE
   })
 }
 
@@ -131,7 +137,12 @@ const formatLongDate = (date: Date) =>
 const formatSlotDate = (value: string) => {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return formatLongDate(date)
+  return capitalize(date.toLocaleDateString(DATE_LOCALE, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    timeZone: AGENDA_TIME_ZONE
+  }))
 }
 
 const formatWeekdayShort = (date: Date) =>
@@ -184,14 +195,28 @@ const splitPhonePrefix = (value: string) => {
     : { prefix: '+598', number: trimmed.replace(/^\+/, '') }
 }
 
-const toLocalNoon = (date: Date) =>
-  new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0)
+// Fecha de Uruguay ("2026-10-01") de un instante, para agrupar los turnos por
+// el día de la agenda y no por el del navegador del invitado.
+const formatAgendaDateKey = (value: Date) =>
+  new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: AGENDA_TIME_ZONE
+  }).format(value)
+
+// "Hoy" en Uruguay, como fecha local a mediodía: los días del calendario son
+// días de Uruguay aunque el navegador esté en otra zona.
+const agendaToday = () => {
+  const [year, month, day] = formatAgendaDateKey(new Date()).split('-').map(Number)
+  return new Date(year, month - 1, day, 12, 0, 0, 0)
+}
 
 const isWeekend = (date: Date) => date.getDay() === 0 || date.getDay() === 6
 
 const buildBusinessDays = (count: number) => {
   const days: Date[] = []
-  const cursor = toLocalNoon(new Date())
+  const cursor = agendaToday()
   while (days.length < count) {
     if (!isWeekend(cursor)) days.push(new Date(cursor))
     cursor.setDate(cursor.getDate() + 1)
@@ -201,6 +226,9 @@ const buildBusinessDays = (count: number) => {
 
 const buildAvailabilityRange = (days: Date[]) => {
   const end = new Date(days[days.length - 1])
+  // Un día de margen: el fin del último día de Uruguay puede caer al día
+  // siguiente en la zona del navegador.
+  end.setDate(end.getDate() + 1)
   end.setHours(23, 59, 59, 999)
   return {
     start: new Date().toISOString(),
@@ -279,7 +307,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const [selectedEventTypeId, setSelectedEventTypeId] = useState<string>(
     envEventTypeId ? String(envEventTypeId) : ''
   )
-  const [selectedDate, setSelectedDate] = useState<Date>(toLocalNoon(new Date()))
+  const [selectedDate, setSelectedDate] = useState<Date>(agendaToday)
   const [slotsByDate, setSlotsByDate] = useState<Record<string, string[]>>({})
   // Días de la semana (0=domingo..6=sábado) que realmente tienen agenda
   // configurada en Cal.com, según el horario (schedule) del event type. null
@@ -295,7 +323,10 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const [askForName, setAskForName] = useState(false)
   const [askForEmail, setAskForEmail] = useState(false)
   const [askForPhone, setAskForPhone] = useState(false)
-  const [timeZone] = useState(detectedTimeZone)
+  // `timeZone` es la zona en la que se piden y muestran los turnos (Uruguay);
+  // `guestTimeZone`, la del invitado, que viaja con la reserva.
+  const timeZone = AGENDA_TIME_ZONE
+  const [guestTimeZone] = useState(detectedTimeZone)
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('slots')
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
   const [hasFetchedSlots, setHasFetchedSlots] = useState(false)
@@ -477,7 +508,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
         extractSlots(rawSlots).forEach((slot) => {
           const slotDate = new Date(slot)
           if (Number.isNaN(slotDate.getTime())) return
-          const key = formatLocalDateKey(slotDate)
+          const key = formatAgendaDateKey(slotDate)
           if (!normalized[key]) normalized[key] = []
           normalized[key].push(slot)
         })
@@ -630,7 +661,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
         email: attendeeEmail.trim(),
         whatsapp: `${attendeePhonePrefix}${attendeePhone.trim()}`,
         edad: '',
-        zonaHoraria: timeZone,
+        zonaHoraria: guestTimeZone,
         pais: attendeePhoneCountry
       }
     } else if (urlLeadId) {
@@ -660,7 +691,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
         obstaculoPrincipal: '',
         porQueAhora: '',
         edad: '',
-        zonaHoraria: timeZone
+        zonaHoraria: guestTimeZone
       }),
       nombre: attendeeName.trim(),
       email: attendeeEmail.trim(),
@@ -679,7 +710,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
         attendee: {
           name: attendeeName.trim(),
           email: attendeeEmail.trim(),
-          timeZone
+          timeZone: guestTimeZone
         },
         leadId: precallLeadId,
         precallData,
@@ -800,7 +831,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
               </li>
               <li className="flex items-center gap-2.5">
                 <GlobeIcon className="h-[18px] w-[18px] shrink-0 text-[#9D9B9F]" />
-                <span className="break-all">{timeZone.replace(/_/g, ' ')}</span>
+                <span>Horarios en hora de Uruguay</span>
               </li>
             </ul>
           </aside>
@@ -817,7 +848,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
                 </p>
                 {booking?.start && (
                   <p className="m-0 text-[14px] font-semibold text-[#1A1820]">
-                    {formatSlotDate(booking.start)} · {formatSlotTime(booking.start, timeFormat)}
+                    {formatSlotDate(booking.start)} · {formatSlotTime(booking.start, timeFormat)} (hora de Uruguay)
                   </p>
                 )}
                 <div className="mt-2 flex w-full max-w-[320px] flex-col gap-2 sm:flex-row">
@@ -881,7 +912,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
                         const key = formatLocalDateKey(date)
                         const isAvailable = Boolean(slotsByDate[key])
                         const isSelected = isAvailable && key === selectedDateKey
-                        const isToday = key === formatLocalDateKey(new Date())
+                        const isToday = key === formatAgendaDateKey(new Date())
                         return (
                           <button
                             key={key}
