@@ -27,9 +27,6 @@ const BUSINESS_DAYS_VISIBLE = 5
 // sin agenda, como los miércoles). Si igual no hay ningún cupo en esta
 // ventana, se suma un día hábil más por vez (ver fetchSlots).
 const BUSINESS_DAYS_FETCHED = BUSINESS_DAYS_VISIBLE + 3
-// Fallback mientras no se resolvió el horario real del event type (ver
-// fetch de "working_days"): asume de lunes a viernes.
-const DEFAULT_ACTIVE_WEEKDAYS = new Set([1, 2, 3, 4, 5])
 const MAX_BUSINESS_DAYS_FETCHED = 30
 const AVAILABILITY_CACHE_KEY = 'ddfit_agenda_availability_v2'
 const AVAILABILITY_CACHE_TTL_MS = 1000 * 60 * 10
@@ -309,10 +306,6 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   )
   const [selectedDate, setSelectedDate] = useState<Date>(agendaToday)
   const [slotsByDate, setSlotsByDate] = useState<Record<string, string[]>>({})
-  // Días de la semana (0=domingo..6=sábado) que realmente tienen agenda
-  // configurada en Cal.com, según el horario (schedule) del event type. null
-  // mientras no se resolvió: se asume de lunes a viernes por defecto.
-  const [activeWeekdays, setActiveWeekdays] = useState<Set<number> | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<string>('')
   const [timeFormat, setTimeFormat] = useState<TimeFormat>('24h')
   const [attendeeName, setAttendeeName] = useState('')
@@ -349,27 +342,11 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const missingName = !attendeeName.trim()
   const missingEmail = !attendeeEmail.trim()
   const missingPhone = !attendeePhone.trim()
-  // Cal.com no informa en /v2/slots qué días de la semana no tienen agenda
-  // (los omite, igual que a los días que sí tienen agenda pero están
-  // completos). Por eso el día de la semana habilitado sale del horario
-  // real del event type (ver fetch de "working_days"); mientras no llega,
-  // asumimos de lunes a viernes para no ocultar todo de entrada.
-  const effectiveActiveWeekdays = activeWeekdays ?? DEFAULT_ACTIVE_WEEKDAYS
-
   const displayDates = useMemo(() => {
-    const result: Date[] = []
-    let availableCount = 0
-    for (const date of businessDays) {
-      if (!effectiveActiveWeekdays.has(date.getDay())) continue
-      const key = formatLocalDateKey(date)
-      result.push(date)
-      if (slotsByDate[key]) {
-        availableCount += 1
-        if (availableCount >= BUSINESS_DAYS_VISIBLE) break
-      }
-    }
-    return availableCount > 0 ? result : result.slice(0, BUSINESS_DAYS_VISIBLE)
-  }, [businessDays, slotsByDate, effectiveActiveWeekdays])
+    return businessDays
+      .filter((date) => Boolean(slotsByDate[formatLocalDateKey(date)]))
+      .slice(0, BUSINESS_DAYS_VISIBLE)
+  }, [businessDays, slotsByDate])
   const hasAnyAvailability = displayDates.some((date) => Boolean(slotsByDate[formatLocalDateKey(date)]))
   const showInitialLoading = !hasLoadedSlots && (!hasFetchedSlots || isLoadingSlots)
 
@@ -415,32 +392,6 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       isMounted = false
     }
   }, [envEventTypeId])
-
-  // Resuelve, una sola vez por event type, qué días de la semana tienen
-  // agenda configurada en Cal.com (independiente de si hay cupos libres o
-  // no ese día puntual). Si falla, se mantiene el fallback de lunes a
-  // viernes y el resto del flujo sigue funcionando igual.
-  useEffect(() => {
-    if (!selectedEventTypeId) return
-    let isMounted = true
-
-    supabase.functions
-      .invoke('cal', {
-        body: { action: 'working_days', eventTypeId: Number(selectedEventTypeId) }
-      })
-      .then(({ data, error: fetchError }) => {
-        if (!isMounted || fetchError) return
-        const weekdays = (data?.data?.activeWeekdays ?? []) as number[]
-        if (weekdays.length > 0) setActiveWeekdays(new Set(weekdays))
-      })
-      .catch((err) => {
-        console.error('[Agenda] working_days error:', err)
-      })
-
-    return () => {
-      isMounted = false
-    }
-  }, [selectedEventTypeId])
 
   useEffect(() => {
     if (!selectedEventTypeId) return
@@ -730,7 +681,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
         console.error('[Agenda] Cal booking error:', errBody ?? bookingError)
 
         if (errBody?.error === 'ACTIVE_BOOKING_EXISTS') {
-          errorMessage = 'Ya existe una cita activa para este contacto. Si necesitás cambiarla, reprogramá o cancelá la anterior.'
+          errorMessage = 'Ya tenés una reserva activa con este email. Para cambiar el horario, abrí el correo de confirmación de Cal.com y usá el enlace para reprogramar.'
         } else if (
           errBody?.error === 'LEAD_NOT_FOUND' ||
           errBody?.error === 'PRECALL_EMAIL_MISMATCH' ||

@@ -407,6 +407,7 @@ type AppointmentRow = {
   end_at: string | null;
   cal_booking_id: string | null;
   created_at: string | null;
+  payload: unknown;
 };
 
 type LeadUpsertInput = {
@@ -743,6 +744,20 @@ function normalizeStatus(value: unknown, event?: string) {
   return null;
 }
 
+function appointmentEventTypeId(payload: unknown) {
+  const root = asRecord(payload);
+  const data = asRecord(root?.data);
+  const webhookPayload = asRecord(root?.payload);
+  const candidates = [root, data, asRecord(data?.data), webhookPayload];
+  for (const candidate of candidates) {
+    const directId = parseEventTypeId(candidate?.eventTypeId);
+    if (directId) return directId;
+    const nestedId = parseEventTypeId(asRecord(candidate?.eventType)?.id);
+    if (nestedId) return nestedId;
+  }
+  return null;
+}
+
 function toMillis(value: unknown) {
   if (typeof value !== "string" || !value) return null;
   const millis = new Date(value).getTime();
@@ -776,11 +791,12 @@ async function listFutureActiveAppointments(
     leadId?: string | null;
     email?: string | null;
     normalizedPhone?: string | null;
+    eventTypeId?: number | null;
   },
 ) {
   const now = new Date().toISOString();
   const selectFields =
-    "id, lead_id, guest_email, guest_phone, guest_phone_normalized, status, start_at, end_at, cal_booking_id, created_at";
+    "id, lead_id, guest_email, guest_phone, guest_phone_normalized, status, start_at, end_at, cal_booking_id, created_at, payload";
 
   let query = adminClient
     .from("appointments")
@@ -788,12 +804,12 @@ async function listFutureActiveAppointments(
     .gte("start_at", now)
     .in("status", [...ACTIVE_APPOINTMENT_STATUSES])
     .order("start_at", { ascending: true })
-    .limit(5);
+    .limit(25);
 
   if (input.leadId) {
     query = query.eq("lead_id", input.leadId);
   } else if (input.email) {
-    query = query.ilike("guest_email", input.email);
+    query = query.eq("guest_email", input.email.toLowerCase());
   } else if (input.normalizedPhone) {
     query = query.eq("guest_phone_normalized", input.normalizedPhone);
   } else {
@@ -813,6 +829,7 @@ async function listFutureActiveAppointments(
   const seen = new Set<string>();
 
   return rows.filter((row) => {
+    if (input.eventTypeId && appointmentEventTypeId(row.payload) !== input.eventTypeId) return false;
     const key = row.cal_booking_id ?? row.id;
     if (seen.has(key)) return false;
     seen.add(key);
@@ -899,6 +916,12 @@ function findMatchingBooking(
     const foundEmail = bookingEmail(booking);
     return foundEmail === normalizedEmail;
   }) ?? null;
+}
+
+function isBookingLimitError(payload: unknown) {
+  const message = JSON.stringify(payload ?? "").toLowerCase();
+  return /(limit|maximum|max|exceed|only one|already have)/.test(message)
+    && /(booking|reservation|appointment|event)/.test(message);
 }
 
 async function verifyWebhookSignature(rawBody: string, signature: string | null) {
@@ -1247,7 +1270,6 @@ serve(async (req) => {
           });
         }
 
-
         // If precall data has a phone, include it in the Cal.com attendee object.
         // Cal.com event types configured to require phone will reject bookings without it.
         // Usa el pais real seleccionado por el usuario (guestCountry) en vez de
@@ -1266,6 +1288,14 @@ serve(async (req) => {
           return errorResponse("Missing eventTypeId", 400);
         }
         bookingPayload.eventTypeId = effectiveEventTypeId;
+
+        const existingAppointments = await listFutureActiveAppointments(adminClient, {
+          email: normalizedRequestedEmail,
+          eventTypeId: effectiveEventTypeId,
+        });
+        if (existingAppointments.length > 0) {
+          return errorResponse("ACTIVE_BOOKING_EXISTS", 409);
+        }
 
         let booking: unknown;
         const warnings: string[] = [];
@@ -1297,6 +1327,9 @@ serve(async (req) => {
           }
 
           if (!booking) {
+            if (isBookingLimitError(err.payload)) {
+              return errorResponse("ACTIVE_BOOKING_EXISTS", 409);
+            }
             return errorResponse("CAL_CREATE_BOOKING_FAILED", 502, err.payload ?? err.message);
           }
         }
