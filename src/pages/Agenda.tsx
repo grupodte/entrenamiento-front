@@ -28,6 +28,7 @@ const BUSINESS_DAYS_VISIBLE = 5
 // fetchSlots amplía la ventana de búsqueda por bloques.
 const BUSINESS_DAYS_FETCHED = BUSINESS_DAYS_VISIBLE + 3
 const MAX_BUSINESS_DAYS_FETCHED = 30
+const DEFAULT_ACTIVE_WEEKDAYS = new Set([1, 2, 3, 4, 5])
 const AVAILABILITY_CACHE_KEY = 'ddfit_agenda_availability_v2'
 const AVAILABILITY_CACHE_TTL_MS = 1000 * 60 * 10
 const SLOT_SKELETON_ITEMS = 8
@@ -306,6 +307,9 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   )
   const [selectedDate, setSelectedDate] = useState<Date>(agendaToday)
   const [slotsByDate, setSlotsByDate] = useState<Record<string, string[]>>({})
+  // Días semanales con horario configurado en Cal.com. Un día puede aparecer
+  // aunque esté completo; los turnos reales determinan si se puede seleccionar.
+  const [activeWeekdays, setActiveWeekdays] = useState<Set<number> | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<string>('')
   const [timeFormat, setTimeFormat] = useState<TimeFormat>('24h')
   const [attendeeName, setAttendeeName] = useState('')
@@ -342,13 +346,23 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const missingName = !attendeeName.trim()
   const missingEmail = !attendeeEmail.trim()
   const missingPhone = !attendeePhone.trim()
+  const effectiveActiveWeekdays = activeWeekdays ?? DEFAULT_ACTIVE_WEEKDAYS
+
   const displayDates = useMemo(() => {
-    return businessDays
-      .filter((date) => Boolean(slotsByDate[formatLocalDateKey(date)]))
-      .slice(0, BUSINESS_DAYS_VISIBLE)
-  }, [businessDays, slotsByDate])
+    const result: Date[] = []
+    let availableCount = 0
+    for (const date of businessDays) {
+      if (!effectiveActiveWeekdays.has(date.getDay())) continue
+      result.push(date)
+      if (slotsByDate[formatLocalDateKey(date)]) {
+        availableCount += 1
+        if (availableCount >= BUSINESS_DAYS_VISIBLE) break
+      }
+    }
+    return result
+  }, [businessDays, slotsByDate, effectiveActiveWeekdays])
   const hasAnyAvailability = displayDates.some((date) => Boolean(slotsByDate[formatLocalDateKey(date)]))
-  const showInitialLoading = !hasLoadedSlots && (!hasFetchedSlots || isLoadingSlots)
+  const showInitialLoading = activeWeekdays === null || (!hasLoadedSlots && (!hasFetchedSlots || isLoadingSlots))
 
   useEffect(() => {
     trackNavigation('pre_call', 'agenda', { session_id: sessionId })
@@ -392,6 +406,35 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       isMounted = false
     }
   }, [envEventTypeId])
+
+  // Consulta qué días de la semana tienen horario configurado en el event type.
+  // /v2/slots omite tanto los días sin agenda como los que están completos.
+  useEffect(() => {
+    if (!selectedEventTypeId) return
+    let isMounted = true
+
+    supabase.functions
+      .invoke('cal', {
+        body: { action: 'working_days', eventTypeId: Number(selectedEventTypeId) }
+      })
+      .then(({ data, error: fetchError }) => {
+        if (!isMounted) return
+        if (fetchError) {
+          setActiveWeekdays(DEFAULT_ACTIVE_WEEKDAYS)
+          return
+        }
+        const weekdays = (data?.data?.activeWeekdays ?? []) as number[]
+        setActiveWeekdays(new Set(weekdays))
+      })
+      .catch((err) => {
+        console.error('[Agenda] working_days error:', err)
+        if (isMounted) setActiveWeekdays(DEFAULT_ACTIVE_WEEKDAYS)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [selectedEventTypeId])
 
   useEffect(() => {
     if (!selectedEventTypeId) return
