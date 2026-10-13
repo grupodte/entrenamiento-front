@@ -24,8 +24,8 @@ type TimeFormat = '24h' | '12h'
 const BUSINESS_DAYS_VISIBLE = 5
 // Ventana inicial un poco más amplia que los 5 días a mostrar, para no
 // depender de la extensión de a uno en el caso común (ej. algún día hábil
-// sin agenda, como los miércoles). Si igual no hay ningún cupo en esta
-// ventana, se suma un día hábil más por vez (ver fetchSlots).
+// sin agenda, como los miércoles). Si todavía no reúne 5 días con cupos,
+// fetchSlots amplía la ventana de búsqueda por bloques.
 const BUSINESS_DAYS_FETCHED = BUSINESS_DAYS_VISIBLE + 3
 const MAX_BUSINESS_DAYS_FETCHED = 30
 const AVAILABILITY_CACHE_KEY = 'ddfit_agenda_availability_v2'
@@ -487,13 +487,15 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       })
       setHasLoadedSlots(true)
       setIsLoadingSlots(false)
-      // Mostramos hasta 5 días con turnos, pero no forzamos a encontrar 5:
-      // si el rango consultado no tiene NINGÚN día con cupos, recién ahí
-      // sumamos un día hábil más (de a uno) y volvemos a intentar.
-      const fetchedDaysHaveAvailability = businessDays
-        .some((date) => Boolean(normalized[formatLocalDateKey(date)]))
-      if (!fetchedDaysHaveAvailability && businessDaysFetched < MAX_BUSINESS_DAYS_FETCHED) {
-        setBusinessDaysFetched((current) => Math.min(current + 1, MAX_BUSINESS_DAYS_FETCHED))
+      // Seguimos ampliando el rango hasta reunir 5 fechas con cupos, porque
+      // los días que Cal.com omite (sin agenda o completos) no cuentan como
+      // días visibles. Si hay poca disponibilidad, mostramos las que haya
+      // al alcanzar el máximo de búsqueda.
+      const availableDaysFetched = businessDays
+        .filter((date) => Boolean(normalized[formatLocalDateKey(date)]))
+        .length
+      if (availableDaysFetched < BUSINESS_DAYS_VISIBLE && businessDaysFetched < MAX_BUSINESS_DAYS_FETCHED) {
+        setBusinessDaysFetched((current) => Math.min(current + BUSINESS_DAYS_VISIBLE, MAX_BUSINESS_DAYS_FETCHED))
       }
     }
 
@@ -914,7 +916,7 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
                       <p className="m-0 mt-3 text-[14px] font-medium text-[#1A1820]">
                         {hasAnyAvailability
                           ? 'No hay horarios para esta fecha.'
-                          : 'No hay horarios disponibles en los próximos 5 días hábiles.'}
+                          : 'No hay horarios disponibles por ahora.'}
                       </p>
                       <p className="m-0 mt-1 text-[13px] text-[#9D9B9F]">
                         {hasAnyAvailability ? 'Elegí otro día.' : 'Probá de nuevo en unos minutos.'}
