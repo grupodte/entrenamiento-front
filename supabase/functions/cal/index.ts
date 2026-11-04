@@ -1171,8 +1171,14 @@ serve(async (req) => {
           precallData,
         });
 
+        // Reenvíos del mismo contacto conservan el ID para la deduplicación de
+        // Meta. Clientes anteriores siguen usando su UUID hasta actualizarse.
+        const eventId = input?.eventIdStrategy === "lead" && lead?.id
+          ? `precall_lead_${lead.id}`
+          : stringField(input?.eventId);
+
         await sendMetaCapiEvent("Lead", {
-          eventId: stringField(input?.eventId),
+          eventId,
           email: stringField(precallData.email),
           phone: stringField(precallData.whatsapp) ?? stringField(precallData.phone),
           eventSourceUrl: stringField(input?.eventSourceUrl),
@@ -1187,6 +1193,7 @@ serve(async (req) => {
         return jsonResponse({
           data: {
             leadId: lead?.id ?? null,
+            eventId,
           },
         });
       }

@@ -216,6 +216,7 @@ export default function PreCall() {
   const [data, setData] = useState<Data>(INITIAL)
   const [errors, setErrors] = useState<Partial<Record<keyof Data, string>>>({})
   const [submitting, setSubmitting] = useState(false)
+  const submitInFlight = useRef(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const contentRef = useRef<HTMLElement | null>(null)
 
@@ -281,6 +282,7 @@ export default function PreCall() {
   }, [step])
 
   const handleSubmit = async () => {
+    if (submitInFlight.current) return
     setSubmitError(null)
     const e: typeof errors = {}
     if (!data.nombre.trim()) e.nombre = 'Requerido'
@@ -290,6 +292,7 @@ export default function PreCall() {
     if (Object.keys(e).length) { setErrors(e); return }
     setErrors({})
 
+    submitInFlight.current = true
     setSubmitting(true)
     const submitData = {
       ...data,
@@ -307,6 +310,7 @@ export default function PreCall() {
           source: 'precall',
           precallData: submitData,
           eventId: leadEventId,
+          eventIdStrategy: 'lead',
           fbp,
           fbc,
           eventSourceUrl: window.location.href
@@ -318,7 +322,12 @@ export default function PreCall() {
       }
 
       leadId = typeof leadResponse?.data?.leadId === 'string' ? leadResponse.data.leadId : null
-      trackConversion('meta_lead', leadEventId, { value: META_LEAD_VALUE, currency: META_CURRENCY })
+      // El servidor define el ID a partir del contacto guardado. El fallback
+      // permite desplegar el frontend antes que la nueva función cal.
+      const conversionEventId = typeof leadResponse?.data?.eventId === 'string'
+        ? leadResponse.data.eventId
+        : leadEventId
+      trackConversion('meta_lead', conversionEventId, { value: META_LEAD_VALUE, currency: META_CURRENCY })
     } catch (error) {
       // Keep the original booking flow working even if the new lead intake endpoint
       // is not deployed yet or returns a validation error.
@@ -333,6 +342,7 @@ export default function PreCall() {
     } catch {
       setSubmitError('No pudimos guardar tus datos. Intentá de nuevo.')
       setSubmitting(false)
+      submitInFlight.current = false
       return
     }
     await new Promise(r => setTimeout(r, 400))

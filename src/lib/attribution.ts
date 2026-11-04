@@ -1,7 +1,9 @@
-// Captura los parametros de campana de la URL de entrada y los conserva durante
-// toda la sesion, porque el usuario navega dentro de la SPA (/pre-call -> /agenda)
-// y la query string se pierde en el camino.
+// Captura los parametros de campana de la URL de entrada y los conserva 30 dias
+// en localStorage: el usuario navega dentro de la SPA (/pre-call -> /agenda), y
+// muchas veces toca el anuncio, se va y vuelve despues (o el navegador de
+// Instagram se cierra), asi que sessionStorage perdia la atribucion.
 const STORAGE_KEY = 'dmf_attribution'
+const TTL_MS = 30 * 24 * 60 * 60 * 1000
 
 const UTM_KEYS = [
   'utm_source',
@@ -16,12 +18,20 @@ const UTM_KEYS = [
 export type Attribution = Partial<Record<(typeof UTM_KEYS)[number], string>> & {
   landing_page?: string
   referrer?: string
+  captured_at?: string
 }
 
 function read(): Attribution {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as Attribution) : {}
+    const raw = localStorage.getItem(STORAGE_KEY) ?? sessionStorage.getItem(STORAGE_KEY)
+    if (!raw) return {}
+    const data = JSON.parse(raw) as Attribution
+    const age = data.captured_at ? Date.now() - Date.parse(data.captured_at) : 0
+    if (age > TTL_MS) {
+      localStorage.removeItem(STORAGE_KEY)
+      return {}
+    }
+    return data
   } catch {
     return {}
   }
@@ -45,11 +55,18 @@ export function captureAttribution(): Attribution {
 
   if (Object.keys(fresh).length === 0) return stored
 
+  // Meta agrega fbclid a todo clic en anuncio, aunque el anuncio no tenga UTMs.
+  if (fresh.fbclid && !fresh.utm_source) {
+    fresh.utm_source = 'facebook'
+    fresh.utm_medium = fresh.utm_medium || 'paid_social'
+  }
+
   fresh.landing_page = window.location.pathname
   fresh.referrer = document.referrer || undefined
+  fresh.captured_at = new Date().toISOString()
 
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(fresh))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh))
   } catch {
     // Modo privado o storage bloqueado: seguimos sin atribucion persistida.
   }
