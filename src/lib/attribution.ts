@@ -56,10 +56,9 @@ export function captureAttribution(): Attribution {
   if (Object.keys(fresh).length === 0) return stored
 
   // Meta agrega fbclid a todo clic en anuncio, aunque el anuncio no tenga UTMs.
-  if (fresh.fbclid && !fresh.utm_source) {
-    fresh.utm_source = 'facebook'
-    fresh.utm_medium = fresh.utm_medium || 'paid_social'
-  }
+  // No se completa utm_source: un lead con fbclid y sin UTM se informa como
+  // "Meta sin atribuir" y no debe mezclarse con campañas que usan
+  // utm_source=facebook (V2).
 
   fresh.landing_page = window.location.pathname
   fresh.referrer = document.referrer || undefined
