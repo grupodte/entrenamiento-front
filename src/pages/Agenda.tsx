@@ -730,7 +730,10 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       }
     }
 
-    navigate({ to: '/gracias-agenda' })
+    navigate({
+      to: '/gracias-agenda',
+      search: isAlumnoAgenda ? { origen: 'alumno' } : {},
+    })
   }
 
   const resetFlow = () => {

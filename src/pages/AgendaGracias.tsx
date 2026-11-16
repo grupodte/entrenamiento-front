@@ -3,6 +3,12 @@ import { useNavigate } from '@tanstack/react-router'
 import { useGTM } from '../lib/useGTM'
 import logoSvg from '../assets/DD FIT - LOGO PRINCIPAL.svg'
 
+const preCallVideoUrl = import.meta.glob<string>('../assets/pre-call-gracias.mp4', {
+  eager: true,
+  import: 'default',
+  query: '?url',
+})['../assets/pre-call-gracias.mp4']
+
 const WhatsAppIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <path d="M20.5 11.7a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.5-4.9A8.4 8.4 0 1 1 20.5 11.7Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
@@ -23,24 +29,27 @@ const ArrowRightIcon = ({ className }: { className?: string }) => (
   </svg>
 )
 
-export default function AgendaGracias() {
+export default function AgendaGracias({ fromAlumnoAgenda }: { fromAlumnoAgenda: boolean }) {
   const navigate = useNavigate()
   const { trackEvent } = useGTM()
   const videoRef = useRef<HTMLVideoElement>(null)
   const [countdown, setCountdown] = useState(10)
+  const videoUrl = fromAlumnoAgenda ? undefined : preCallVideoUrl
 
   useEffect(() => {
     trackEvent('booking_completed', { conversion_type: 'agenda_confirmada' })
   }, [trackEvent])
 
   useEffect(() => {
+    if (videoUrl) return
+
     if (countdown === 0) {
       navigate({ to: '/' })
       return
     }
     const timer = window.setTimeout(() => setCountdown((remaining) => remaining - 1), 1000)
     return () => window.clearTimeout(timer)
-  }, [countdown, navigate])
+  }, [countdown, navigate, videoUrl])
 
   useEffect(() => {
     const video = videoRef.current
@@ -154,11 +163,29 @@ export default function AgendaGracias() {
               Volver al inicio
               <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </button>
-            <p className="m-0 mt-2.5 flex items-center justify-center gap-2 text-[11px] text-white/50 sm:mt-4 sm:text-[12px]" aria-live="polite">
-              Irás al inicio en <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-white/10 px-1.5 font-semibold text-white/85">{countdown}</span> segundos
-            </p>
+            {!videoUrl && (
+              <p className="m-0 mt-2.5 flex items-center justify-center gap-2 text-[11px] text-white/50 sm:mt-4 sm:text-[12px]" aria-live="polite">
+                Irás al inicio en <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-white/10 px-1.5 font-semibold text-white/85">{countdown}</span> segundos
+              </p>
+            )}
           </section>
         </div>
+
+        {videoUrl && (
+          <section className="mx-auto w-full max-w-[720px] pb-8 text-center sm:pb-12" aria-labelledby="pre-call-video-title">
+            <h2 id="pre-call-video-title" className="mb-3 text-lg font-semibold tracking-tight text-white sm:mb-4 sm:text-2xl">
+              Mirá este video antes de tu llamada
+            </h2>
+            <video
+              className="mx-auto block max-h-[70svh] w-full rounded-[18px] border border-white/20 bg-black object-contain sm:rounded-[24px]"
+              src={videoUrl}
+              aria-labelledby="pre-call-video-title"
+              controls
+              playsInline
+              preload="metadata"
+            />
+          </section>
+        )}
 
         <footer className="border-t border-white/15 py-3 text-center text-[9px] font-medium uppercase tracking-[.12em] text-white/40 sm:py-4 sm:text-[10px] sm:tracking-[.16em]">
           DemicheriFitness · Entrenamiento y nutrición con seguimiento real
