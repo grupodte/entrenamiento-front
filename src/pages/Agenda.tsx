@@ -46,14 +46,10 @@ type AvailabilityCachePayload = {
 }
 
 // Pre-call data from localStorage
+// Las respuestas del formulario se reenvían tal cual (los leads viejos tienen
+// otros nombres de campo), así que acá solo tipamos lo que usa la agenda.
 type PrecallData = {
-  entrenaDias: string
-  compromiso: string
-  tieneEquipo: string
-  dispuestoInvertir: string
-  dispone99Mensuales: string
-  obstaculoPrincipal: string
-  porQueAhora: string
+  [key: string]: unknown
   nombre: string
   email: string
   whatsapp: string
@@ -603,13 +599,6 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
     let precallLeadId: string | null = null
     if (isAlumnoAgenda) {
       precallData = {
-        entrenaDias: '',
-        compromiso: '',
-        tieneEquipo: '',
-        dispuestoInvertir: '',
-        dispone99Mensuales: '',
-        obstaculoPrincipal: '',
-        porQueAhora: '',
         nombre: attendeeName.trim(),
         email: attendeeEmail.trim(),
         whatsapp: `${attendeePhonePrefix}${attendeePhone.trim()}`,
@@ -636,13 +625,6 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
 
     precallData = {
       ...(precallData ?? {
-        entrenaDias: '',
-        compromiso: '',
-        tieneEquipo: '',
-        dispuestoInvertir: '',
-        dispone99Mensuales: '',
-        obstaculoPrincipal: '',
-        porQueAhora: '',
         edad: '',
         zonaHoraria: guestTimeZone
       }),

@@ -1177,7 +1177,9 @@ serve(async (req) => {
           ? `precall_lead_${lead.id}`
           : stringField(input?.eventId);
 
-        await sendMetaCapiEvent("Lead", {
+        // La lista de espera no cuenta como Lead: Meta debe optimizar hacia gente que agenda.
+        const isWaitlist = stringField(precallData.estado) === "lista_espera";
+        if (!isWaitlist) await sendMetaCapiEvent("Lead", {
           eventId,
           email: stringField(precallData.email),
           phone: stringField(precallData.whatsapp) ?? stringField(precallData.phone),

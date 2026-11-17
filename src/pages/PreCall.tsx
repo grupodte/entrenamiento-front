@@ -11,16 +11,21 @@ import { META_CURRENCY, META_LEAD_VALUE } from '../lib/metaConversionValues'
 
 const PRECALL_STORAGE_KEY = 'dmf_precall_data'
 const PRECALL_LEAD_ID_STORAGE_KEY = 'dmf_precall_lead_id'
+const WAITLIST_NAME_STORAGE_KEY = 'dmf_waitlist_name'
 
 // ── Types ──────────────────────────────────────────────────
 type Data = {
-  entrenaDias: string       // 2x | 3x | +3x
-  compromiso: string        // 1-5 (salud de la alimentación)
-  tieneEquipo: string       // si | no | parcial
-  dispuestoInvertir: string // rutina | dieta | rutina-dieta
-  dispone99Mensuales: string // si | no
-  obstaculoPrincipal: string // lesión o insuficiencia (respuesta abierta corta)
-  porQueAhora: string
+  objetivo: string              // bajar_grasa | ganar_musculo | salud | rendimiento
+  modalidadOnline: string       // si | no (quiere presencial)
+  tiempoIntentando: string      // menos_6m | 6m_2a | mas_2a
+  diasEntrenamiento: string     // 1_o_menos | 2 | 3 | 4_mas
+  equipo: string                // gimnasio | casa | nada
+  lesiones: string              // texto abierto (máx. 120)
+  compromisoSeguimiento: string // si | no
+  porQueAhora: string           // harto | evento | salud | decision | averiguando
+  tipoPlan: string              // rutina | dieta | completo
+  inversion: string             // ya | en_semanas | no
+  compromisoLlamada: boolean
   nombre: string
   email: string
   pais: string // ISO2, fuente de verdad del pais/prefijo (varios paises comparten el mismo dial code, ej. +1)
@@ -29,19 +34,37 @@ type Data = {
   edad: string
 }
 
+type TextField = { [K in keyof Data]: Data[K] extends string ? K : never }[keyof Data]
+
 // iso es unico (a diferencia del dial code, que varios paises comparten, ej. +1).
 const ISO_TO_COUNTRY: Record<string, (typeof COUNTRY_PREFIXES)[number]> = Object.fromEntries(
   COUNTRY_PREFIXES.map(p => [p.iso, p])
 )
 
 const INITIAL: Data = {
-  entrenaDias: '', compromiso: '', tieneEquipo: '', dispuestoInvertir: '',
-  dispone99Mensuales: '',
-  obstaculoPrincipal: '', porQueAhora: '',
+  objetivo: '', modalidadOnline: '', tiempoIntentando: '', diasEntrenamiento: '', equipo: '', lesiones: '',
+  compromisoSeguimiento: '', porQueAhora: '', tipoPlan: '', inversion: '',
+  compromisoLlamada: false,
   nombre: '', email: '', pais: 'UY', whatsappPrefix: '+598', whatsapp: '', edad: '',
 }
 
-const TOTAL = 8 // pasos con contenido (1-8), el 0 es welcome
+const TOTAL = 11 // pasos con contenido (1-11), el 0 es welcome
+
+// Respuestas que descalifican -> /no-es-el-momento, con el motivo a registrar.
+const DISQUALIFIERS: Partial<Record<TextField, { value: string; reason: string }>> = {
+  modalidadOnline: { value: 'no', reason: 'quiere_presencial' },
+  diasEntrenamiento: { value: '1_o_menos', reason: 'poca_disponibilidad' },
+  compromisoSeguimiento: { value: 'no', reason: 'sin_compromiso' },
+  porQueAhora: { value: 'averiguando', reason: 'solo_averiguando' },
+  inversion: { value: 'no', reason: 'sin_presupuesto' },
+}
+
+const priceForPlan = (tipoPlan: string) => (tipoPlan === 'completo' ? 300 : 200)
+
+const priorityFor = (d: Data) =>
+  d.diasEntrenamiento === '4_mas' && d.tiempoIntentando === 'mas_2a' && d.inversion === 'ya'
+    ? 'alta'
+    : 'normal'
 
 const inputBase =
   'w-full bg-[#F4F2F7] border border-[#E8E4EE] rounded-[8px] px-4 py-3 text-[#1A1820] text-[15px] placeholder:text-[#9D9B9F] focus:outline-none focus:border-[#9580A6] focus:ring-2 focus:ring-[#9580A6]/15 transition-colors'
@@ -104,49 +127,6 @@ function StepChoice({
                 {o.desc}
               </span>
             )}
-          </button>
-        ))}
-      </div>
-      <BackBtn onClick={onBack} />
-    </div>
-  )
-}
-
-function StepScale({
-  step, question, hint, value, onBack, onChoose,
-}: {
-  step: number
-  question: string
-  hint?: string
-  value: string
-  onBack: () => void
-  onChoose: (v: string) => void
-}) {
-  const labels = ['Muy baja', 'Baja', 'Media', 'Buena', 'Muy buena']
-  return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <StepMeta step={step} />
-        <h2 className="text-[#1A1820] text-[22px] sm:text-[30px] font-bold leading-tight m-0">
-          {question}
-        </h2>
-        {hint && <p className="text-[#69686B] text-[13px] mt-2 m-0">{hint}</p>}
-      </div>
-      <div className="flex gap-2">
-        {['1','2','3','4','5'].map((n, i) => (
-          <button
-            key={n}
-            onClick={() => onChoose(n)}
-            className={`flex-1 flex flex-col items-center gap-1 py-4 rounded-[10px] border transition-all ${
-              value === n
-                ? 'bg-[#9580A6] border-[#9580A6] text-white'
-                : 'bg-[#F4F2F7] border-[#E8E4EE] text-[#1A1820] hover:border-[#9580A6]'
-            }`}
-          >
-            <span className="text-[22px] font-bold leading-none">{n}</span>
-            <span className={`text-[9px] font-bold uppercase tracking-wide ${value === n ? 'text-white/70' : 'text-[#9D9B9F]'}`}>
-              {labels[i]}
-            </span>
           </button>
         ))}
       </div>
@@ -220,7 +200,7 @@ export default function PreCall() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const contentRef = useRef<HTMLElement | null>(null)
 
-  const set = (field: keyof Data) => (value: string) =>
+  const set = (field: TextField) => (value: string) =>
     setData(prev => ({ ...prev, [field]: value }))
 
   const transition = (next: number) => {
@@ -231,13 +211,21 @@ export default function PreCall() {
   const goNext = () => transition(step + 1)
   const goBack = () => transition(step - 1)
 
+  const isWaitlist = data.inversion === 'en_semanas'
+  const precio = priceForPlan(data.tipoPlan)
+
   // Auto-advance after choice selection
-  const choose = (field: keyof Data, value: string) => {
+  const choose = (field: TextField, value: string) => {
     const nextData = { ...data, [field]: value }
     setData(nextData)
     trackEvent('precall_choice', { field, value, step, session_id: sessionId })
-    if (field === 'dispone99Mensuales' && value === 'no') {
-      trackEvent('budget_rejection', { reason: 'insufficient_budget', step, session_id: sessionId })
+    const disqualifier = DISQUALIFIERS[field]
+    if (disqualifier && disqualifier.value === value) {
+      trackEvent('precall_disqualified', { reason: disqualifier.reason, step, session_id: sessionId })
+      if (field === 'inversion') {
+        // Se mantiene por compatibilidad con reportes existentes.
+        trackEvent('budget_rejection', { reason: 'insufficient_budget', step, session_id: sessionId })
+      }
       try {
         localStorage.setItem(PRECALL_STORAGE_KEY, JSON.stringify(nextData))
       } catch {
@@ -289,13 +277,23 @@ export default function PreCall() {
     if (!data.email.trim() || !/\S+@\S+\.\S+/.test(data.email)) e.email = 'Email inválido'
     if (!data.whatsapp.trim()) e.whatsapp = 'Requerido'
     if (!data.edad.trim()) e.edad = 'Requerido'
+    if (!isWaitlist && !data.compromisoLlamada) {
+      e.compromisoLlamada = 'Tenés que aceptar el compromiso para agendar'
+    }
     if (Object.keys(e).length) { setErrors(e); return }
     setErrors({})
+
+    const estado = isWaitlist ? 'lista_espera' : 'califica'
+    const prioridad = priorityFor(data)
 
     submitInFlight.current = true
     setSubmitting(true)
     const submitData = {
       ...data,
+      compromisoLlamada: isWaitlist ? false : data.compromisoLlamada,
+      precio,
+      estado,
+      prioridad,
       whatsapp: `${data.whatsappPrefix}${data.whatsapp.trim()}`,
       // Queda dentro de precall_data (jsonb) para poder cruzar anuncio -> lead -> venta.
       attribution: getAttribution(),
@@ -322,12 +320,15 @@ export default function PreCall() {
       }
 
       leadId = typeof leadResponse?.data?.leadId === 'string' ? leadResponse.data.leadId : null
-      // El servidor define el ID a partir del contacto guardado. El fallback
-      // permite desplegar el frontend antes que la nueva función cal.
-      const conversionEventId = typeof leadResponse?.data?.eventId === 'string'
-        ? leadResponse.data.eventId
-        : leadEventId
-      trackConversion('meta_lead', conversionEventId, { value: META_LEAD_VALUE, currency: META_CURRENCY })
+      if (estado === 'califica') {
+        // El servidor define el ID a partir del contacto guardado. El fallback
+        // permite desplegar el frontend antes que la nueva función cal.
+        const conversionEventId = typeof leadResponse?.data?.eventId === 'string'
+          ? leadResponse.data.eventId
+          : leadEventId
+        // Solo los que califican cuentan como Lead para que Meta optimice hacia gente que agenda.
+        trackConversion('meta_lead', conversionEventId, { value: META_LEAD_VALUE, currency: META_CURRENCY })
+      }
     } catch (error) {
       // Keep the original booking flow working even if the new lead intake endpoint
       // is not deployed yet or returns a validation error.
@@ -335,22 +336,40 @@ export default function PreCall() {
     }
 
     try {
-      localStorage.setItem(PRECALL_STORAGE_KEY, JSON.stringify(submitData))
-      if (leadId) {
-        localStorage.setItem(PRECALL_LEAD_ID_STORAGE_KEY, leadId)
+      if (estado === 'califica') {
+        localStorage.setItem(PRECALL_STORAGE_KEY, JSON.stringify(submitData))
+        if (leadId) {
+          localStorage.setItem(PRECALL_LEAD_ID_STORAGE_KEY, leadId)
+        }
+      } else {
+        // La lista de espera no pasa por /agenda: solo guardamos el nombre para el saludo.
+        localStorage.removeItem(PRECALL_STORAGE_KEY)
+        localStorage.removeItem(PRECALL_LEAD_ID_STORAGE_KEY)
+        sessionStorage.setItem(WAITLIST_NAME_STORAGE_KEY, data.nombre.trim())
       }
     } catch {
-      setSubmitError('No pudimos guardar tus datos. Intentá de nuevo.')
-      setSubmitting(false)
-      submitInFlight.current = false
-      return
+      if (estado === 'califica') {
+        setSubmitError('No pudimos guardar tus datos. Intentá de nuevo.')
+        setSubmitting(false)
+        submitInFlight.current = false
+        return
+      }
     }
     await new Promise(r => setTimeout(r, 400))
     trackEvent('precall_submitted', {
-      dias_entrenamiento: data.entrenaDias,
-      principal_need: data.dispuestoInvertir,
+      dias_entrenamiento: data.diasEntrenamiento,
+      principal_need: data.tipoPlan,
+      estado,
+      prioridad,
+      tipoPlan: data.tipoPlan,
       session_id: sessionId,
     })
+    if (estado === 'lista_espera') {
+      trackEvent('precall_waitlist', { tipoPlan: data.tipoPlan, session_id: sessionId })
+      trackNavigation('pre_call', 'lista_espera', { session_id: sessionId })
+      navigate({ to: '/lista-espera' })
+      return
+    }
     trackNavigation('pre_call', 'agenda', { session_id: sessionId })
     navigate({ to: '/agenda' })
   }
@@ -412,123 +431,180 @@ export default function PreCall() {
             </div>
           )}
 
-          {/* ── Step 1: Días de entrenamiento ── */}
+          {/* ── Step 1: Objetivo ── */}
           {step === 1 && (
             <StepChoice
               step={1}
-              question="¿Cuántos días por semana estás dispuesto/a a entrenar?"
-              value={data.entrenaDias}
+              question="¿Cuál es tu objetivo principal?"
+              value={data.objetivo}
               onBack={goBack}
               options={[
-                { value: '2x', label: '2 x semana' },
-                { value: '3x', label: '3 x semana' },
-                { value: '+3x', label: '+3 x semana' },
+                { value: 'bajar_grasa', label: 'Bajar grasa' },
+                { value: 'ganar_musculo', label: 'Ganar músculo' },
+                { value: 'salud', label: 'Mejorar mi salud' },
+                { value: 'rendimiento', label: 'Rendir más en mi deporte' },
               ]}
-              onChoose={v => choose('entrenaDias', v)}
+              onChoose={v => choose('objetivo', v)}
             />
           )}
 
-          {/* ── Step 2: Alimentación actual ── */}
+          {/* ── Step 2: Modalidad online ── */}
           {step === 2 && (
-            <StepScale
+            <StepChoice
               step={2}
-              question="Del 1 al 5: ¿Qué tan saludable es tu alimentación hoy?"
-              value={data.compromiso}
+              question="El proceso es 100% online, no hay entrenamientos presenciales. ¿Te sirve trabajar así?"
+              value={data.modalidadOnline}
               onBack={goBack}
-              onChoose={v => choose('compromiso', v)}
+              options={[
+                { value: 'si', label: 'Sí, me sirve online' },
+                { value: 'no', label: 'Prefiero algo presencial' },
+              ]}
+              onChoose={v => choose('modalidadOnline', v)}
             />
           )}
 
-          {/* ── Step 3: Tiene equipo ── */}
+          {/* ── Step 3: Tiempo intentando ── */}
           {step === 3 && (
             <StepChoice
               step={3}
-              question="¿Tenés acceso a un gimnasio o equipo básico para entrenar?"
-              value={data.tieneEquipo}
+              question="¿Hace cuánto querés lograr esto y no lo conseguís?"
+              value={data.tiempoIntentando}
               onBack={goBack}
               options={[
-                { value: 'si', label: 'Sí, tengo acceso a un gimnasio' },
-                { value: 'parcial', label: 'Tengo algo de equipo en casa' },
-                { value: 'no', label: 'No tengo equipo por ahora' },
+                { value: 'menos_6m', label: 'Menos de 6 meses' },
+                { value: '6m_2a', label: 'Entre 6 meses y 2 años' },
+                { value: 'mas_2a', label: 'Más de 2 años' },
               ]}
-              onChoose={v => choose('tieneEquipo', v)}
+              onChoose={v => choose('tiempoIntentando', v)}
             />
           )}
 
-          {/* ── Step 4: Apoyo principal ── */}
+          {/* ── Step 4: Días de entrenamiento ── */}
           {step === 4 && (
             <StepChoice
               step={4}
-              question="¿Con cuál de estas opciones necesitás mayor apoyo hoy?"
-              value={data.dispuestoInvertir}
+              question="Siendo honesto/a, ¿cuántos días por semana podés entrenar?"
+              value={data.diasEntrenamiento}
               onBack={goBack}
               options={[
-                { value: 'rutina', label: 'Rutina' },
-                { value: 'dieta', label: 'Dieta' },
-                { value: 'rutina-dieta', label: 'Rutina y dieta' },
+                { value: '1_o_menos', label: '1 o menos' },
+                { value: '2', label: '2 días' },
+                { value: '3', label: '3 días' },
+                { value: '4_mas', label: '4 o más' },
               ]}
-              onChoose={v => choose('dispuestoInvertir', v)}
+              onChoose={v => choose('diasEntrenamiento', v)}
             />
           )}
 
-          {/* ── Step 5: Presupuesto mínimo ── */}
+          {/* ── Step 5: Equipo ── */}
           {step === 5 && (
             <StepChoice
               step={5}
-              question="El proceso personalizado dura 8 semanas. La inversión mínima es de USD 200. ¿Está dentro de tus posibilidades?"
-              value={data.dispone99Mensuales}
+              question="¿Tenés acceso a un gimnasio o equipo para entrenar?"
+              value={data.equipo}
               onBack={goBack}
               options={[
-                { value: 'si', label: 'Sí' },
-                { value: 'no', label: 'No es el momento' },
+                { value: 'gimnasio', label: 'Sí, voy a un gimnasio' },
+                { value: 'casa', label: 'Tengo algo de equipo en casa' },
+                { value: 'nada', label: 'No tengo equipo por ahora' },
               ]}
-              onChoose={v => choose('dispone99Mensuales', v)}
+              onChoose={v => choose('equipo', v)}
             />
           )}
 
-          {/* ── Step 6: Lesión o insuficiencia ── */}
+          {/* ── Step 6: Lesiones ── */}
           {step === 6 && (
             <StepText
               step={6}
-              question="¿Tenés algún tipo de lesión o insuficiencia?"
-              hint="Respuesta abierta corta."
+              question="¿Tenés alguna lesión o condición que debamos saber?"
+              hint="Respuesta corta."
               placeholder="Ej: molestia de rodilla, hernia lumbar, ninguna"
-              value={data.obstaculoPrincipal}
-              onChange={v => set('obstaculoPrincipal')(v)}
+              value={data.lesiones}
+              onChange={v => set('lesiones')(v)}
               onBack={goBack}
               onNext={goNext}
-              canContinue={data.obstaculoPrincipal.trim().length > 0}
+              canContinue={data.lesiones.trim().length > 0}
               maxLength={120}
             />
           )}
 
-          {/* ── Step 7: Por qué ahora ── */}
+          {/* ── Step 7: Compromiso con el seguimiento ── */}
           {step === 7 && (
             <StepChoice
               step={7}
+              question="El proceso exige registrar tus comidas y entrenamientos y mandar un reporte semanal. ¿Te comprometés?"
+              value={data.compromisoSeguimiento}
+              onBack={goBack}
+              options={[
+                { value: 'si', label: 'Sí, me comprometo' },
+                { value: 'no', label: 'Prefiero algo sin tanto seguimiento' },
+              ]}
+              onChoose={v => choose('compromisoSeguimiento', v)}
+            />
+          )}
+
+          {/* ── Step 8: Por qué ahora ── */}
+          {step === 8 && (
+            <StepChoice
+              step={8}
               question="¿Por qué ahora y no el mes que viene?"
               value={data.porQueAhora}
               onBack={goBack}
               options={[
                 { value: 'harto', label: 'Estoy harto/a de no ver resultados', desc: 'Ya intenté varias veces y nada funcionó' },
                 { value: 'evento', label: 'Tengo una fecha o evento importante', desc: 'Necesito estar listo/a para algo concreto' },
-                { value: 'decision', label: 'Tomé la decisión y no quiero esperar', desc: 'Si no arranco ahora, no arranco nunca' },
                 { value: 'salud', label: 'Me lo pidió mi salud', desc: 'No es solo estética, es necesidad' },
+                { value: 'decision', label: 'Tomé la decisión y no quiero esperar', desc: 'Si no arranco ahora, no arranco nunca' },
+                { value: 'averiguando', label: 'Solo estoy averiguando opciones', desc: 'Todavía no decidí empezar' },
               ]}
               onChoose={v => choose('porQueAhora', v)}
             />
           )}
 
-          {/* ── Step 8: Datos de contacto ── */}
-          {step === 8 && (
+          {/* ── Step 9: Tipo de plan ── */}
+          {step === 9 && (
+            <StepChoice
+              step={9}
+              question="¿Qué necesitás?"
+              value={data.tipoPlan}
+              onBack={goBack}
+              options={[
+                { value: 'rutina', label: 'Solo rutina de entrenamiento' },
+                { value: 'dieta', label: 'Solo plan de alimentación' },
+                { value: 'completo', label: 'Rutina y alimentación' },
+              ]}
+              onChoose={v => choose('tipoPlan', v)}
+            />
+          )}
+
+          {/* ── Step 10: Inversión ── */}
+          {step === 10 && (
+            <StepChoice
+              step={10}
+              question={`Tu plan cuesta USD ${precio} por 8 semanas. Si en la llamada vemos que sos un buen perfil, ¿podés empezar esta semana?`}
+              value={data.inversion}
+              onBack={goBack}
+              options={[
+                { value: 'ya', label: 'Sí, tengo el dinero y quiero empezar ya' },
+                { value: 'en_semanas', label: 'Sí, pero dentro de unas semanas' },
+                { value: 'no', label: 'No es el momento' },
+              ]}
+              onChoose={v => choose('inversion', v)}
+            />
+          )}
+
+          {/* ── Step 11: Datos de contacto (califica / lista de espera) ── */}
+          {step === 11 && (
             <div className="flex flex-col gap-6">
               <div>
-                <StepMeta step={8} />
+                <StepMeta step={11} />
                 <h2 className="text-[#1A1820] text-[24px] sm:text-[32px] font-bold leading-tight m-0">
-                  ¿A dónde te enviamos la confirmación?
+                  {isWaitlist ? 'Te guardamos un lugar en la lista de espera' : '¿A dónde te enviamos la confirmación?'}
                 </h2>
                 <p className="text-[#69686B] text-[13px] mt-2 m-0">
-                  Estos datos son para confirmar tu llamada. No usamos spam.
+                  {isWaitlist
+                    ? 'Te escribimos por WhatsApp cuando se abra un cupo.'
+                    : 'Estos datos son para confirmar tu llamada. No usamos spam.'}
                 </p>
               </div>
 
@@ -610,6 +686,30 @@ export default function PreCall() {
                   />
                   {errors.edad && <p className="text-red-500 text-[12px] mt-1 m-0">{errors.edad}</p>}
                 </div>
+
+                {/* Compromiso con la llamada (solo si califica) */}
+                {!isWaitlist && (
+                  <div>
+                    <label className="flex items-start gap-3 cursor-pointer rounded-[10px] border border-[#E8E4EE] bg-[#F4F2F7] px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={data.compromisoLlamada}
+                        onChange={e => {
+                          const checked = e.target.checked
+                          setData(prev => ({ ...prev, compromisoLlamada: checked }))
+                          if (checked) setErrors(prev => ({ ...prev, compromisoLlamada: undefined }))
+                        }}
+                        className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-[#9580A6]"
+                      />
+                      <span className="text-[#1A1820] text-[13px] leading-snug">
+                        Entiendo que la llamada es 1 a 1 con Dani y ocupa uno de los 8 cupos del mes. Me comprometo a conectarme puntual y con cámara, o a avisar con 24 h de anticipación si no puedo.
+                      </span>
+                    </label>
+                    {errors.compromisoLlamada && (
+                      <p className="text-red-500 text-[12px] mt-1 m-0">{errors.compromisoLlamada}</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3">
@@ -622,9 +722,14 @@ export default function PreCall() {
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="flex-1 bg-[#9580A6] text-white font-bold text-[13px] uppercase tracking-widest py-4 px-8 rounded-[8px] hover:bg-[#7A6A8F] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  aria-disabled={!isWaitlist && !data.compromisoLlamada}
+                  className={`flex-1 bg-[#9580A6] text-white font-bold text-[13px] uppercase tracking-widest py-4 px-8 rounded-[8px] hover:bg-[#7A6A8F] transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+                    !isWaitlist && !data.compromisoLlamada ? 'opacity-40' : ''
+                  }`}
                 >
-                  {submitting ? 'Guardando...' : 'Agendar mi llamada →'}
+                  {submitting
+                    ? 'Guardando...'
+                    : isWaitlist ? 'Anotarme en la lista de espera →' : 'Agendar mi llamada →'}
                 </button>
               </div>
               {submitError && (
@@ -632,9 +737,11 @@ export default function PreCall() {
                   {submitError}
                 </p>
               )}
-              <p className="text-center text-[12px] text-[#9D9B9F] m-0">
-                Después de esto vas a poder elegir el día y horario de tu llamada.
-              </p>
+              {!isWaitlist && (
+                <p className="text-center text-[12px] text-[#9D9B9F] m-0">
+                  Después de esto vas a poder elegir el día y horario de tu llamada.
+                </p>
+              )}
             </div>
           )}
 
