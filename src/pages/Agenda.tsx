@@ -8,7 +8,7 @@ import { useSessionTracking } from '../lib/useSessionTracking'
 import { getMetaCookies } from '../lib/metaCookies'
 import { COUNTRY_PREFIXES } from '../lib/countries'
 import { META_CURRENCY, META_SCHEDULE_VALUE } from '../lib/metaConversionValues'
-import brandIcon from '../assets/SVG - FAV ICON.svg'
+import daniPhoto from '../assets/Imagenes/image 280.webp'
 
 type BookingSummary = {
   uid?: string
@@ -303,7 +303,18 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(agendaToday)
   const [slotsByDate, setSlotsByDate] = useState<Record<string, string[]>>({})
   const [selectedSlot, setSelectedSlot] = useState<string>('')
-  const [timeFormat, setTimeFormat] = useState<TimeFormat>('24h')
+  // Público de Uruguay/LatAm: siempre 24h, sin selector.
+  const timeFormat: TimeFormat = '24h'
+  // Viene de completar el pre-call y calificó: se lo confirmamos arriba.
+  const [cameQualified] = useState(() => {
+    if (isAlumnoAgenda) return false
+    try {
+      const stored = localStorage.getItem(PRECALL_STORAGE_KEY)
+      return stored ? (JSON.parse(stored) as { estado?: unknown }).estado === 'califica' : false
+    } catch {
+      return false
+    }
+  })
   const [attendeeName, setAttendeeName] = useState('')
   const [attendeeEmail, setAttendeeEmail] = useState('')
   const [attendeePhoneCountry, setAttendeePhoneCountry] = useState('UY')
@@ -712,9 +723,15 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
       }
     }
 
+    // El horario viaja en la URL para mostrarlo (y ofrecer "agregar al calendario")
+    // en la página de gracias.
+    const bookedStart = typeof payload.start === 'string' ? payload.start : selectedSlot
     navigate({
       to: '/gracias-agenda',
-      search: isAlumnoAgenda ? { origen: 'alumno' } : {},
+      search: {
+        ...(isAlumnoAgenda ? { origen: 'alumno' as const } : {}),
+        ...(bookedStart ? { inicio: bookedStart } : {}),
+      },
     })
   }
 
@@ -731,14 +748,58 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
   const inputClass =
     'h-11 w-full rounded-[10px] border border-[#E8E4EE] bg-white px-3 text-[14px] text-[#1A1820] outline-none transition-[border-color,box-shadow] placeholder:text-[#C8C6CA] focus:border-[#9580A6] focus:shadow-[0_0_0_3px_rgba(149,128,166,0.18)]'
 
+  // En escritorio va en la columna izquierda; en celular, debajo del calendario
+  // para no empujar los horarios fuera de la primera pantalla.
+  const callSteps = (
+    <>
+                <p className="m-0 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9580A6]">
+                  Qué vamos a hacer
+                </p>
+                <ol className="m-0 mt-3 flex list-none flex-col gap-2.5 p-0">
+                  {[
+                    'Repasamos tu objetivo y lo que intentaste hasta hoy',
+                    'Te digo si el programa es para vos y cómo sería tu plan',
+                    'Si encaja, arrancás esa misma semana',
+                  ].map((item, index) => (
+                    <li key={item} className="flex items-start gap-2.5 text-[13px] leading-snug text-[#1A1820]">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#EDE9F3] text-[11px] font-semibold text-[#7A6A8F]">
+                        {index + 1}
+                      </span>
+                      {item}
+                    </li>
+                  ))}
+                </ol>
+    </>
+  )
+
   return (
     <div className="min-h-screen bg-[#FEFEFE] px-3 py-8 sm:px-5 md:py-14">
       <div className="mx-auto w-full max-w-[1040px]">
+        {!isAlumnoAgenda && (
+          <div className="mb-4 flex flex-col gap-1 rounded-[14px] border border-[#E8E4EE] bg-[#F4F2F7] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <p className="m-0 flex items-center gap-2 text-[14px] font-semibold text-[#1A1820]">
+              {cameQualified && (
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#9580A6] text-white">
+                  <CheckIcon className="h-3 w-3" />
+                </span>
+              )}
+              {cameQualified ? 'Tu perfil califica · Último paso: elegí tu horario' : 'Último paso: elegí tu horario'}
+            </p>
+            <p className="m-0 text-[12px] text-[#69686B]">Solo tomamos 8 personas por mes.</p>
+          </div>
+        )}
         <div className="overflow-hidden rounded-[18px] border border-[#E8E4EE] bg-white shadow-[0_1px_2px_rgba(26,24,32,0.04),0_16px_48px_rgba(149,128,166,0.12)] md:grid md:grid-cols-[300px_1fr]">
           <aside className="border-b border-[#E8E4EE] p-5 sm:p-6 md:border-b-0 md:border-r md:p-7">
-            <div className="flex items-center gap-2.5">
-              <img src={brandIcon} alt="" className="h-9 w-9 rounded-[10px]" />
-              <span className="text-[13px] font-medium text-[#69686B]">Demicheri Fitness</span>
+            <div className="flex items-center gap-3">
+              <img
+                src={daniPhoto}
+                alt="Dani Demicheri"
+                className="h-12 w-12 shrink-0 rounded-full object-cover object-[50%_25%] ring-2 ring-[#EDE9F3]"
+              />
+              <div className="min-w-0">
+                <p className="m-0 text-[14px] font-semibold text-[#1A1820]">Dani Demicheri</p>
+                <p className="m-0 text-[12px] text-[#69686B]">Llamada 1 a 1</p>
+              </div>
             </div>
 
             <h1 className="m-0 mt-4 text-[22px] font-semibold leading-tight tracking-[-0.02em] text-[#1A1820] md:text-[24px]">
@@ -772,9 +833,13 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
                 <span>Horarios en hora de Uruguay</span>
               </li>
             </ul>
+
+            {!isAlumnoAgenda && (
+              <div className="mt-6 hidden border-t border-[#E8E4EE] pt-5 md:block">{callSteps}</div>
+            )}
           </aside>
 
-          <section className="flex flex-col p-5 sm:p-6 md:min-h-[500px] md:p-7">
+          <section className="flex flex-col p-5 sm:p-6 md:min-h-[420px] md:p-7">
             {bookingPhase === 'success' ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-4 py-10 text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EDE9F3] text-[#9580A6]">
@@ -814,27 +879,6 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
                     <p className="m-0 mt-1 text-[13px] text-[#9D9B9F]">
                       {showInitialLoading ? 'Próximos 5 días hábiles' : formatMonthRange(displayDates)}
                     </p>
-                  </div>
-                  <div
-                    role="group"
-                    aria-label="Formato de hora"
-                    className="flex shrink-0 rounded-[9px] border border-[#E8E4EE] bg-[#F4F2F7] p-[3px]"
-                  >
-                    {(['12h', '24h'] as const).map((format) => (
-                      <button
-                        key={format}
-                        type="button"
-                        aria-pressed={timeFormat === format}
-                        className={`rounded-[7px] px-2.5 py-1 text-[12px] font-medium transition-colors ${
-                          timeFormat === format
-                            ? 'bg-white text-[#1A1820] shadow-[0_1px_2px_rgba(26,24,32,0.08)]'
-                            : 'text-[#9D9B9F] hover:text-[#69686B]'
-                        }`}
-                        onClick={() => setTimeFormat(format)}
-                      >
-                        {format}
-                      </button>
-                    ))}
                   </div>
                 </div>
 
@@ -1112,6 +1156,9 @@ export default function Agenda({ mode = 'precall' }: AgendaProps) {
               </form>
             )}
           </section>
+          {!isAlumnoAgenda && bookingPhase === 'slots' && (
+            <div className="border-t border-[#E8E4EE] p-5 sm:p-6 md:hidden">{callSteps}</div>
+          )}
         </div>
       </div>
     </div>
