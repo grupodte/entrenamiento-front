@@ -532,7 +532,7 @@ export default function PreCall() {
           {step === 7 && (
             <StepChoice
               step={7}
-              question="El proceso exige registrar tus comidas y entrenamientos y mandar un reporte semanal. ¿Te comprometés?"
+              question="¿Estás dispuesto a participar activamente en tu proceso de cambio?"
               value={data.compromisoSeguimiento}
               onBack={goBack}
               options={[
@@ -581,13 +581,13 @@ export default function PreCall() {
           {step === 10 && (
             <StepChoice
               step={10}
-              question={`Tu plan cuesta USD ${precio} por 8 semanas. ¿Cuándo podrías empezar?`}
+              question={`El plan cuesta USD ${precio} por 8 semanas y podés pagarlo en cuotas. ¿Cuándo te gustaría empezar?`}
               value={data.inversion}
               onBack={goBack}
               options={[
-                { value: 'ya', label: 'Esta semana, tengo el presupuesto' },
-                { value: 'en_semanas', label: 'En unas semanas' },
-                { value: 'no', label: 'Ahora no puedo invertir eso' },
+                { value: 'ya', label: 'Esta semana' },
+                { value: 'en_semanas', label: 'En las próximas semanas' },
+                { value: 'no', label: 'Todavía lo estoy evaluando' },
               ]}
               onChoose={v => choose('inversion', v)}
             />
