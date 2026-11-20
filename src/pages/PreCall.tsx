@@ -537,7 +537,7 @@ export default function PreCall() {
               onBack={goBack}
               options={[
                 { value: 'si', label: 'Sí, me comprometo' },
-                { value: 'no', label: 'Prefiero algo sin tanto seguimiento' },
+                { value: 'no', label: 'Prefiero algo más flexible' },
               ]}
               onChoose={v => choose('compromisoSeguimiento', v)}
             />
@@ -581,13 +581,13 @@ export default function PreCall() {
           {step === 10 && (
             <StepChoice
               step={10}
-              question={`Tu plan cuesta USD ${precio} por 8 semanas. Si en la llamada vemos que sos un buen perfil, ¿podés empezar esta semana?`}
+              question={`Tu plan cuesta USD ${precio} por 8 semanas. ¿Cuándo podrías empezar?`}
               value={data.inversion}
               onBack={goBack}
               options={[
-                { value: 'ya', label: 'Sí, tengo el dinero y quiero empezar ya' },
-                { value: 'en_semanas', label: 'Sí, pero dentro de unas semanas' },
-                { value: 'no', label: 'No es el momento' },
+                { value: 'ya', label: 'Esta semana, tengo el presupuesto' },
+                { value: 'en_semanas', label: 'En unas semanas' },
+                { value: 'no', label: 'Ahora no puedo invertir eso' },
               ]}
               onChoose={v => choose('inversion', v)}
             />
