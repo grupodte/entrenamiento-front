@@ -24,7 +24,7 @@ type Data = {
   compromisoSeguimiento: string // si | no
   porQueAhora: string           // harto | evento | salud | decision | averiguando
   tipoPlan: string              // rutina | dieta | completo
-  inversion: string             // ya | en_semanas | no
+  inversion: string             // ya | en_semanas (= evaluando -> lista de espera)
   compromisoLlamada: boolean
   nombre: string
   email: string
@@ -56,7 +56,6 @@ const DISQUALIFIERS: Partial<Record<TextField, { value: string; reason: string }
   diasEntrenamiento: { value: '1_o_menos', reason: 'poca_disponibilidad' },
   compromisoSeguimiento: { value: 'no', reason: 'sin_compromiso' },
   porQueAhora: { value: 'averiguando', reason: 'solo_averiguando' },
-  inversion: { value: 'no', reason: 'sin_presupuesto' },
 }
 
 const priceForPlan = (tipoPlan: string) => (tipoPlan === 'completo' ? 300 : 200)
@@ -222,10 +221,6 @@ export default function PreCall() {
     const disqualifier = DISQUALIFIERS[field]
     if (disqualifier && disqualifier.value === value) {
       trackEvent('precall_disqualified', { reason: disqualifier.reason, step, session_id: sessionId })
-      if (field === 'inversion') {
-        // Se mantiene por compatibilidad con reportes existentes.
-        trackEvent('budget_rejection', { reason: 'insufficient_budget', step, session_id: sessionId })
-      }
       try {
         localStorage.setItem(PRECALL_STORAGE_KEY, JSON.stringify(nextData))
       } catch {
@@ -585,9 +580,9 @@ export default function PreCall() {
               value={data.inversion}
               onBack={goBack}
               options={[
-                { value: 'ya', label: 'Esta semana' },
-                { value: 'en_semanas', label: 'En las próximas semanas' },
-                { value: 'no', label: 'Todavía lo estoy evaluando' },
+                { value: 'ya', label: 'Lo antes posible' },
+                // Se mantiene el valor 'en_semanas' por compatibilidad con los leads ya guardados.
+                { value: 'en_semanas', label: 'Todavía lo estoy evaluando' },
               ]}
               onChoose={v => choose('inversion', v)}
             />
