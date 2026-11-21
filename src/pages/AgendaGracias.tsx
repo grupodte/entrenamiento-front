@@ -70,6 +70,7 @@ export default function AgendaGracias({ fromAlumnoAgenda, startIso }: { fromAlum
   const { trackEvent } = useGTM()
   const videoRef = useRef<HTMLVideoElement>(null)
   const [playing, setPlaying] = useState(false)
+  const [muted, setMuted] = useState(false)
   const [countdown, setCountdown] = useState(10)
   const videoUrl = fromAlumnoAgenda ? undefined : PRECALL_VIDEO_URL
   const start = startIso ? new Date(startIso) : null
@@ -90,9 +91,32 @@ export default function AgendaGracias({ fromAlumnoAgenda, startIso }: { fromAlum
     return () => window.clearTimeout(timer)
   }, [countdown, navigate, videoUrl])
 
+  // Autoplay: primero con sonido; si el navegador lo bloquea, arranca en silencio
+  // y mostramos el botón para activar el sonido.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!videoUrl || !video) return
+    video.muted = false
+    video.play().catch(() => {
+      video.muted = true
+      setMuted(true)
+      void video.play().catch(() => undefined)
+    })
+  }, [videoUrl])
+
+  const unmute = () => {
+    const video = videoRef.current
+    if (!video) return
+    video.muted = false
+    video.currentTime = 0
+    setMuted(false)
+    void video.play().catch(() => undefined)
+  }
+
   const togglePlay = () => {
     const video = videoRef.current
     if (!video) return
+    if (muted) return unmute()
     if (video.paused) void video.play().catch(() => undefined)
     else video.pause()
   }
@@ -176,7 +200,8 @@ export default function AgendaGracias({ fromAlumnoAgenda, startIso }: { fromAlum
                     src={videoUrl}
                     poster={preCallPoster}
                     playsInline
-                    preload="metadata"
+                    muted={muted}
+                    preload="auto"
                     onClick={togglePlay}
                     onPlay={() => { setPlaying(true); trackEvent('precall_video_play', {}) }}
                     onPause={() => setPlaying(false)}
@@ -184,6 +209,15 @@ export default function AgendaGracias({ fromAlumnoAgenda, startIso }: { fromAlum
                   />
                   {/* Dynamic island */}
                   <div className="pointer-events-none absolute left-1/2 top-2.5 h-[22px] w-[80px] -translate-x-1/2 rounded-full bg-black" />
+                  {playing && muted && (
+                    <button
+                      type="button"
+                      onClick={unmute}
+                      className="absolute inset-x-0 bottom-6 mx-auto flex w-max items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-semibold text-[#211a28] shadow-lg"
+                    >
+                      🔊 Tocá para activar el sonido
+                    </button>
+                  )}
                   {!playing && (
                     <button
                       type="button"
